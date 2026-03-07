@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LOCATIONS } from "@/lib/mock-data";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
-import { Sparkles, Loader2, Send, Wand2, Upload, X, ImageIcon } from "lucide-react";
+import { Sparkles, Loader2, Send, Wand2, Upload, X, ImageIcon, Hash, User } from "lucide-react";
 import Image from "next/image";
 
 export default function ReporterPage() {
@@ -24,39 +24,45 @@ export default function ReporterPage() {
   const [isGeneratingHeadlines, setIsGeneratingHeadlines] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reporterInfo, setReporterInfo] = useState({ name: "Reporter", id: "REP000" });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Simulating fetching logged in reporter info
+    setReporterInfo({
+      name: "రాహుల్ కుమార్",
+      id: "REP001"
+    });
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate Format: jpg, jpeg only
     const validTypes = ['image/jpeg', 'image/jpg'];
     if (!validTypes.includes(file.type)) {
       toast({
         title: "అసమర్థిత ఫార్మాట్ (Unsupported Format)",
-        description: "దయచేసి JPG లేదా JPEG చిత్రాలను మాత్రమే అప్‌లోడ్ చేయండి. (Please upload only JPG or JPEG images.)",
+        description: "దయచేసి JPG లేదా JPEG చిత్రాలను మాత్రమే అప్‌లోడ్ చేయండి.",
         variant: "destructive",
       });
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
-    // Validate Size: Below 1MB
-    const maxSize = 1 * 1024 * 1024; // 1MB
+    const maxSize = 1 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "చిత్రం పరిమాణం పెద్దదిగా ఉంది (Image too large)",
-        description: "చిత్రం 1MB కంటే తక్కువ ఉండాలి. (Image must be less than 1MB.)",
+        description: "చిత్రం 1MB కంటే తక్కువ ఉండాలి.",
         variant: "destructive",
       });
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
-    // Convert to Data URL for preview and mock upload
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
@@ -71,7 +77,7 @@ export default function ReporterPage() {
 
   const handleGenerateHeadlines = async () => {
     if (!content) {
-      toast({ title: "Error", description: "ముందుగా కంటెంట్‌ను నమోదు చేయండి (Please enter content first)", variant: "destructive" });
+      toast({ title: "Error", description: "ముందుగా కంటెంట్‌ను నమోదు చేయండి", variant: "destructive" });
       return;
     }
     setIsGeneratingHeadlines(true);
@@ -79,10 +85,10 @@ export default function ReporterPage() {
       const result = await generateHeadlines({ articleContent: content });
       if (result.headlines?.length > 0) {
         setTitle(result.headlines[0]);
-        toast({ title: "Success", description: "హెడ్ లైన్ రూపొందించబడింది! (Headline generated!)" });
+        toast({ title: "Success", description: "హెడ్ లైన్ రూపొందించబడింది!" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "హెడ్ లైన్ రూపొందించడం విఫలమైంది (Failed to generate headlines)", variant: "destructive" });
+      toast({ title: "Error", description: "హెడ్ లైన్ రూపొందించడం విఫలమైంది", variant: "destructive" });
     } finally {
       setIsGeneratingHeadlines(false);
     }
@@ -90,19 +96,23 @@ export default function ReporterPage() {
 
   const handleSummarize = async () => {
     if (!content) {
-      toast({ title: "Error", description: "వివరమైన కంటెంట్‌ను నమోదు చేయండి (Please enter detailed content first)", variant: "destructive" });
+      toast({ title: "Error", description: "వివరమైన కంటెంట్‌ను నమోదు చేయండి", variant: "destructive" });
       return;
     }
     setIsSummarizing(true);
     try {
       const result = await summarizeArticleForReporter({ detailedArticle: content });
       setContent(result.summary);
-      toast({ title: "Success", description: "కంటెంట్ సంగ్రహించబడింది! (Content summarized!)" });
+      toast({ title: "Success", description: "కంటెంట్ సంగ్రహించబడింది!" });
     } catch (error) {
-      toast({ title: "Error", description: "సారాంశం విఫలమైంది (Failed to summarize content)", variant: "destructive" });
+      toast({ title: "Error", description: "సారాంశం విఫలమైంది", variant: "destructive" });
     } finally {
       setIsSummarizing(false);
     }
+  };
+
+  const generateUniqueCode = () => {
+    return Math.floor(10000 + Math.random() * 90000).toString();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,17 +120,22 @@ export default function ReporterPage() {
     if (!title || !content || !district || !mandal || !imagePreview) {
       toast({ 
         title: "Error", 
-        description: "అన్ని ఫీల్డ్‌లు మరియు చిత్రం తప్పనిసరి. (All fields and image are required)", 
+        description: "అన్ని ఫీల్డ్‌లు మరియు చిత్రం తప్పనిసరి.", 
         variant: "destructive" 
       });
       return;
     }
     setIsSubmitting(true);
     
+    const newCode = generateUniqueCode();
+    
     // Simulate Firestore submission
     setTimeout(() => {
       setIsSubmitting(false);
-      toast({ title: "Success", description: "వార్తలు సమీక్ష కోసం పంపబడ్డాయి! (News submitted for moderation!)" });
+      toast({ 
+        title: "Success", 
+        description: `వార్తలు సమర్పించబడ్డాయి! యూనిక్ కోడ్: ${newCode}` 
+      });
       setTitle("");
       setContent("");
       setDistrict("");
@@ -136,8 +151,20 @@ export default function ReporterPage() {
       <div className="max-w-2xl mx-auto px-4">
         <Card className="shadow-lg border-none">
           <CardHeader className="bg-primary/5 rounded-t-lg">
-            <CardTitle className="text-2xl font-headline text-primary">వార్తలను సమర్పించండి (Submit News)</CardTitle>
-            <CardDescription>స్థానిక సంఘటన వివరాలను నమోదు చేయండి. (Enter details about the local event.)</CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-2xl font-headline text-primary">వార్తలను సమర్పించండి</CardTitle>
+                <CardDescription>స్థానిక సంఘటన వివరాలను నమోదు చేయండి.</CardDescription>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground uppercase mb-1">
+                  <User className="w-3 h-3" />
+                  రిపోర్టర్ వివరాలు
+                </div>
+                <p className="text-sm font-bold text-foreground">{reporterInfo.name}</p>
+                <p className="text-[10px] font-mono text-muted-foreground">ID: {reporterInfo.id}</p>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
             <div className="space-y-4">
@@ -213,13 +240,10 @@ export default function ReporterPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                 />
-                <p className="text-[10px] text-muted-foreground text-right">
-                  సరైన నిడివి: 70-100 పదాలు. (Optimal: 70-100 words.)
-                </p>
               </div>
 
               <div className="space-y-2">
-                <Label>చిత్రాన్ని అప్‌లోడ్ చేయండి (Upload Image)</Label>
+                <Label>చిత్రాన్ని అప్‌లోడ్ చేయండి</Label>
                 {!imagePreview ? (
                   <div 
                     onClick={() => fileInputRef.current?.click()}
@@ -267,7 +291,7 @@ export default function ReporterPage() {
               disabled={isSubmitting}
             >
               {isSubmitting ? <Loader2 className="mr-2 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              సమర్పించండి (Submit for Approval)
+              సమర్పించండి
             </Button>
           </CardContent>
         </Card>
