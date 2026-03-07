@@ -4,6 +4,13 @@ export const LOCATIONS = {
   Rangareddy: ["Gachibowli", "Madhapur", "Kondapur"]
 };
 
+export type Comment = {
+  id: string;
+  userName: string;
+  text: string;
+  timestamp: string;
+};
+
 export type NewsPost = {
   id: string;
   unique_code: string;
@@ -21,6 +28,7 @@ export type NewsPost = {
   engagement: {
     likes: number;
     comments: number;
+    commentList: Comment[];
   };
 };
 
@@ -36,7 +44,14 @@ export const MOCK_NEWS: NewsPost[] = [
     author_id: "REP001",
     author_name: "రాహుల్ కుమార్",
     timestamp: new Date().toISOString(),
-    engagement: { likes: 120, comments: 45 }
+    engagement: { 
+      likes: 120, 
+      comments: 2,
+      commentList: [
+        { id: "c1", userName: "Srinivas", text: "చాలా మంచి వార్త!", timestamp: "10 mins ago" },
+        { id: "c2", userName: "Anitha", text: "మా పిల్లలు ఇక్కడ ఆడుకోవడానికి ఇష్టపడతారు.", timestamp: "5 mins ago" }
+      ]
+    }
   },
   {
     id: "2",
@@ -49,7 +64,13 @@ export const MOCK_NEWS: NewsPost[] = [
     author_id: "REP001",
     author_name: "రాహుల్ కుమార్",
     timestamp: new Date(Date.now() - 86400000).toISOString(),
-    engagement: { likes: 85, comments: 12 }
+    engagement: { 
+      likes: 85, 
+      comments: 1,
+      commentList: [
+        { id: "c3", userName: "Raju", text: "అభివృద్ధి జరుగుతోంది!", timestamp: "1 hour ago" }
+      ]
+    }
   },
   {
     id: "3",
@@ -62,6 +83,10 @@ export const MOCK_NEWS: NewsPost[] = [
     author_id: "REP002",
     author_name: "స్నేహ రెడ్డి",
     timestamp: new Date(Date.now() - 172800000).toISOString(),
-    engagement: { likes: 230, comments: 67 }
+    engagement: { 
+      likes: 230, 
+      comments: 0,
+      commentList: []
+    }
   }
 ];

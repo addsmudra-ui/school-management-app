@@ -1,11 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { NewsPost } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, User, Hash } from "lucide-react";
+import { NewsPost, Comment } from "@/lib/mock-data";
+import { Heart, MessageCircle, Share2, MapPin, User, Hash, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewsCardProps {
   news: NewsPost;
@@ -14,6 +17,9 @@ interface NewsCardProps {
 export function NewsCard({ news }: NewsCardProps) {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(news.engagement.likes);
+  const [comments, setComments] = useState<Comment[]>(news.engagement.commentList);
+  const [newComment, setNewComment] = useState("");
+  const { toast } = useToast();
 
   const toggleLike = () => {
     if (liked) {
@@ -22,6 +28,24 @@ export function NewsCard({ news }: NewsCardProps) {
       setLikesCount(prev => prev + 1);
     }
     setLiked(!liked);
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+
+    const comment: Comment = {
+      id: Date.now().toString(),
+      userName: "You",
+      text: newComment,
+      timestamp: "Just now"
+    };
+
+    setComments(prev => [comment, ...prev]);
+    setNewComment("");
+    toast({
+      title: "కామెంట్ జోడించబడింది",
+      description: "మీ అభిప్రాయం విజయవంతంగా పోస్ట్ చేయబడింది.",
+    });
   };
 
   return (
@@ -74,10 +98,48 @@ export function NewsCard({ news }: NewsCardProps) {
               />
               <span className="text-xs font-medium text-muted-foreground">{likesCount}</span>
             </button>
-            <button className="flex flex-col items-center gap-1">
-              <MessageCircle className="w-6 h-6 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground">{news.engagement.comments}</span>
-            </button>
+            
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="flex flex-col items-center gap-1">
+                  <MessageCircle className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">{comments.length}</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl">
+                <SheetHeader>
+                  <SheetTitle className="text-xl font-bold">కామెంట్స్ ({comments.length})</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 flex flex-col h-full">
+                  <div className="flex-1 overflow-y-auto space-y-4 pb-24">
+                    {comments.length > 0 ? (
+                      comments.map((comment) => (
+                        <div key={comment.id} className="bg-muted/30 p-4 rounded-lg">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-sm text-primary">{comment.userName}</span>
+                            <span className="text-[10px] text-muted-foreground">{comment.timestamp}</span>
+                          </div>
+                          <p className="text-sm text-foreground">{comment.text}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-center text-muted-foreground py-10 italic">ఇంకా కామెంట్స్ ఏవీ లేవు. మొదటిగా కామెంట్ చేయండి!</p>
+                    )}
+                  </div>
+                  <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-muted flex gap-2 items-center">
+                    <Input 
+                      placeholder="కామెంట్ జోడించండి..." 
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                    />
+                    <Button size="icon" onClick={handleAddComment}>
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
           <button className="flex flex-col items-center gap-1">
             <Share2 className="w-6 h-6 text-muted-foreground" />
