@@ -25,8 +25,8 @@ export type NewsPost = {
 export const MOCK_NEWS: NewsPost[] = [
   {
     id: "1",
-    title: "New Smart Park Inaugurated in Hanamkonda",
-    content: "The local administration has officially opened the new green smart park in the heart of Hanamkonda. The park features solar lighting and automated irrigation systems, providing a modern recreational space for residents of all ages.",
+    title: "హన్మకొండలో నూతన స్మార్ట్ పార్క్ ప్రారంభం",
+    content: "హన్మకొండ నడిబొడ్డున స్థానిక యంత్రాంగం నూతన గ్రీన్ స్మార్ట్ పార్క్‌ను అధికారికంగా ప్రారంభించింది. ఈ పార్కులో సోలార్ లైటింగ్ మరియు ఆటోమేటెడ్ ఇరిగేషన్ సిస్టమ్స్ ఉన్నాయి, ఇది అన్ని వయసుల నివాసితులకు ఆధునిక వినోద స్థలాన్ని అందిస్తుంది.",
     image_url: "https://picsum.photos/seed/hanamkonda/800/600",
     location: { mandal: "Hanamkonda", district: "Warangal" },
     status: "approved",
@@ -36,8 +36,8 @@ export const MOCK_NEWS: NewsPost[] = [
   },
   {
     id: "2",
-    title: "Kazipet Junction Modernization Project Starts",
-    content: "Upgradation works for the Kazipet railway junction have commenced this morning. The project aims to improve passenger amenities and expand the platform capacity to handle more high-speed trains effectively over the next two years.",
+    title: "కాజీపేట జంక్షన్ ఆధునీకరణ పనులు ప్రారంభం",
+    content: "కాజీపేట రైల్వే జంక్షన్ ఆధునీకరణ పనులు ఈ ఉదయం ప్రారంభమయ్యాయి. ఈ ప్రాజెక్ట్ ప్రయాణీకుల సౌకర్యాలను మెరుగుపరచడం మరియు రాబోయే రెండేళ్లలో మరిన్ని హై-స్పీడ్ రైళ్లను సమర్థవంతంగా నిర్వహించడానికి ప్లాట్‌ఫారమ్ సామర్థ్యాన్ని విస్తరించడం లక్ష్యంగా పెట్టుకుంది.",
     image_url: "https://picsum.photos/seed/kazipet/800/600",
     location: { mandal: "Kazipet", district: "Warangal" },
     status: "approved",
@@ -47,8 +47,8 @@ export const MOCK_NEWS: NewsPost[] = [
   },
   {
     id: "3",
-    title: "Local Market Prices Stabilize in Ameerpet",
-    content: "After weeks of fluctuation, essential commodity prices have finally stabilized in the Ameerpet wholesale markets. This brings much-needed relief to local consumers and small-scale retailers ahead of the festive season.",
+    title: "అమీర్‌పేటలో నిత్యావసర వస్తువుల ధరలు స్థిరం",
+    content: "వారాల తరబడి హెచ్చుతగ్గుల తర్వాత, అమీర్‌పేట హోల్‌సేల్ మార్కెట్లలో నిత్యావసర వస్తువుల ధరలు చివరకు స్థిరపడ్డాయి. ఇది పండుగ సీజన్‌కు ముందు స్థానిక వినియోగదారులకు మరియు చిన్న తరహా రిటైలర్లకు ఎంతో ఊరటనిస్తుంది.",
     image_url: "https://picsum.photos/seed/market/800/600",
     location: { mandal: "Ameerpet", district: "Hyderabad" },
     status: "approved",

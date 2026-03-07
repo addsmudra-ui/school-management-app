@@ -16,7 +16,7 @@ const SummarizeArticleInputSchema = z.object({
 export type SummarizeArticleInput = z.infer<typeof SummarizeArticleInputSchema>;
 
 const SummarizeArticleOutputSchema = z.object({
-  summary: z.string().describe('A concise summary of the news article, between 70-100 words.')
+  summary: z.string().describe('A concise summary of the news article in Telugu.')
 });
 export type SummarizeArticleOutput = z.infer<typeof SummarizeArticleOutputSchema>;
 
@@ -28,7 +28,11 @@ const summarizeArticlePrompt = ai.definePrompt({
   name: 'summarizeArticlePrompt',
   input: {schema: SummarizeArticleInputSchema},
   output: {schema: SummarizeArticleOutputSchema},
-  prompt: `You are an AI assistant tasked with summarizing news articles for a news app. Your goal is to create a concise and impactful summary that is between 70 and 100 words. The summary should capture the main points of the article without losing crucial information.
+  prompt: `You are an AI assistant tasked with summarizing news articles for a Telugu news app (MandalPulse). Your goal is to create a concise and impactful summary.
+
+IMPORTANT: The summary must be written in Telugu (తెలుగు) language.
+
+The summary should be between 70 and 100 words in Telugu. It should capture the main points of the article without losing crucial information.
 
 Here is the detailed news article:
 {{{detailedArticle}}}`

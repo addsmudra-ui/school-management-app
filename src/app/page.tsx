@@ -23,7 +23,7 @@ export default function Home() {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <Newspaper className="w-12 h-12 text-primary animate-pulse" />
-          <p className="text-primary font-medium">Loading local news...</p>
+          <p className="text-primary font-medium">వార్తలు లోడ్ అవుతున్నాయి... (Loading news...)</p>
         </div>
       </div>
     );
@@ -44,8 +44,8 @@ export default function Home() {
           <div className="flex items-center justify-center h-screen px-6 text-center">
             <div>
               <Newspaper className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
-              <h3 className="text-xl font-bold text-foreground mb-2">No News Found</h3>
-              <p className="text-muted-foreground">Stay tuned! Reporters are working hard to bring news from your mandal.</p>
+              <h3 className="text-xl font-bold text-foreground mb-2">వార్తలు ఏవీ లేవు (No News Found)</h3>
+              <p className="text-muted-foreground">వేచి ఉండండి! మీ మండలం నుండి వార్తలను తీసుకురావడానికి రిపోర్టర్లు కృషి చేస్తున్నారు.</p>
             </div>
           </div>
         )}

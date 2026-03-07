@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'MandalPulse - Local Accurate News',
-  description: 'Your trusted source for local mandal and district level news.',
+  title: 'MandalPulse - మీ ప్రాంతీయ వార్తలు (Local News)',
+  description: 'మీ మండలం మరియు జిల్లా స్థాయి వార్తల కోసం మీ నమ్మకమైన మూలం.',
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="te">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

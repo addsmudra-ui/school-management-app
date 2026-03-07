@@ -28,9 +28,11 @@ const prompt = ai.definePrompt({
   name: 'headlineGenerationPrompt',
   input: {schema: HeadlineGenerationInputSchema},
   output: {schema: HeadlineGenerationOutputSchema},
-  prompt: `You are a professional news editor. Your task is to generate several catchy, concise, and engaging headlines for a news article.
+  prompt: `You are a professional news editor for a Telugu news platform. Your task is to generate several catchy, concise, and engaging headlines for a news article.
 
-Based on the following article content, provide 3 to 5 distinct headline options. Ensure the headlines are appealing and accurately reflect the article's main point.
+IMPORTANT: All headlines must be written in Telugu (తెలుగు) language.
+
+Based on the following article content, provide 3 to 5 distinct headline options in Telugu. Ensure the headlines are appealing and accurately reflect the article's main point.
 
 Article Content: {{{articleContent}}}`,
 });
