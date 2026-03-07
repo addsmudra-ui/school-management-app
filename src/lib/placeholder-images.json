@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "news-1",
+      "description": "Local community gathering in Hanamkonda",
+      "imageUrl": "https://picsum.photos/seed/hanamkonda/800/600",
+      "imageHint": "community gathering"
+    },
+    {
+      "id": "news-2",
+      "description": "District developments in Warangal",
+      "imageUrl": "https://picsum.photos/seed/warangal/800/600",
+      "imageHint": "city development"
+    },
+    {
+      "id": "news-3",
+      "description": "Local agriculture report",
+      "imageUrl": "https://picsum.photos/seed/agriculture/800/600",
+      "imageHint": "farming fields"
+    },
+    {
+      "id": "news-4",
+      "description": "Urban infrastructure progress",
+      "imageUrl": "https://picsum.photos/seed/urban/800/600",
+      "imageHint": "road construction"
+    }
+  ]
 }
