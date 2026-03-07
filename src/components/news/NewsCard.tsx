@@ -48,6 +48,38 @@ export function NewsCard({ news }: NewsCardProps) {
     });
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: news.title,
+      text: `${news.title}\n\nవార్త చదవండి:`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled or share failed
+        console.log("Sharing failed", err);
+      }
+    } else {
+      // Fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareData.title}\n${shareData.url}`);
+        toast({
+          title: "లింక్ కాపీ చేయబడింది (Link Copied)",
+          description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది.",
+        });
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "షేర్ చేయడం వీలుపడలేదు.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   return (
     <div className="news-card-snap w-full max-w-md mx-auto bg-white shadow-xl relative overflow-hidden flex flex-col">
       <div className="relative h-2/5 w-full">
@@ -141,7 +173,10 @@ export function NewsCard({ news }: NewsCardProps) {
               </SheetContent>
             </Sheet>
           </div>
-          <button className="flex flex-col items-center gap-1">
+          <button 
+            onClick={handleShare}
+            className="flex flex-col items-center gap-1 transition-transform active:scale-95"
+          >
             <Share2 className="w-6 h-6 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground">Share</span>
           </button>
