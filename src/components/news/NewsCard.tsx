@@ -49,34 +49,46 @@ export function NewsCard({ news }: NewsCardProps) {
   };
 
   const handleShare = async () => {
-    const shareData = {
-      title: news.title,
-      text: `${news.title}\n\nవార్త చదవండి:`,
-      url: window.location.href,
-    };
+    const shareTitle = news.title;
+    const shareText = `${news.title}\n\nవార్త వివరాల కోసం MandalPulse చూడండి.\n\n`;
+    const shareUrl = window.location.origin;
 
-    if (navigator.share) {
+    // Check if Web Share API is available and supported
+    if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share(shareData);
-      } catch (err) {
-        // User cancelled or share failed
-        console.log("Sharing failed", err);
-      }
-    } else {
-      // Fallback to clipboard
-      try {
-        await navigator.clipboard.writeText(`${shareData.title}\n${shareData.url}`);
-        toast({
-          title: "లింక్ కాపీ చేయబడింది (Link Copied)",
-          description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది.",
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
         });
+        // On success, we don't necessarily need a toast as the system UI handles it
+        return;
       } catch (err) {
-        toast({
-          title: "Error",
-          description: "షేర్ చేయడం వీలుపడలేదు.",
-          variant: "destructive",
-        });
+        // If the user cancelled the share (AbortError), we don't show an error
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+        // For other errors, fall back to clipboard
       }
+    }
+
+    // Fallback: Copy to Clipboard
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(`${shareTitle}\n${shareUrl}`);
+        toast({
+          title: "లింక్ కాపీ చేయబడింది",
+          description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది. మీరు ఇప్పుడు ఎక్కడైనా షేర్ చేయవచ్చు.",
+        });
+      } else {
+        throw new Error("Clipboard API not available");
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "షేర్ చేయడం వీలుపడలేదు",
+        description: "దయచేసి మళ్ళీ ప్రయత్నించండి.",
+      });
     }
   };
 
