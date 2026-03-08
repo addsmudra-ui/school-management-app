@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -95,7 +94,7 @@ export default function AdminNewPost() {
               <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
                 <SelectTrigger className="h-11"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
                 <SelectContent>
-                  {state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key(d) value={d}>{d}</SelectItem>)}
+                  {state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
