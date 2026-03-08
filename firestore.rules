@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * MANDALPULSE SECURITY RULES
+     *
+     * CORE PHILOSOPHY:
+     * This ruleset implements a robust Role-Based Access Control (RBAC) model using "Authorization Independence."
+     * Instead of relying on fields within user documents, roles are verified via specific lookup collections
+     * (/roles_admins, /roles_editors, /roles_reporters). This ensures high performance and prevents 
+     * recursive rules or expensive get() calls.
+     *
+     * DATA STRUCTURE:
+     * - /users/{userId}: Private user profiles and personalization settings.
+     * - /roles_{role}/{userId}: Shadow collections for lightning-fast role verification.
+     * - /pending_news_posts: A segregated collection for unmoderated content, accessible only to staff and authors.
+     * - /approved_news_posts: The public-facing feed, read-accessible to all authenticated users.
+     * - /approved_news_posts/{id}/comments: User engagement nested under specific articles.
+     *
+     * KEY SECURITY DECISIONS:
+     * 1. Structural Segregation: News posts are separated by status (pending vs approved) into different 
+     *    collections. This prevents accidental exposure of unvetted content.
+     * 2. Denormalization for Authorization: Essential fields like 'authorId' are required on every 
+     *    document to allow direct ownership checks without cross-document lookups.
+     * 3. Prototyping Flexibility: While ownership and roles are strictly enforced, the specific 
+     *    schema of content fields (titles, descriptions, etc.) is left flexible for rapid iteration.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
+    }
+
+    function isEditor() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid));
+    }
+
+    function isReporter() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_reporters/$(request.auth.uid));
+    }
+
+    function isStaff() {
+      return isAdmin() || isEditor();
+    }
+
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for user profiles. Users can manage their own profile; admins have full access.
+     * @path /users/{userId}
+     * @allow (get, list, create, update) if the authenticated user's ID matches the {userId} path.
+     * @deny (delete) for non-admin users to prevent accidental account deletion.
+     * @principle Enforces strict data ownership and path-to-field consistency.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Role lookup collections. These are administrative and read-only for the owner.
+     * @path /roles_admins/{userId}, /roles_editors/{userId}, /roles_reporters/{userId}
+     * @allow (get) for the user to verify their own role; (get, list, write) for admins.
+     * @deny (write) for any non-admin user.
+     * @principle Implements Authorization Independence via shadow collections.
+     */
+    match /roles_admins/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list, create, update, delete: if isAdmin();
+    }
+    match /roles_editors/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list, create, update, delete: if isAdmin();
+    }
+    match /roles_reporters/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description News posts awaiting moderation. Accessible to authors (reporters) and staff.
+     * @path /pending_news_posts/{newsPostId}
+     * @allow (create) if the user is a reporter; (get, update, delete) if user is owner or staff.
+     * @deny (list) for general users to prevent seeing unvetted content.
+     * @principle Structural segregation of private/pending content.
+     */
+    match /pending_news_posts/{newsPostId} {
+      allow get: if isSignedIn() && (isOwner(resource.data.authorId) || isStaff());
+      allow list: if isStaff();
+      allow create: if isReporter() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff()) && request.resource.data.authorId == resource.data.authorId;
+      allow delete: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
+    }
+
+    /**
+     * @description Publicly visible, approved news posts.
+     * @path /approved_news_posts/{newsPostId}
+     * @allow (get, list) for all authenticated users; (write) for staff only.
+     * @deny (write) for reporters or regular users.
+     * @principle Read-only public access with administrative content control.
+     */
+    match /approved_news_posts/{newsPostId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isStaff();
+
+      /**
+       * @description Comments on approved news posts.
+       * @path /approved_news_posts/{newsPostId}/comments/{commentId}
+       * @allow (get, list) for all users; (create) for any user; (update, delete) for author or admin.
+       * @deny (update, delete) if not the original comment author.
+       * @principle Owner-only writes for social engagement data.
+       */
+      match /comments/{commentId} {
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && request.resource.data.newsPostId == newsPostId;
+        allow update: if (isExistingOwner(resource.data.authorId) || isAdmin()) && request.resource.data.authorId == resource.data.authorId;
+        allow delete: if isExistingOwner(resource.data.authorId) || isAdmin();
+      }
+    }
+
+  }
+}
