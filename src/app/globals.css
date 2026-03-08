@@ -79,3 +79,19 @@
   align-items: center;
   justify-content: center;
 }
+
+@keyframes bell-ring {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-10deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(0); }
+  100% { transform: rotate(0); }
+}
+
+.animate-bell {
+  animation: bell-ring 1s ease-in-out infinite;
+  transform-origin: top center;
+}
