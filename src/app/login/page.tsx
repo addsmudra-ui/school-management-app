@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, ShieldCheck, UserCircle, Phone } from "lucide-react";
+import { Newspaper, UserCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
   const [role, setRole] = useState("user");
   const router = useRouter();
 
@@ -20,6 +21,9 @@ export default function LoginPage() {
     else if (step === 'otp') setStep('details');
     else {
       localStorage.setItem('mandalPulse_role', role);
+      localStorage.setItem('mandalPulse_userName', name || 'User');
+      // Dispatch custom event to notify Navbar of auth change
+      window.dispatchEvent(new Event('mandalPulse_authChanged'));
       router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
     }
   };
@@ -72,6 +76,14 @@ export default function LoginPage() {
           {step === 'details' && (
             <div className="space-y-4 animate-in fade-in duration-300">
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>మీ పేరు (Your Name)</Label>
+                  <Input 
+                    placeholder="మీ పూర్తి పేరును నమోదు చేయండి" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>నేను ఒక... (I am a...)</Label>
                   <Select onValueChange={setRole} value={role}>
