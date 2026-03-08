@@ -10,21 +10,6 @@ service cloud.firestore {
      * Instead of relying on fields within user documents, roles are verified via specific lookup collections
      * (/roles_admins, /roles_editors, /roles_reporters). This ensures high performance and prevents 
      * recursive rules or expensive get() calls.
-     *
-     * DATA STRUCTURE:
-     * - /users/{userId}: Private user profiles and personalization settings.
-     * - /roles_{role}/{userId}: Shadow collections for lightning-fast role verification.
-     * - /pending_news_posts: A segregated collection for unmoderated content, accessible only to staff and authors.
-     * - /approved_news_posts: The public-facing feed, read-accessible to all authenticated users.
-     * - /approved_news_posts/{id}/comments: User engagement nested under specific articles.
-     *
-     * KEY SECURITY DECISIONS:
-     * 1. Structural Segregation: News posts are separated by status (pending vs approved) into different 
-     *    collections. This prevents accidental exposure of unvetted content.
-     * 2. Denormalization for Authorization: Essential fields like 'authorId' are required on every 
-     *    document to allow direct ownership checks without cross-document lookups.
-     * 3. Prototyping Flexibility: While ownership and roles are strictly enforced, the specific 
-     *    schema of content fields (titles, descriptions, etc.) is left flexible for rapid iteration.
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -61,10 +46,6 @@ service cloud.firestore {
 
     /**
      * @description Rules for user profiles. Users can manage their own profile; admins have full access.
-     * @path /users/{userId}
-     * @allow (get, list, create, update) if the authenticated user's ID matches the {userId} path.
-     * @deny (delete) for non-admin users to prevent accidental account deletion.
-     * @principle Enforces strict data ownership and path-to-field consistency.
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
@@ -75,11 +56,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Role lookup collections. These are administrative and read-only for the owner.
-     * @path /roles_admins/{userId}, /roles_editors/{userId}, /roles_reporters/{userId}
-     * @allow (get) for the user to verify their own role; (get, list, write) for admins.
-     * @deny (write) for any non-admin user.
-     * @principle Implements Authorization Independence via shadow collections.
+     * @description Role lookup collections. Read-only for the owner; write for admins.
      */
     match /roles_admins/{userId} {
       allow get: if isOwner(userId) || isAdmin();
@@ -96,10 +73,6 @@ service cloud.firestore {
 
     /**
      * @description News posts awaiting moderation. Accessible to authors (reporters) and staff.
-     * @path /pending_news_posts/{newsPostId}
-     * @allow (create) if the user is a reporter; (get, update, delete) if user is owner or staff.
-     * @deny (list) for general users to prevent seeing unvetted content.
-     * @principle Structural segregation of private/pending content.
      */
     match /pending_news_posts/{newsPostId} {
       allow get: if isSignedIn() && (isOwner(resource.data.authorId) || isStaff());
@@ -111,10 +84,6 @@ service cloud.firestore {
 
     /**
      * @description Publicly visible, approved news posts.
-     * @path /approved_news_posts/{newsPostId}
-     * @allow (get, list) for all authenticated users; (write) for staff only.
-     * @deny (write) for reporters or regular users.
-     * @principle Read-only public access with administrative content control.
      */
     match /approved_news_posts/{newsPostId} {
       allow get, list: if isSignedIn();
@@ -122,10 +91,6 @@ service cloud.firestore {
 
       /**
        * @description Comments on approved news posts.
-       * @path /approved_news_posts/{newsPostId}/comments/{commentId}
-       * @allow (get, list) for all users; (create) for any user; (update, delete) for author or admin.
-       * @deny (update, delete) if not the original comment author.
-       * @principle Owner-only writes for social engagement data.
        */
       match /comments/{commentId} {
         allow get, list: if isSignedIn();
@@ -133,6 +98,23 @@ service cloud.firestore {
         allow update: if (isExistingOwner(resource.data.authorId) || isAdmin()) && request.resource.data.authorId == resource.data.authorId;
         allow delete: if isExistingOwner(resource.data.authorId) || isAdmin();
       }
+    }
+
+    /**
+     * @description Push notifications and alerts.
+     */
+    match /notifications/{notifId} {
+      allow get, list: if isSignedIn();
+      allow create: if isStaff();
+      allow update, delete: if isAdmin();
+    }
+
+    /**
+     * @description App metadata (e.g., location lists).
+     */
+    match /metadata/{docId} {
+      allow get: if isSignedIn();
+      allow list, write: if isAdmin();
     }
 
   }

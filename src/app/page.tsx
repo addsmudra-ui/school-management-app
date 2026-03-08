@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Navbar } from "@/components/layout/Navbar";
@@ -7,7 +6,7 @@ import { useEffect, useState, useMemo, Suspense } from "react";
 import { Newspaper, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import {
   Dialog,
@@ -27,6 +26,7 @@ import { LOCATIONS } from "@/lib/mock-data";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
   const searchParams = useSearchParams();
   
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
@@ -41,7 +41,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    if (!firestore || !selectedDistrict) return null;
+    // Only run query if services, user, and district are ready to avoid permission errors
+    if (!firestore || !selectedDistrict || isUserLoading || !user) return null;
     
     let q = query(
       collection(firestore, 'approved_news_posts'),
@@ -55,7 +56,7 @@ function NewsFeedContent() {
     }
 
     return q;
-  }, [firestore, selectedDistrict, selectedMandal]);
+  }, [firestore, selectedDistrict, selectedMandal, user, isUserLoading]);
 
   const { data: news, isLoading } = useCollection(newsQuery);
 
@@ -63,9 +64,10 @@ function NewsFeedContent() {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
     localStorage.setItem('mandalPulse_mandal', selectedMandal);
     setIsLocationModalOpen(false);
+    window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">

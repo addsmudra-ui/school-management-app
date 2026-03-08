@@ -4,16 +4,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { Newspaper, User, PlusCircle, LayoutDashboard, LogOut, MapPin, Bell } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { NotificationService, SentNotification } from "@/lib/storage";
+import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
 
 export function Navbar() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [userStatus, setUserStatus] = useState<string>("");
@@ -23,9 +24,10 @@ export function Navbar() {
 
   // Real-time notifications
   const notifQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    // Guard query with user to avoid permission errors
+    if (!firestore || isUserLoading || !user) return null;
     return query(collection(firestore, 'notifications'), orderBy('timestamp', 'desc'), limit(20));
-  }, [firestore]);
+  }, [firestore, user, isUserLoading]);
 
   const { data: notifications } = useCollection<SentNotification>(notifQuery);
 
