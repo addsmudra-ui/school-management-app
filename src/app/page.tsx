@@ -39,8 +39,11 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL: Ensure firestore, location, and user are ready.
-    if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) return null;
+    // CRITICAL: Ensure firestore, location, and user are fully ready.
+    // The user must be signed in (anonymous or identified) to satisfy security rules.
+    if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) {
+      return null;
+    }
     
     let q = query(
       collection(firestore, 'approved_news_posts'),
