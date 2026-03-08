@@ -3,9 +3,9 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense } from "react";
-import { Newspaper, MapPin, SlidersHorizontal, Loader2 } from "lucide-react";
+import { MapPin, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import {
   Dialog,
@@ -25,13 +25,10 @@ import { LOCATIONS } from "@/lib/mock-data";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
-  
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedMandal, setSelectedMandal] = useState<string>("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
-  // Initialize location from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
@@ -41,10 +38,7 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // News is now public, only wait for firestore and basic location selection
-    if (!firestore || !selectedDistrict) {
-      return null;
-    }
+    if (!firestore || !selectedDistrict) return null;
     
     let q = query(
       collection(firestore, 'approved_news_posts'),

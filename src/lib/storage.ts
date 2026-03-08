@@ -69,7 +69,7 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
-    // 1. Mark as approved in pending (or delete it)
+    // 1. Remove from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
@@ -81,7 +81,7 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // 3. Send automated notification history
+    // 3. Log notification history
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
@@ -134,7 +134,8 @@ export const UserService = {
       const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) return null;
-      return { ...querySnapshot.docs[0].data(), id: querySnapshot.docs[0].id } as UserProfile;
+      const data = querySnapshot.docs[0].data();
+      return { ...data, id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
       console.error("Error fetching user by phone:", e);
       return null;
@@ -169,16 +170,15 @@ export const UserService = {
   },
 
   delete: (db: Firestore, userId: string) => {
-    // 1. Delete main user profile
-    const userRef = doc(db, 'users', userId);
-    deleteDocumentNonBlocking(userRef);
+    // 1. Delete profile
+    deleteDocumentNonBlocking(doc(db, 'users', userId));
 
     // 2. Delete role markers
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
     
-    // 3. Delete private data
+    // 3. Delete subcollections
     deleteDocumentNonBlocking(doc(db, 'users', userId, 'private', 'likes'));
   }
 };

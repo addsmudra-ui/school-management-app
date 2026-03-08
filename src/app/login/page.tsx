@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   const handleNext = async () => {
     if (!firestore || isUserLoading) {
-      toast({ variant: "destructive", title: "Initializing", description: "Firebase is warming up..." });
+      toast({ variant: "destructive", title: "Wait", description: "Firebase is initializing..." });
       return;
     }
 
@@ -39,13 +39,13 @@ export default function LoginPage() {
     try {
       if (step === 'phone') {
         if (!phone || phone.length < 10) {
-          toast({ variant: "destructive", title: "Validation Error", description: "Please enter a valid phone number." });
+          toast({ variant: "destructive", title: "Error", description: "Please enter a valid phone number." });
           return;
         }
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          // Sync local state
+          // Sync profile to local storage for UI consistency
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -61,7 +61,8 @@ export default function LoginPage() {
           
           if (existing.role === 'admin') {
             setRole('admin');
-            setStep('details'); // Proceed to password check
+            setName(existing.name);
+            setStep('details'); // Admins must verify password
           } else {
             router.push(existing.role === 'reporter' ? '/reporter' : '/');
             return;
@@ -74,17 +75,18 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
-        // Validation for new or admin users
+        // Verification step
         if (role === 'admin') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
-            toast({ variant: "destructive", title: "Admin Auth Failed", description: "Invalid administrator password." });
+            toast({ variant: "destructive", title: "Admin Login Failed", description: "Invalid password." });
+            setIsLoading(false);
             return;
           }
         }
 
         if (!user?.uid) {
-          throw new Error("Auth session not ready. Please refresh the page.");
+          throw new Error("Authentication session expired. Please reload.");
         }
 
         const newUser: UserProfile = {
@@ -96,10 +98,9 @@ export default function LoginPage() {
           location: role !== 'admin' ? { state, district, mandal } : undefined
         };
 
-        // Create in Firestore
         await UserService.create(firestore, newUser);
 
-        // Sync local
+        // Update local session
         localStorage.setItem('mandalPulse_role', role);
         localStorage.setItem('mandalPulse_userName', name);
         localStorage.setItem('mandalPulse_userPhone', phone);
@@ -112,15 +113,15 @@ export default function LoginPage() {
         }
 
         window.dispatchEvent(new Event('mandalPulse_authChanged'));
-        toast({ title: "Welcome to MandalPulse", description: "Account setup successful." });
+        toast({ title: "Welcome", description: "Login successful." });
         router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
       }
     } catch (error: any) {
-      console.error("Login Error:", error);
+      console.error("Login process failed:", error);
       toast({ 
         variant: "destructive", 
         title: "Login Error", 
-        description: error.message || "An unexpected error occurred during login." 
+        description: error.message || "Something went wrong." 
       });
     } finally {
       setIsLoading(false);
@@ -146,15 +147,13 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden">
         <CardHeader className="text-center relative bg-primary/5 pb-8">
           {step !== 'phone' && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute left-4 top-4 rounded-full"
+            <button 
+              className="absolute left-4 top-4 p-2 rounded-full hover:bg-white transition-colors"
               onClick={() => setStep(step === 'details' ? 'otp' : 'phone')}
               disabled={isLoading}
             >
               <ChevronLeft className="w-5 h-5" />
-            </Button>
+            </button>
           )}
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
             <Newspaper className="w-10 h-10 text-primary" />
@@ -187,7 +186,7 @@ export default function LoginPage() {
           {step === 'otp' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="space-y-4 text-center">
-                <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">OTP ని నమోదు చేయండి (Simulated)</Label>
+                <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">OTP ని నమోదు చేయండి</Label>
                 <div className="flex justify-between gap-2">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <Input key={i} className="text-center text-xl font-bold h-12 w-full rounded-xl" maxLength={1} defaultValue="0" />
