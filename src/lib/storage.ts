@@ -1,3 +1,4 @@
+
 "use client";
 
 import { NewsPost, MOCK_NEWS, UserProfile, MOCK_USERS, LOCATIONS_BY_STATE } from "./mock-data";
@@ -7,6 +8,7 @@ const LIKES_KEY = 'mandalPulse_liked_posts';
 const USERS_KEY = 'mandalPulse_users_v1';
 const LOCATIONS_KEY = 'mandalPulse_locations_v1';
 const NOTIFICATIONS_KEY = 'mandalPulse_notifications_v1';
+const ADMIN_CONFIG_KEY = 'mandalPulse_admin_config';
 
 export type SentNotification = {
   id: string;
@@ -14,6 +16,17 @@ export type SentNotification = {
   body: string;
   target: string;
   timestamp: string;
+};
+
+export const AdminService = {
+  getPassword: (): string => {
+    if (typeof window === 'undefined') return 'admin123';
+    return localStorage.getItem(ADMIN_CONFIG_KEY) || 'admin123';
+  },
+  setPassword: (newPassword: string) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(ADMIN_CONFIG_KEY, newPassword);
+  }
 };
 
 export const NewsService = {
@@ -41,7 +54,18 @@ export const NewsService = {
 
   update: (id: string, updates: Partial<NewsPost>) => {
     const news = NewsService.getAll();
+    const oldPost = news.find(n => n.id === id);
     const updated = news.map(n => n.id === id ? { ...n, ...updates } : n);
+    
+    // Auto-Notify on Approval
+    if (oldPost && oldPost.status !== 'approved' && updates.status === 'approved') {
+      NotificationService.send({
+        title: `బ్రేకింగ్: ${updates.title || oldPost.title}`,
+        body: `${oldPost.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చదవండి!`,
+        target: oldPost.location.district
+      });
+    }
+
     NewsService.save(updated);
   },
 

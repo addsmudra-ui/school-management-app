@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,29 +7,37 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, ChevronLeft } from "lucide-react";
+import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
-import { UserService } from "@/lib/storage";
+import { UserService, AdminService } from "@/lib/storage";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<'user' | 'reporter' | 'admin'>("user");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleNext = () => {
     if (step === 'phone') {
       if (!phone || phone.length < 10) return;
       
-      // Check if user exists
       const existing = UserService.getByPhone(phone);
       if (existing) {
-        // Simple mock: log them in immediately if they exist
+        if (existing.role === 'admin') {
+          // Admins need a password check
+          setStep('details');
+          setRole('admin');
+          return;
+        }
+        
         localStorage.setItem('mandalPulse_role', existing.role);
         localStorage.setItem('mandalPulse_userName', existing.name);
         localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -48,9 +57,16 @@ export default function LoginPage() {
     }
     else if (step === 'otp') setStep('details');
     else {
-      // Register new user
+      if (role === 'admin') {
+        const correctPassword = AdminService.getPassword();
+        if (password !== correctPassword) {
+          toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid admin password." });
+          return;
+        }
+      }
+
       const newUser: UserProfile = {
-        id: "USR" + Date.now(),
+        id: role === 'admin' ? "ADM_ROOT" : "USR" + Date.now(),
         phone,
         name,
         role,
@@ -78,7 +94,7 @@ export default function LoginPage() {
 
   const isDetailsValid = () => {
     if (!name) return false;
-    if (role === 'admin') return true;
+    if (role === 'admin') return password.length > 0;
     return state && district && mandal;
   };
 
@@ -97,7 +113,7 @@ export default function LoginPage() {
             </Button>
           )}
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-            < Newspaper className="w-10 h-10 text-primary" />
+            <Newspaper className="w-10 h-10 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold font-headline">MandalPulse</CardTitle>
           <CardDescription>స్థానిక వార్తలు (Local News)</CardDescription>
@@ -147,7 +163,10 @@ export default function LoginPage() {
                   <Label>నేను ఒక... (I am a...)</Label>
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
                     <SelectTrigger className="h-11">
-                      <SelectValue />
+                      <div className="flex items-center gap-2">
+                        {role === 'admin' ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
+                        <SelectValue />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">సాధారణ పాఠకుడు (Reader)</SelectItem>
@@ -157,6 +176,19 @@ export default function LoginPage() {
                   </Select>
                 </div>
                 
+                {role === 'admin' && (
+                  <div className="space-y-2 animate-in zoom-in-95 duration-200">
+                    <Label className="text-rose-600 font-bold">అడ్మిన్ పాస్‌వర్డ్ (Admin Password)</Label>
+                    <Input 
+                      type="password" 
+                      placeholder="Enter Admin Password" 
+                      value={password} 
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="border-rose-200 focus:ring-rose-500"
+                    />
+                  </div>
+                )}
+
                 {role !== 'admin' && (
                   <>
                     <div className="space-y-2">
