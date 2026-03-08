@@ -11,6 +11,7 @@ import {
   ChartTooltipContent 
 } from "@/components/ui/chart";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { cn } from "@/lib/utils";
 
 const chartData = [
   { name: "Mon", posts: 4 },
