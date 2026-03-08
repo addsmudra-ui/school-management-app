@@ -69,11 +69,11 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
-    // Delete from pending
+    // 1. Mark as approved in pending (or delete it)
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
-    // Add to approved
+    // 2. Add to approved collection
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -81,10 +81,10 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Send push notification history
+    // 3. Send automated notification history
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
-      body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చదవండి!`,
+      body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
       target: postData.location.district
     });
   },
@@ -136,18 +136,20 @@ export const UserService = {
       if (querySnapshot.empty) return null;
       return { ...querySnapshot.docs[0].data(), id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
+      console.error("Error fetching user by phone:", e);
       return null;
     }
   },
 
   create: async (db: Firestore, profile: UserProfile) => {
+    // 1. Create main user profile
     const userRef = doc(db, 'users', profile.id);
     await setDoc(userRef, {
       ...profile,
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Atomically provision role marker for security rules 'exists' checks
+    // 2. Create role marker for security rules 'exists' checks
     const roleCollectionMap = {
       'admin': 'roles_admins',
       'reporter': 'roles_reporters',
@@ -171,12 +173,12 @@ export const UserService = {
     const userRef = doc(db, 'users', userId);
     deleteDocumentNonBlocking(userRef);
 
-    // 2. Clean up all potential role markers
+    // 2. Delete role markers
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
     
-    // 3. Clean up sub-collections (manually in a real app, or here for MVP)
+    // 3. Delete private data
     deleteDocumentNonBlocking(doc(db, 'users', userId, 'private', 'likes'));
   }
 };

@@ -31,6 +31,7 @@ function NewsFeedContent() {
   const [selectedMandal, setSelectedMandal] = useState<string>("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
+  // Initialize location from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
@@ -40,8 +41,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // News is now publicly readable in rules, but we still guard the query construction
-    if (!firestore || isUserLoading || !selectedDistrict) {
+    // Only fire query when auth and location are ready
+    if (!firestore || isUserLoading || !user?.uid || !selectedDistrict) {
       return null;
     }
     
@@ -57,7 +58,7 @@ function NewsFeedContent() {
     }
 
     return q;
-  }, [firestore, selectedDistrict, selectedMandal, isUserLoading]);
+  }, [firestore, selectedDistrict, selectedMandal, isUserLoading, user?.uid]);
 
   const { data: news, isLoading } = useCollection(newsQuery);
 
