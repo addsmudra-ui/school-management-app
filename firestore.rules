@@ -6,19 +6,19 @@ service cloud.firestore {
      * MANDALPULSE SECURITY RULES
      *
      * Ensures robust login lookup and role-based access.
-     * Deployment Trigger: 2024-05-21T10:00:00Z
+     * Deployment Trigger: 2024-05-21T11:00:00Z
      */
 
-    // --- GLOBAL HELPER FUNCTIONS ---
-
+    // --- HELPER FUNCTIONS ---
     function isSignedIn() {
-      return request.auth != null && request.auth.uid != null;
+      return request.auth != null;
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Checking roles via your dedicated collections
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
     }
@@ -38,14 +38,15 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     match /users/{userId} {
-      // Allow list for phone lookup (restricted to phone query)
-      allow list: if isSignedIn();
-      // Allow getting profile
+      // Allow get for any signed in user (needed for profile fetching)
       allow get: if isSignedIn();
-      // Allow profile creation matching Auth UID
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      // Allow updates by owner or admin
-      allow update: if (isOwner(userId) || isAdmin());
+      // Only admins can see the full user list for management
+      allow list: if isAdmin(); 
+      // Users can only create their own profile matching their Auth UID
+      allow create: if isOwner(userId);
+      // Updates allowed by owner or admin
+      allow update: if isOwner(userId) || isAdmin();
+      // Deletion restricted to admins
       allow delete: if isAdmin();
 
       match /private/{docId} {
@@ -53,41 +54,41 @@ service cloud.firestore {
       }
     }
 
-    match /roles_admins/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list, create, update, delete: if isAdmin();
-    }
-    match /roles_editors/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list, create, update, delete: if isAdmin();
-    }
-    match /roles_reporters/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update, delete: if isAdmin();
-    }
+    // Role verification (Required for the exists() checks above)
+    // We allow read to any signed-in user to allow the app to verify roles client-side if needed,
+    // but restricted write to admins only.
+    match /roles_admins/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /roles_editors/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /roles_reporters/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
     match /pending_news_posts/{newsPostId} {
-      allow get: if isSignedIn() && (resource == null || resource.data.author_id == request.auth.uid || isStaff());
-      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 50); 
+      // Staff can see all pending posts; Reporters can only see their own drafts
+      allow read: if isSignedIn() && (isOwner(resource.data.author_id) || isStaff());
+      // Only approved reporters can create new posts
       allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
-      allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
+      // Updates and deletions restricted to owner or staff
+      allow update, delete: if isSignedIn() && (isOwner(resource.data.author_id) || isStaff());
     }
 
     match /approved_news_posts/{newsPostId} {
-      allow get, list: if isSignedIn();
+      // Publicly readable by all authenticated users
+      allow read: if isSignedIn(); 
+      // Only editors and admins can manage approved content
       allow create, update, delete: if isStaff();
 
       match /comments/{commentId} {
-        allow get, list: if isSignedIn();
+        allow read: if isSignedIn();
+        // Users can comment on approved news
         allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
-        allow update, delete: if (isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin()));
+        // Users can edit their own comments
+        allow update: if isSignedIn() && resource.data.author_id == request.auth.uid;
+        // Users can delete their own comments, and admins can moderate them
+        allow delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin());
       }
     }
 
     match /notifications/{notifId} {
-      allow get, list: if isSignedIn();
+      allow read: if isSignedIn();
       allow create: if isStaff();
       allow update, delete: if isAdmin();
     }
@@ -96,11 +97,5 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list, write: if isAdmin();
     }
-
-    match /config/{docId} {
-      allow get: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
   }
 }
