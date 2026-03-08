@@ -4,25 +4,49 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [authorized, setAuthorized] = useState(false);
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
+  
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
+
+  const { data: profile, isLoading: isProfileLoading } = useDoc(userDocRef);
 
   useEffect(() => {
-    const role = localStorage.getItem('mandalPulse_role');
-    if (role !== 'admin') {
+    if (!isUserLoading && !user) {
       router.push('/login');
-    } else {
-      setAuthorized(true);
     }
-  }, [router]);
+  }, [user, isUserLoading, router]);
 
-  if (!authorized) return null;
+  useEffect(() => {
+    if (!isProfileLoading && profile && profile.role !== 'admin') {
+      router.push('/');
+    }
+  }, [profile, isProfileLoading, router]);
+
+  if (isUserLoading || isProfileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!profile || profile.role !== 'admin') {
+    return null;
+  }
 
   return (
     <SidebarProvider>

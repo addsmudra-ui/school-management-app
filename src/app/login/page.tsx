@@ -39,13 +39,13 @@ export default function LoginPage() {
     try {
       if (step === 'phone') {
         if (!phone || phone.length < 10) {
-          toast({ variant: "destructive", title: "Error", description: "Please enter a valid phone number." });
+          toast({ variant: "destructive", title: "Error", description: "Please enter a valid 10-digit phone number." });
+          setIsLoading(false);
           return;
         }
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          // Sync profile to local storage for UI consistency
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -62,7 +62,7 @@ export default function LoginPage() {
           if (existing.role === 'admin') {
             setRole('admin');
             setName(existing.name);
-            setStep('details'); // Admins must verify password
+            setStep('details'); 
           } else {
             router.push(existing.role === 'reporter' ? '/reporter' : '/');
             return;
@@ -75,7 +75,6 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
-        // Verification step
         if (role === 'admin') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
@@ -100,20 +99,19 @@ export default function LoginPage() {
 
         await UserService.create(firestore, newUser);
 
-        // Update local session
         localStorage.setItem('mandalPulse_role', role);
         localStorage.setItem('mandalPulse_userName', name);
         localStorage.setItem('mandalPulse_userPhone', phone);
         localStorage.setItem('mandalPulse_userStatus', newUser.status);
         
-        if (role !== 'admin') {
-          localStorage.setItem('mandalPulse_state', state || "");
-          localStorage.setItem('mandalPulse_district', district || "");
-          localStorage.setItem('mandalPulse_mandal', mandal || "");
+        if (role !== 'admin' && state) {
+          localStorage.setItem('mandalPulse_state', state);
+          localStorage.setItem('mandalPulse_district', district);
+          localStorage.setItem('mandalPulse_mandal', mandal);
         }
 
         window.dispatchEvent(new Event('mandalPulse_authChanged'));
-        toast({ title: "Welcome", description: "Login successful." });
+        toast({ title: "Welcome", description: "Profile setup complete." });
         router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
       }
     } catch (error: any) {

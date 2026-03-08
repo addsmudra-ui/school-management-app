@@ -54,7 +54,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
       
       match /private/{docId} {
@@ -64,21 +65,21 @@ service cloud.firestore {
 
     // 4. ROLE MARKERS - Critical for security checks
     match /roles_admins/{uid} { 
-      allow read: if true; 
+      allow read: if isSignedIn(); 
       allow write: if isAdmin(); 
     }
     match /roles_reporters/{uid} { 
-      allow read: if true; 
+      allow read: if isSignedIn(); 
       allow write: if isAdmin() || (isSignedIn() && request.auth.uid == uid); 
     }
     match /roles_editors/{uid} { 
-      allow read: if true; 
+      allow read: if isSignedIn(); 
       allow write: if isAdmin(); 
     }
 
     // 5. SYSTEM CONFIG
     match /config/{id} {
-      allow read: if isAdmin();
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
   }
