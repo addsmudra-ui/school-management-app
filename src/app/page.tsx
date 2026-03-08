@@ -1,13 +1,14 @@
-"use client";
+
+'use client';
 
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
-import { LOCATIONS } from "@/lib/mock-data";
-import { NewsService } from "@/lib/storage";
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { Newspaper, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import {
   Dialog,
   DialogContent,
@@ -22,80 +23,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LOCATIONS } from "@/lib/mock-data";
 
 function NewsFeedContent() {
+  const firestore = useFirestore();
   const searchParams = useSearchParams();
+  
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedMandal, setSelectedMandal] = useState<string>("");
-  const [news, setNews] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
-  const filterNews = useCallback((district: string, mandal: string) => {
-    const allNews = NewsService.getAll();
-    const filtered = allNews.filter(item => 
-      item.status === 'approved' &&
-      item.location.district === district && 
-      (mandal === "All" || mandal === "" || item.location.mandal === mandal)
-    );
-    setNews(filtered);
-  }, []);
-
   useEffect(() => {
-    // Initial load from storage
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
-    
     setSelectedDistrict(savedDistrict);
     setSelectedMandal(savedMandal);
-    filterNews(savedDistrict, savedMandal);
-    
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 800);
+  }, []);
 
-    const handleNewsChange = () => filterNews(selectedDistrict, selectedMandal);
-    window.addEventListener('mandalPulse_newsChanged', handleNewsChange);
+  const newsQuery = useMemoFirebase(() => {
+    if (!firestore || !selectedDistrict) return null;
     
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('mandalPulse_newsChanged', handleNewsChange);
-    };
-  }, [filterNews, selectedDistrict, selectedMandal]);
+    let q = query(
+      collection(firestore, 'approved_news_posts'),
+      where('location.district', '==', selectedDistrict),
+      orderBy('timestamp', 'desc'),
+      limit(20)
+    );
 
-  // Handle deep linking to a specific post
-  useEffect(() => {
-    const postId = searchParams.get('postId');
-    if (postId && !loading) {
-      const allNews = NewsService.getAll();
-      const targetPost = allNews.find(p => p.id === postId);
-      
-      if (targetPost) {
-        // Update location to match the post
-        setSelectedDistrict(targetPost.location.district);
-        setSelectedMandal(targetPost.location.mandal);
-        filterNews(targetPost.location.district, targetPost.location.mandal);
-        
-        // Wait for render, then scroll
-        setTimeout(() => {
-          const element = document.getElementById(`post-${postId}`);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 300);
-      }
+    if (selectedMandal && selectedMandal !== "All") {
+      q = query(q, where('location.mandal', '==', selectedMandal));
     }
-  }, [searchParams, loading, filterNews]);
+
+    return q;
+  }, [firestore, selectedDistrict, selectedMandal]);
+
+  const { data: news, isLoading } = useCollection(newsQuery);
 
   const handleLocationUpdate = () => {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
     localStorage.setItem('mandalPulse_mandal', selectedMandal);
-    window.dispatchEvent(new Event('mandalPulse_locationChanged'));
-    filterNews(selectedDistrict, selectedMandal);
     setIsLocationModalOpen(false);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -108,7 +78,6 @@ function NewsFeedContent() {
 
   return (
     <>
-      {/* Fixed Header Overlay for Mobile */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -164,7 +133,7 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {news.length > 0 ? (
+        {news && news.length > 0 ? (
           news.map((item) => (
             <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
               <NewsCard news={item} />
