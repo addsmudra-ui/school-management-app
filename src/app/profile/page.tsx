@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2 } from "lucide-react";
+import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText } from "lucide-react";
 import { NewsService } from "@/lib/storage";
 import { NewsPost } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -181,6 +180,31 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Legal & Info Section */}
+        <Card className="border-none shadow-md rounded-2xl overflow-hidden bg-white">
+          <CardContent className="p-2">
+            <Link href="/privacy" className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors rounded-xl group">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-blue-600" />
+                </div>
+                <span className="font-bold text-sm">గోప్యతా విధానం (Privacy Policy)</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+            </Link>
+            <div className="h-px bg-slate-100 mx-4" />
+            <Link href="/guidelines" className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors rounded-xl group">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-amber-600" />
+                </div>
+                <span className="font-bold text-sm">నిబంధనలు (Content Guidelines)</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+            </Link>
           </CardContent>
         </Card>
 

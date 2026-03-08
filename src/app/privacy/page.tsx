@@ -1,0 +1,79 @@
+"use client";
+
+import { Navbar } from "@/components/layout/Navbar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Shield, Lock, Eye, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+export default function PrivacyPolicyPage() {
+  return (
+    <main className="min-h-screen bg-slate-50/50 pb-24 md:pt-20">
+      <Navbar />
+      <div className="max-w-3xl mx-auto px-4 pt-8 space-y-6">
+        <Link href="/profile">
+          <Button variant="ghost" size="sm" className="gap-2 mb-2">
+            <ArrowLeft className="w-4 h-4" />
+            తిరిగి వెళ్ళండి
+          </Button>
+        </Link>
+        
+        <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+          <CardHeader className="bg-primary/5 border-b border-primary/10 py-8">
+            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+              <Shield className="w-6 h-6 text-primary" />
+            </div>
+            <CardTitle className="text-3xl font-bold font-headline text-center">గోప్యతా విధానం (Privacy Policy)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 space-y-6 text-slate-700 leading-relaxed">
+            <section className="space-y-3">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" />
+                సమాచార సేకరణ (Data Collection)
+              </h2>
+              <p>
+                MandalPulse యాప్ మీ పేరు, ఫోన్ నంబర్ మరియు ప్రాంతం (మండలం/జిల్లా) వంటి ప్రాథమిక వివరాలను సేకరిస్తుంది. ఈ సమాచారం మీకు సరైన ప్రాంతీయ వార్తలను అందించడానికి మరియు రిపోర్టర్లను ధృవీకరించడానికి ఉపయోగపడుతుంది.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Lock className="w-5 h-5 text-primary" />
+                డేటా భద్రత (Data Security)
+              </h2>
+              <p>
+                మీ వ్యక్తిగత సమాచారం పూర్తిగా భద్రంగా ఉంటుంది. మేము మీ సమాచారాన్ని ఏ మూడవ పక్షం (Third Party) సంస్థలకు విక్రయించము లేదా అద్దెకు ఇవ్వము. మీ డేటా కేవలం అడ్మిన్ ప్యానెల్ ద్వారా మాత్రమే నిర్వహించబడుతుంది.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                అనుమతులు (Permissions)
+              </h2>
+              <p>
+                యాప్ సరిగ్గా పనిచేయడానికి మేము ఈ క్రింది అనుమతులను కోరవచ్చు:
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>మీకు ముఖ్యమైన వార్తల అలర్ట్‌లను పంపడానికి నోటిఫికేషన్ అనుమతి.</li>
+                <li>మీ ప్రాంతంలోని వార్తలను ముందుగా చూపడానికి లొకేషన్ సమాచారం.</li>
+                <li>రిపోర్టర్లు వార్తా చిత్రాలను అప్‌లోడ్ చేయడానికి గ్యాలరీ అనుమతి.</li>
+              </ul>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-xl font-bold text-foreground">సంప్రదించండి</h2>
+              <p>
+                గోప్యతా విధానం గురించి మీకు ఏవైనా సందేహాలు ఉంటే, దయచేసి అడ్మిన్ కార్యాలయాన్ని సంప్రదించండి.
+              </p>
+            </section>
+            
+            <div className="pt-6 border-t text-xs text-muted-foreground text-center">
+              చివరిగా అప్‌డేట్ చేయబడింది: {new Date().toLocaleDateString('te-IN')}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}
