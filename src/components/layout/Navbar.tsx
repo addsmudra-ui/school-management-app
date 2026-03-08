@@ -93,7 +93,7 @@ export function Navbar() {
   const canPost = role === 'admin' || (role === 'reporter' && userStatus === 'approved');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted h-16 md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-sm">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted h-16 md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg pb-safe">
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-primary font-bold text-xl">
           <Newspaper className="w-6 h-6" />
@@ -125,14 +125,14 @@ export function Navbar() {
                 <span className="text-[10px] md:text-sm font-semibold">Alerts</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[90%] sm:max-w-sm p-0">
+            <SheetContent side="right" className="w-[90%] sm:max-w-sm p-0 z-[100]">
               <SheetHeader className="p-6 border-b bg-primary/5">
                 <SheetTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-primary" />
                   నోటిఫికేషన్లు (Notifications)
                 </SheetTitle>
               </SheetHeader>
-              <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4 pb-20">
+              <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4 pb-32">
                 {notifications.length > 0 ? (
                   notifications.map((n) => (
                     <div key={n.id} className="p-4 bg-muted/30 rounded-2xl border border-muted group hover:bg-white hover:shadow-md transition-all">

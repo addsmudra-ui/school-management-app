@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -88,9 +87,9 @@ export function NewsCard({ news }: NewsCardProps) {
   };
 
   return (
-    <div className="w-full h-full max-w-md mx-auto bg-white relative flex flex-col md:h-[90vh] md:rounded-3xl md:my-8 md:shadow-2xl overflow-hidden">
+    <div className="w-full h-full max-w-md mx-auto bg-white relative flex flex-col md:h-[90vh] md:rounded-3xl md:my-8 md:shadow-2xl overflow-hidden pt-14 pb-16 md:py-0">
       {/* Image Section */}
-      <div className="relative h-[45%] w-full overflow-hidden bg-muted">
+      <div className="relative h-[45%] w-full overflow-hidden bg-muted flex-shrink-0">
         <Image
           src={news.image_url}
           alt={news.title}
@@ -111,9 +110,9 @@ export function NewsCard({ news }: NewsCardProps) {
         </div>
       </div>
 
-      {/* Content Section */}
-      <div className="p-6 flex-1 flex flex-col justify-between overflow-y-auto">
-        <div className="space-y-4">
+      {/* Content Section - Internal Scrolling for Mobile */}
+      <div className="p-6 flex-1 flex flex-col overflow-y-auto">
+        <div className="space-y-4 pb-20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
               <User className="w-3 h-3" />
@@ -137,13 +136,13 @@ export function NewsCard({ news }: NewsCardProps) {
             {news.title}
           </h2>
           
-          <p className="text-muted-foreground leading-relaxed text-lg pb-12">
+          <p className="text-muted-foreground leading-relaxed text-lg">
             {news.content}
           </p>
         </div>
 
-        {/* Action Bar */}
-        <div className="flex items-center justify-between py-4 bg-white sticky bottom-0 border-t border-muted">
+        {/* Floating Action Bar inside the card area to stay visible */}
+        <div className="flex items-center justify-between py-4 px-6 bg-white/95 backdrop-blur-sm absolute bottom-0 left-0 right-0 border-t border-muted z-20">
           <div className="flex items-center gap-8">
             <button
               onClick={toggleLike}
@@ -165,12 +164,12 @@ export function NewsCard({ news }: NewsCardProps) {
                   <span className="text-xs font-bold text-muted-foreground">{comments.length}</span>
                 </button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0">
+              <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0 z-[60]">
                 <SheetHeader className="p-6 border-b">
                   <SheetTitle className="text-xl font-bold">కామెంట్స్ ({comments.length})</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col h-full">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-32">
                     {comments.length > 0 ? (
                       comments.map((comment) => (
                         <div key={comment.id} className="bg-muted/30 p-4 rounded-2xl">
@@ -188,7 +187,7 @@ export function NewsCard({ news }: NewsCardProps) {
                       </div>
                     )}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-2 items-center">
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-2 items-center pb-8 md:pb-4">
                     <Input 
                       placeholder="కామెంట్ జోడించండి..." 
                       value={newComment}

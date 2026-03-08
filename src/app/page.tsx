@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Navbar } from "@/components/layout/Navbar";
@@ -109,6 +108,7 @@ function NewsFeedContent() {
 
   return (
     <>
+      {/* Fixed Header Overlay for Mobile */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ function NewsFeedContent() {
 
 export default function Home() {
   return (
-    <main className="h-screen bg-background overflow-hidden">
+    <main className="h-screen bg-background overflow-hidden overscroll-none">
       <Navbar />
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-screen bg-background">
