@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { STATES, LOCATIONS_BY_STATE, MOCK_NEWS, NewsPost } from "@/lib/mock-data";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
-import { Sparkles, Loader2, Send, Wand2, Upload, X, ImageIcon, User, Briefcase, FileText, Pencil, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, Send, Wand2, Upload, X, ImageIcon, User, Briefcase, FileText, Pencil, Trash2, Star } from "lucide-react";
 import Image from "next/image";
 
 export default function ReporterPage() {
@@ -239,9 +239,23 @@ export default function ReporterPage() {
                             {getStatusBadge(post.status)}
                           </div>
                           <h3 className="font-bold text-lg line-clamp-1">{post.title}</h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {post.location.mandal}, {post.location.district} • {new Date(post.timestamp).toLocaleDateString()}
-                          </p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              {post.location.mandal}, {post.location.district} • {new Date(post.timestamp).toLocaleDateString()}
+                            </p>
+                            {post.author_role && (
+                              <Badge variant="outline" className="text-[10px] h-4 py-0 px-1 border-primary/30 text-primary">
+                                {post.author_role}
+                              </Badge>
+                            )}
+                            {post.author_stars && (
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({length: post.author_stars}).map((_, i) => (
+                                  <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-2 mt-4 justify-end">
                           <Button variant="outline" size="sm" onClick={() => handleEdit(post)} disabled={post.status === 'approved'}>

@@ -5,7 +5,10 @@ export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
     "Warangal": ["Hanamkonda", "Kazipet", "Inavole", "Wardhannapet", "Dharmasagar"],
     "Hyderabad": ["Ameerpet", "Banjara Hills", "Kukatpally", "Secunderabad", "Mehdipatnam"],
     "Rangareddy": ["Gachibowli", "Madhapur", "Kondapur", "Serilingampally", "Rajendranagar"],
-    "Karimnagar": ["Karimnagar", "Thimmapur", "Ganneruvaram", "Choppadandi", "Manakondur"]
+    "Karimnagar": ["Karimnagar", "Thimmapur", "Ganneruvaram", "Choppadandi", "Manakondur"],
+    "Nizamabad": ["Nizamabad", "Armoor", "Bodhan", "Balkonda"],
+    "Khammam": ["Khammam", "Wyra", "Sathupalli", "Madhira"],
+    "Mahabubnagar": ["Mahabubnagar", "Jadcherla", "Devarkadra", "Narayanpet"]
   },
   "Andhra Pradesh": {
     "Visakhapatnam": ["Gajuwaka", "Madhurawada", "Seethammadhara", "Pendurthi"],
@@ -14,7 +17,6 @@ export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
   }
 };
 
-// For backward compatibility with existing components
 export const LOCATIONS = {
   ...LOCATIONS_BY_STATE["Telangana"],
   ...LOCATIONS_BY_STATE["Andhra Pradesh"]
@@ -26,6 +28,8 @@ export type Comment = {
   text: string;
   timestamp: string;
 };
+
+export type ReporterRole = 'Reporter' | 'Sr. Reporter' | 'Desk Incharge';
 
 export type NewsPost = {
   id: string;
@@ -41,6 +45,8 @@ export type NewsPost = {
   status: 'pending' | 'approved' | 'rejected';
   author_id: string;
   author_name: string;
+  author_role?: ReporterRole;
+  author_stars?: number;
   timestamp: string;
   engagement: {
     likes: number;
@@ -60,6 +66,8 @@ export const MOCK_NEWS: NewsPost[] = [
     status: "approved",
     author_id: "REP001",
     author_name: "రాహుల్ కుమార్",
+    author_role: "Sr. Reporter",
+    author_stars: 4,
     timestamp: new Date().toISOString(),
     engagement: { 
       likes: 125, 

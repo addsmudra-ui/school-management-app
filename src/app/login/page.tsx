@@ -29,12 +29,27 @@ export default function LoginPage() {
     else {
       localStorage.setItem('mandalPulse_role', role);
       localStorage.setItem('mandalPulse_userName', name || 'User');
-      localStorage.setItem('mandalPulse_state', state);
-      localStorage.setItem('mandalPulse_district', district);
-      localStorage.setItem('mandalPulse_mandal', mandal);
+      
+      // Admin doesn't require location storage for operation
+      if (role !== 'admin') {
+        localStorage.setItem('mandalPulse_state', state);
+        localStorage.setItem('mandalPulse_district', district);
+        localStorage.setItem('mandalPulse_mandal', mandal);
+      } else {
+        localStorage.removeItem('mandalPulse_state');
+        localStorage.removeItem('mandalPulse_district');
+        localStorage.removeItem('mandalPulse_mandal');
+      }
+
       window.dispatchEvent(new Event('mandalPulse_authChanged'));
       router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
     }
+  };
+
+  const isDetailsValid = () => {
+    if (!name) return false;
+    if (role === 'admin') return true;
+    return state && district && mandal;
   };
 
   return (
@@ -52,7 +67,7 @@ export default function LoginPage() {
             </Button>
           )}
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-            <Newspaper className="w-10 h-10 text-primary" />
+            < Newspaper className="w-10 h-10 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold font-headline">MandalPulse</CardTitle>
           <CardDescription>స్థానిక వార్తలు (Local News)</CardDescription>
@@ -112,44 +127,48 @@ export default function LoginPage() {
                   </Select>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label>రాష్ట్రం (State)</Label>
-                  <Select onValueChange={(val) => { setState(val); setDistrict(""); setMandal(""); }} value={state}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {role !== 'admin' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>రాష్ట్రం (State)</Label>
+                      <Select onValueChange={(val) => { setState(val); setDistrict(""); setMandal(""); }} value={state}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>జిల్లా (District)</Label>
-                    <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="జిల్లా" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>మండలం (Mandal)</Label>
-                    <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="మండలం" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {district && LOCATIONS_BY_STATE[state][district].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label>జిల్లా (District)</Label>
+                        <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="జిల్లా" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>మండలం (Mandal)</Label>
+                        <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="మండలం" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {district && LOCATIONS_BY_STATE[state][district].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={!name || !state || !district || !mandal}>ప్రారంభించండి</Button>
+              <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={!isDetailsValid()}>ప్రారంభించండి</Button>
             </div>
           )}
         </CardContent>
