@@ -76,9 +76,11 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
+    // Delete from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
+    // Add to approved
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -86,6 +88,7 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
+    // Send push notification locally in Firestore
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చదవండి!`,
@@ -94,8 +97,8 @@ export const NewsService = {
   },
 
   reject: (db: Firestore, postId: string) => {
-    const pendingRef = doc(db, 'pending_news_posts', postId);
-    updateDocumentNonBlocking(pendingRef, { status: 'rejected' });
+    const postRef = doc(db, 'pending_news_posts', postId);
+    updateDocumentNonBlocking(postRef, { status: 'rejected' });
   },
 
   delete: (db: Firestore, postId: string, isApproved: boolean) => {
@@ -104,11 +107,11 @@ export const NewsService = {
     deleteDocumentNonBlocking(postRef);
   },
 
-  toggleLike: (db: Firestore, postId: string, userId: string, isLiked: boolean) => {
+  toggleLike: (db: Firestore, postId: string, userId: string, isCurrentlyLiked: boolean) => {
     const postRef = doc(db, 'approved_news_posts', postId);
     const userLikesRef = doc(db, 'users', userId, 'private', 'likes');
     
-    if (isLiked) {
+    if (isCurrentlyLiked) {
       updateDocumentNonBlocking(postRef, { likes: increment(-1) });
       updateDocumentNonBlocking(userLikesRef, { postIds: arrayRemove(postId) });
     } else {
@@ -155,6 +158,7 @@ export const UserService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
+    // Sync roles collection for security rules exists() check
     const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
                           profile.role === 'reporter' ? 'roles_reporters' : null;
     if (roleCollection) {
@@ -190,6 +194,7 @@ export const NotificationService = {
 export const LocationService = {
   addMandal: (db: Firestore, state: string, district: string, mandal: string) => {
     const locRef = doc(db, 'metadata', 'locations');
+    // Using dot notation for nested field update
     updateDocumentNonBlocking(locRef, {
       [`${state}.${district}`]: arrayUnion(mandal)
     });

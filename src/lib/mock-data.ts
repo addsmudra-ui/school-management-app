@@ -64,7 +64,7 @@ export type NewsPost = {
   author_name: string;
   author_role?: ReporterRole;
   author_stars?: number;
-  timestamp: string;
+  timestamp: any;
   engagement: {
     likes: number;
     comments: number;

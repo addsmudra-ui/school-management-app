@@ -40,11 +40,12 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL: Ensure we have a valid auth UID before running the query
-    // This prevents permission errors during initial anonymous sign-in
+    // CRITICAL GUARD: Ensure firestore, location, and a valid authenticated user UID exist
+    // This prevents "Missing or insufficient permissions" errors during initial sign-in.
     if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) return null;
     
     // Build query for approved news
+    // Note: This requires a composite index on Firestore for (location.district, timestamp)
     let q = query(
       collection(firestore, 'approved_news_posts'),
       where('location.district', '==', selectedDistrict),
@@ -143,7 +144,7 @@ function NewsFeedContent() {
         {news && news.length > 0 ? (
           news.map((item) => (
             <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
-              <NewsCard news={item} />
+              <NewsCard news={item as any} />
             </section>
           ))
         ) : (
