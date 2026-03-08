@@ -22,12 +22,10 @@ export function Navbar() {
   const [location, setLocation] = useState({ mandal: "", district: "" });
   const [hasNewNotif, setHasNewNotif] = useState(false);
 
-  // Real-time notifications
   const notifQuery = useMemoFirebase(() => {
-    // Guard query with user to avoid permission errors
-    if (!firestore || isUserLoading || !user) return null;
+    if (!firestore || isUserLoading || !user?.uid) return null;
     return query(collection(firestore, 'notifications'), orderBy('timestamp', 'desc'), limit(20));
-  }, [firestore, user, isUserLoading]);
+  }, [firestore, user?.uid, isUserLoading]);
 
   const { data: notifications } = useCollection<SentNotification>(notifQuery);
 
@@ -63,7 +61,6 @@ export function Navbar() {
     };
   }, [updateLocationState, updateAuthState]);
 
-  // Check for new notifications reactively
   useEffect(() => {
     if (notifications && notifications.length > 0) {
       const lastSeen = localStorage.getItem('mandalPulse_lastSeenNotif');
@@ -107,7 +104,6 @@ export function Navbar() {
           <span className="hidden sm:inline font-headline tracking-tight">MandalPulse</span>
         </Link>
 
-        {/* Desktop Location Display */}
         <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-primary/5 border border-primary/10 rounded-full text-xs font-bold text-primary">
           <MapPin className="w-3.5 h-3.5" />
           <span>{location.mandal}, {location.district}</span>
@@ -119,7 +115,6 @@ export function Navbar() {
             <span className="text-[10px] md:text-sm font-semibold">Home</span>
           </Link>
 
-          {/* Notification Bell */}
           <Sheet onOpenChange={(open) => open && markAsRead()}>
             <SheetTrigger asChild>
               <button className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors relative">
@@ -193,16 +188,6 @@ export function Navbar() {
               {userName || "Login"}
             </span>
           </Link>
-
-          {userName && (
-            <button 
-              onClick={handleLogout}
-              className="hidden md:flex flex-row items-center gap-1 text-destructive hover:opacity-80 transition-colors ml-4"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="text-sm font-semibold">Logout</span>
-            </button>
-          )}
         </div>
       </div>
     </nav>

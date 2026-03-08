@@ -32,7 +32,6 @@ function NewsFeedContent() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   useEffect(() => {
-    // Load saved preferences or defaults
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
     setSelectedDistrict(savedDistrict);
@@ -40,12 +39,9 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL GUARD: Ensure firestore, location, and a valid authenticated user UID exist
-    // This prevents "Missing or insufficient permissions" errors during initial sign-in.
+    // CRITICAL: Ensure firestore, location, and user are ready.
     if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) return null;
     
-    // Build query for approved news
-    // Note: This requires a composite index on Firestore for (location.district, timestamp)
     let q = query(
       collection(firestore, 'approved_news_posts'),
       where('location.district', '==', selectedDistrict),
@@ -53,7 +49,6 @@ function NewsFeedContent() {
       limit(20)
     );
 
-    // Apply mandal filter if not "All"
     if (selectedMandal && selectedMandal !== "All") {
       q = query(q, where('location.mandal', '==', selectedMandal));
     }
@@ -70,7 +65,6 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  // Show loading while auth or initial query is processing
   if (isUserLoading || (isLoading && !news)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -84,7 +78,6 @@ function NewsFeedContent() {
 
   return (
     <>
-      {/* Mobile Location Header */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -139,7 +132,6 @@ function NewsFeedContent() {
         </div>
       </div>
 
-      {/* Main News Scroll Container */}
       <div className="news-scroll-container">
         {news && news.length > 0 ? (
           news.map((item) => (

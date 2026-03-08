@@ -4,8 +4,7 @@ service cloud.firestore {
 
     /**
      * MANDALPULSE SECURITY RULES
-     * Unified access control for local news platform.
-     * Deployment Trigger: 2024-05-22T10:00:00Z - Final Permission Fix
+     * Deployment Trigger: 2024-05-22T14:30:00Z - Final Permission Fix
      */
 
     // --- HELPER FUNCTIONS ---
@@ -38,7 +37,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if isAdmin();
+      // Allow list for login lookups and admins
+      allow list: if isSignedIn();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
@@ -81,8 +81,7 @@ service cloud.firestore {
 
     match /metadata/{docId} {
       allow get: if isSignedIn();
-      allow list: if isAdmin();
-      allow write: if isAdmin();
+      allow list, write: if isAdmin();
     }
 
     match /config/{docId} {

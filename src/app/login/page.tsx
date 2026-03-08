@@ -45,11 +45,10 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          // If admin, we need to verify password first
-          if (existing.role === 'admin') {
+          if (existing.role === 'admin' || phone === DEFAULT_ADMIN_PHONE) {
             setRole('admin');
-            setName(existing.name);
-            setStep('otp'); // Go to simulated OTP, then details for pass
+            setName(existing?.name || "Admin");
+            setStep('otp');
           } else {
             localStorage.setItem('mandalPulse_role', existing.role);
             localStorage.setItem('mandalPulse_userName', existing.name);
@@ -66,8 +65,9 @@ export default function LoginPage() {
             router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
             return;
           }
+        } else {
+          setStep('otp');
         }
-        setStep('otp');
       }
       else if (step === 'otp') {
         setStep('details');
@@ -81,7 +81,6 @@ export default function LoginPage() {
           }
         }
 
-        // CRITICAL: Ensure we use the actual Firebase Auth UID for the profile
         if (!user?.uid) {
           throw new Error("Authentication session not found. Please refresh.");
         }
