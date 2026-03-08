@@ -11,10 +11,6 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
     }
 
-    function isReporter() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_reporters/$(request.auth.uid));
-    }
-
     function isEditor() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid));
     }
@@ -25,8 +21,8 @@ service cloud.firestore {
 
     // --- COLLECTION RULES ---
 
-    // 1. PUBLIC CONTENT - Anyone can read approved news and notifications
-    match /approved_news_posts/{id} {
+    // 1. PUBLIC CONTENT - Anyone can read approved news, notifications, and metadata
+    match /approved_news_posts/{postId} {
       allow read, get, list: if true;
       allow write: if isStaff();
 
@@ -50,7 +46,7 @@ service cloud.firestore {
     // 2. PENDING CONTENT - Author and Staff only
     match /pending_news_posts/{id} {
       allow read, get, list: if isSignedIn() && (resource == null || resource.data.author_id == request.auth.uid || isStaff());
-      allow create: if isSignedIn() && (isReporter() || isAdmin());
+      allow create: if isSignedIn();
       allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
     }
 
@@ -58,7 +54,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
       
@@ -69,15 +65,15 @@ service cloud.firestore {
 
     // 4. ROLE MARKERS - Critical for security checks
     match /roles_admins/{uid} { 
-      allow read, get, list: if true; 
+      allow read, get, list: if isSignedIn(); 
       allow write: if isAdmin(); 
     }
     match /roles_reporters/{uid} { 
-      allow read, get, list: if true; 
+      allow read, get, list: if isSignedIn(); 
       allow write: if isAdmin() || (isSignedIn() && request.auth.uid == uid); 
     }
     match /roles_editors/{uid} { 
-      allow read, get, list: if true; 
+      allow read, get, list: if isSignedIn(); 
       allow write: if isAdmin(); 
     }
 

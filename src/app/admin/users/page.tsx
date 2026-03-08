@@ -189,27 +189,26 @@ export default function AdminUsers() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4 pl-6">పేరు (Name)</TableHead>
-                <TableHead className="font-bold">కాంటాక్ట్ (Contact)</TableHead>
+                <TableHead className="font-bold py-4 pl-6">పేరు & కాంటాక్ట్</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
-                <TableHead className="font-bold">స్థితి</TableHead>
+                <TableHead className="font-bold">స్థితి (Status)</TableHead>
                 <TableHead className="font-bold text-right pr-6">చర్యలు</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
               ) : filtered.length > 0 ? (
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell className="pl-6 py-4">
-                      <span className="font-bold text-slate-900">{user.name}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Phone className="w-3 h-3" />
-                        {user.phone}
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900">{user.name}</span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Phone className="w-2.5 h-2.5" />
+                          {user.phone}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -263,7 +262,7 @@ export default function AdminUsers() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-48 text-center text-muted-foreground italic">
+                  <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic">
                     వినియోగదారులు ఎవరూ లేరు.
                   </TableCell>
                 </TableRow>
