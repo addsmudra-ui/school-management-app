@@ -122,13 +122,10 @@ export const NewsService = {
   },
   
   getLikedPostIds: () => {
-    // Helper to get liked IDs from local cache if needed, 
-    // though real implementation uses the /private/likes subcollection
     return [];
   },
 
   getAll: () => {
-    // Legacy support for mock data if needed
     return [];
   }
 };
@@ -150,14 +147,14 @@ export const UserService = {
   },
 
   create: async (db: Firestore, profile: UserProfile) => {
+    // CRITICAL: Ensure profile creation uses the exact Auth UID
     const userRef = doc(db, 'users', profile.id);
     await setDoc(userRef, {
       ...profile,
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Handle initial role provisioning if necessary (usually done by admin/backend)
-    // For MVP self-provisioning (demo only)
+    // Handle initial role provisioning
     const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
                           profile.role === 'reporter' ? 'roles_reporters' : null;
     if (roleCollection) {
@@ -172,7 +169,6 @@ export const UserService = {
   },
 
   getAll: () => {
-    // Legacy support
     return [];
   }
 };
@@ -209,7 +205,6 @@ export const LocationService = {
     });
   },
   getLocations: () => {
-    // Legacy support
     return {};
   }
 };

@@ -15,7 +15,7 @@ import { useFirestore, useUser } from "@/firebase";
 
 export default function LoginPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -30,8 +30,8 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   const handleNext = async () => {
-    if (!firestore) {
-      toast({ variant: "destructive", title: "Error", description: "Firebase initialization error." });
+    if (!firestore || isUserLoading) {
+      toast({ variant: "destructive", title: "Error", description: "Firebase initializing..." });
       return;
     }
 
@@ -45,7 +45,6 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          // Store details and redirect
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -64,11 +63,9 @@ export default function LoginPage() {
         setStep('otp');
       }
       else if (step === 'otp') {
-        // Simplified for MVP - OTP is accepted directly
         setStep('details');
       }
       else {
-        // Validation for final step
         if (role === 'admin') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
@@ -77,9 +74,13 @@ export default function LoginPage() {
           }
         }
 
-        // CRITICAL: Use the actual Firebase UID for the profile ID
+        // CRITICAL: Ensure we use the actual Firebase Auth UID for the profile
+        if (!user?.uid) {
+          throw new Error("Authentication session not found. Please refresh.");
+        }
+
         const newUser: UserProfile = {
-          id: user?.uid || `USR_${Date.now()}`,
+          id: user.uid,
           phone,
           name,
           role,
@@ -89,7 +90,6 @@ export default function LoginPage() {
 
         await UserService.create(firestore, newUser);
 
-        // Update local state for UI
         localStorage.setItem('mandalPulse_role', role);
         localStorage.setItem('mandalPulse_userName', name);
         localStorage.setItem('mandalPulse_userPhone', phone);
@@ -110,7 +110,7 @@ export default function LoginPage() {
       toast({ 
         variant: "destructive", 
         title: "Login Error", 
-        description: error.message || "An unexpected error occurred. Please try again." 
+        description: error.message || "An unexpected error occurred." 
       });
     } finally {
       setIsLoading(false);
@@ -122,6 +122,14 @@ export default function LoginPage() {
     if (role === 'admin') return password.length > 0;
     return state && district && mandal;
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
