@@ -8,14 +8,13 @@ service cloud.firestore {
      * CORE PHILOSOPHY:
      * This ruleset implements a robust Role-Based Access Control (RBAC) model using "Authorization Independence."
      * Instead of relying on fields within user documents, roles are verified via specific lookup collections
-     * (/roles_admins, /roles_editors, /roles_reporters). This ensures high performance and prevents 
-     * recursive rules or expensive get() calls.
+     * (/roles_admins, /roles_editors, /roles_reporters).
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
 
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
 
     function isOwner(userId) {
@@ -45,13 +44,13 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     /**
-     * @description Rules for user profiles. Users can manage their own profile; admins have full access.
+     * @description Rules for user profiles.
+     * Note: allow list is needed for the login phone number lookup.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if (isOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.id == userId;
+      allow update: if (isOwner(userId) || isAdmin());
       allow delete: if isAdmin();
     }
 
@@ -72,13 +71,13 @@ service cloud.firestore {
     }
 
     /**
-     * @description News posts awaiting moderation. Accessible to authors (reporters) and staff.
+     * @description News posts awaiting moderation.
      */
     match /pending_news_posts/{newsPostId} {
       allow get: if isSignedIn() && (isOwner(resource.data.authorId) || isStaff());
       allow list: if isStaff();
       allow create: if isReporter() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff()) && request.resource.data.authorId == resource.data.authorId;
+      allow update: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
       allow delete: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
     }
 
@@ -94,8 +93,8 @@ service cloud.firestore {
        */
       match /comments/{commentId} {
         allow get, list: if isSignedIn();
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && request.resource.data.newsPostId == newsPostId;
-        allow update: if (isExistingOwner(resource.data.authorId) || isAdmin()) && request.resource.data.authorId == resource.data.authorId;
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+        allow update: if (isExistingOwner(resource.data.authorId) || isAdmin());
         allow delete: if isExistingOwner(resource.data.authorId) || isAdmin();
       }
     }

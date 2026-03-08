@@ -27,7 +27,6 @@ import { LOCATIONS } from "@/lib/mock-data";
 function NewsFeedContent() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
-  const searchParams = useSearchParams();
   
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedMandal, setSelectedMandal] = useState<string>("");
@@ -41,8 +40,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // Only run query if services, user, and district are ready to avoid permission errors
-    if (!firestore || !selectedDistrict || isUserLoading || !user) return null;
+    // Only run query if services, user, and district are definitely ready
+    if (!firestore || !selectedDistrict || isUserLoading || !user || !user.uid) return null;
     
     let q = query(
       collection(firestore, 'approved_news_posts'),
