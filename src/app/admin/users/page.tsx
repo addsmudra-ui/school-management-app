@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, CheckCircle2, XCircle, Clock, Trash2, Search, MapPin } from "lucide-react";
+import { Users, UserPlus, Trash2, Search, MapPin } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 export default function AdminUsers() {
@@ -35,11 +37,12 @@ export default function AdminUsers() {
     return () => window.removeEventListener('mandalPulse_usersChanged', handleUpdate);
   }, []);
 
-  const handleStatusChange = (id: string, status: 'approved' | 'rejected') => {
-    UserService.update(id, { status });
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'approved' ? 'pending' : 'approved';
+    UserService.update(id, { status: newStatus });
     toast({
-      title: status === 'approved' ? "User Approved" : "User Rejected",
-      description: `రిపోర్టర్ స్థితి విజయవంతంగా ${status === 'approved' ? 'ఆమోదించబడింది' : 'తిరస్కరించబడింది'}.`,
+      title: newStatus === 'approved' ? "User Approved" : "Moved to Pending",
+      description: `రిపోర్టర్ స్థితి విజయవంతంగా ${newStatus === 'approved' ? 'ఆమోదించబడింది' : 'పెండింగ్‌కు మార్చబడింది'}.`,
     });
   };
 
@@ -159,7 +162,7 @@ export default function AdminUsers() {
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold">స్థితి (Status)</TableHead>
-                <TableHead className="font-bold text-right pr-6">చర్యలు</TableHead>
+                <TableHead className="font-bold text-right pr-6">చర్యలు (Approved?)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -199,27 +202,14 @@ export default function AdminUsers() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-6">
-                      <div className="flex justify-end gap-2">
-                        {user.status === 'pending' && (
-                          <>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                              onClick={() => handleStatusChange(user.id, 'approved')}
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 text-destructive border-destructive/20 hover:bg-destructive/10"
-                              onClick={() => handleStatusChange(user.id, 'rejected')}
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
+                      <div className="flex justify-end items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase hidden sm:inline">Approved</span>
+                          <Switch 
+                            checked={user.status === 'approved'} 
+                            onCheckedChange={() => handleToggleStatus(user.id, user.status)}
+                          />
+                        </div>
                         <Button 
                           variant="ghost" 
                           size="icon" 
