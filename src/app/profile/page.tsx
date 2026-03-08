@@ -131,27 +131,29 @@ export default function ProfilePage() {
           <div className="grid gap-4">
             {likedNews.length > 0 ? (
               likedNews.map((news) => (
-                <Card key={news.id} className="overflow-hidden border-none shadow-md group hover:shadow-lg transition-all rounded-2xl">
-                  <div className="flex">
-                    <div className="relative w-32 h-32 shrink-0">
-                      <Image src={news.image_url} alt={news.title} fill className="object-cover" />
-                    </div>
-                    <div className="p-4 flex-1 flex flex-col justify-between min-w-0">
-                      <div>
-                        <h3 className="font-bold text-sm line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-                          {news.title}
-                        </h3>
-                        <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-                          <MapPin className="w-2.5 h-2.5" />
-                          {news.location.mandal}, {news.location.district}
-                        </p>
+                <Link key={news.id} href={`/?postId=${news.id}`}>
+                  <Card className="overflow-hidden border-none shadow-md group hover:shadow-lg transition-all rounded-2xl cursor-pointer">
+                    <div className="flex">
+                      <div className="relative w-32 h-32 shrink-0">
+                        <Image src={news.image_url} alt={news.title} fill className="object-cover" />
                       </div>
-                      <Link href="/" className="text-[10px] font-bold text-primary flex items-center gap-0.5 mt-2 hover:underline">
-                        View Story <ChevronRight className="w-3 h-3" />
-                      </Link>
+                      <div className="p-4 flex-1 flex flex-col justify-between min-w-0">
+                        <div>
+                          <h3 className="font-bold text-sm line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                            {news.title}
+                          </h3>
+                          <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {news.location.mandal}, {news.location.district}
+                          </p>
+                        </div>
+                        <div className="text-[10px] font-bold text-primary flex items-center gap-0.5 mt-2 group-hover:underline">
+                          View Story <ChevronRight className="w-3 h-3" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))
             ) : (
               <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-muted">

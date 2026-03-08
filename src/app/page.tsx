@@ -5,9 +5,10 @@ import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { LOCATIONS } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { Newspaper, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function Home() {
+function NewsFeedContent() {
+  const searchParams = useSearchParams();
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedMandal, setSelectedMandal] = useState<string>("");
   const [news, setNews] = useState<any[]>([]);
@@ -41,26 +43,50 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Initial load from storage
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
     
     setSelectedDistrict(savedDistrict);
     setSelectedMandal(savedMandal);
-    
     filterNews(savedDistrict, savedMandal);
     
     const timer = setTimeout(() => {
       setLoading(false);
     }, 800);
 
-    const handleNewsChange = () => filterNews(savedDistrict, savedMandal);
+    const handleNewsChange = () => filterNews(selectedDistrict, selectedMandal);
     window.addEventListener('mandalPulse_newsChanged', handleNewsChange);
     
     return () => {
       clearTimeout(timer);
       window.removeEventListener('mandalPulse_newsChanged', handleNewsChange);
     };
-  }, [filterNews]);
+  }, [filterNews, selectedDistrict, selectedMandal]);
+
+  // Handle deep linking to a specific post
+  useEffect(() => {
+    const postId = searchParams.get('postId');
+    if (postId && !loading) {
+      const allNews = NewsService.getAll();
+      const targetPost = allNews.find(p => p.id === postId);
+      
+      if (targetPost) {
+        // Update location to match the post
+        setSelectedDistrict(targetPost.location.district);
+        setSelectedMandal(targetPost.location.mandal);
+        filterNews(targetPost.location.district, targetPost.location.mandal);
+        
+        // Wait for render, then scroll
+        setTimeout(() => {
+          const element = document.getElementById(`post-${postId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 300);
+      }
+    }
+  }, [searchParams, loading, filterNews]);
 
   const handleLocationUpdate = () => {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
@@ -82,9 +108,7 @@ export default function Home() {
   }
 
   return (
-    <main className="h-screen bg-background overflow-hidden">
-      <Navbar />
-      
+    <>
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -142,7 +166,7 @@ export default function Home() {
       <div className="news-scroll-container">
         {news.length > 0 ? (
           news.map((item) => (
-            <section key={item.id} className="news-card-snap">
+            <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
               <NewsCard news={item} />
             </section>
           ))
@@ -159,6 +183,21 @@ export default function Home() {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+export default function Home() {
+  return (
+    <main className="h-screen bg-background overflow-hidden">
+      <Navbar />
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <Newspaper className="w-12 h-12 text-primary animate-pulse" />
+        </div>
+      }>
+        <NewsFeedContent />
+      </Suspense>
     </main>
   );
 }
