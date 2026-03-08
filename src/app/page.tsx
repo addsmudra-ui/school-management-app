@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Navbar } from "@/components/layout/Navbar";
@@ -30,7 +29,9 @@ export default function Home() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   const filterNews = useCallback((district: string, mandal: string) => {
+    // Only show approved news in the main feed
     const filtered = MOCK_NEWS.filter(item => 
+      item.status === 'approved' &&
       item.location.district === district && 
       (mandal === "All" || mandal === "" || item.location.mandal === mandal)
     );
@@ -76,7 +77,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background pb-16 md:pt-16 md:pb-0">
+    <main className="h-screen bg-background overflow-hidden">
       <Navbar />
       
       {/* Location Header (Mobile Only) */}
@@ -154,15 +155,15 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="news-scroll-container mt-14 md:mt-0">
+      <div className="news-scroll-container">
         {news.length > 0 ? (
           news.map((item) => (
-            <section key={item.id} className="news-card-snap flex items-center justify-center px-4">
+            <section key={item.id} className="news-card-snap">
               <NewsCard news={item} />
             </section>
           ))
         ) : (
-          <div className="flex items-center justify-center h-[calc(100vh-64px)] px-6 text-center">
+          <div className="flex items-center justify-center h-screen px-6 text-center">
             <div className="max-w-xs">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <MapPin className="w-10 h-10 text-primary/40" />

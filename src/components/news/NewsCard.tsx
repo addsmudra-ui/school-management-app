@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { NewsPost, Comment } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, User, Hash, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, MapPin, User, Hash, Send, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -53,7 +53,6 @@ export function NewsCard({ news }: NewsCardProps) {
     const shareText = `${news.title}\n\nవార్త వివరాల కోసం MandalPulse చూడండి.\n\n`;
     const shareUrl = window.location.origin;
 
-    // Check if Web Share API is available and supported
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
@@ -61,27 +60,19 @@ export function NewsCard({ news }: NewsCardProps) {
           text: shareText,
           url: shareUrl,
         });
-        // On success, we don't necessarily need a toast as the system UI handles it
         return;
       } catch (err) {
-        // If the user cancelled the share (AbortError), we don't show an error
-        if ((err as Error).name === 'AbortError') {
-          return;
-        }
-        // For other errors, fall back to clipboard
+        if ((err as Error).name === 'AbortError') return;
       }
     }
 
-    // Fallback: Copy to Clipboard
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(`${shareTitle}\n${shareUrl}`);
         toast({
           title: "లింక్ కాపీ చేయబడింది",
-          description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది. మీరు ఇప్పుడు ఎక్కడైనా షేర్ చేయవచ్చు.",
+          description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది.",
         });
-      } else {
-        throw new Error("Clipboard API not available");
       }
     } catch (err) {
       toast({
@@ -93,72 +84,93 @@ export function NewsCard({ news }: NewsCardProps) {
   };
 
   return (
-    <div className="news-card-snap w-full max-w-md mx-auto bg-white shadow-xl relative overflow-hidden flex flex-col">
-      <div className="relative h-2/5 w-full">
+    <div className="w-full h-full max-w-md mx-auto bg-white relative flex flex-col md:h-[90vh] md:rounded-3xl md:my-8 md:shadow-2xl overflow-hidden">
+      {/* Image Section - Optimized for High Res */}
+      <div className="relative h-[45%] w-full overflow-hidden bg-muted">
         <Image
           src={news.image_url}
           alt={news.title}
           fill
-          className="object-cover"
+          priority
+          sizes="(max-width: 768px) 100vw, 450px"
+          className="object-cover transition-transform duration-700 hover:scale-105"
           data-ai-hint="news coverage"
         />
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-          <div className="bg-primary/90 text-white px-3 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1 shadow-lg">
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+          <div className="bg-primary/90 text-white px-3 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1 shadow-lg backdrop-blur-sm">
             <MapPin className="w-3 h-3" />
             {news.location.mandal}, {news.location.district}
           </div>
-          <div className="bg-black/70 text-white px-3 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 shadow-lg w-fit">
+          <div className="bg-black/70 text-white px-3 py-1 rounded-full text-[10px] font-mono flex items-center gap-1 shadow-lg w-fit backdrop-blur-sm">
             <Hash className="w-3 h-3" />
             ID: {news.unique_code}
           </div>
         </div>
       </div>
 
-      <div className="p-6 flex-1 flex flex-col justify-between">
+      {/* Content Section */}
+      <div className="p-6 flex-1 flex flex-col justify-between overflow-y-auto">
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-            <User className="w-3 h-3" />
-            రిపోర్టర్: {news.author_name} ({news.author_id})
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <User className="w-3 h-3" />
+              {news.author_name} ({news.author_id})
+              {news.author_role && (
+                <span className="ml-1 px-1.5 py-0.5 bg-primary/5 border border-primary/10 rounded text-primary font-bold">
+                  {news.author_role}
+                </span>
+              )}
+            </div>
+            {news.author_stars && (
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: news.author_stars }).map((_, i) => (
+                  <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+            )}
           </div>
+          
           <h2 className="text-2xl font-bold font-headline leading-tight text-foreground">
             {news.title}
           </h2>
-          <p className="text-muted-foreground leading-relaxed text-lg line-clamp-[6]">
+          
+          <p className="text-muted-foreground leading-relaxed text-lg pb-12">
             {news.content}
           </p>
         </div>
 
-        <div className="flex items-center justify-between pt-6 border-t border-muted">
-          <div className="flex items-center gap-6">
+        {/* Action Bar */}
+        <div className="flex items-center justify-between py-4 bg-white sticky bottom-0 border-t border-muted">
+          <div className="flex items-center gap-8">
             <button
               onClick={toggleLike}
               className="flex flex-col items-center gap-1 transition-transform active:scale-90"
             >
               <Heart 
                 className={cn(
-                  "w-6 h-6 transition-colors", 
+                  "w-7 h-7 transition-colors", 
                   liked ? "fill-destructive text-destructive" : "text-muted-foreground"
                 )} 
               />
-              <span className="text-xs font-medium text-muted-foreground">{likesCount}</span>
+              <span className="text-xs font-bold text-muted-foreground">{likesCount}</span>
             </button>
             
             <Sheet>
               <SheetTrigger asChild>
                 <button className="flex flex-col items-center gap-1">
-                  <MessageCircle className="w-6 h-6 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">{comments.length}</span>
+                  <MessageCircle className="w-7 h-7 text-muted-foreground" />
+                  <span className="text-xs font-bold text-muted-foreground">{comments.length}</span>
                 </button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl">
-                <SheetHeader>
+              <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0">
+                <SheetHeader className="p-6 border-b">
                   <SheetTitle className="text-xl font-bold">కామెంట్స్ ({comments.length})</SheetTitle>
                 </SheetHeader>
-                <div className="mt-6 flex flex-col h-full">
-                  <div className="flex-1 overflow-y-auto space-y-4 pb-24">
+                <div className="flex flex-col h-full">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
                     {comments.length > 0 ? (
                       comments.map((comment) => (
-                        <div key={comment.id} className="bg-muted/30 p-4 rounded-lg">
+                        <div key={comment.id} className="bg-muted/30 p-4 rounded-2xl">
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-bold text-sm text-primary">{comment.userName}</span>
                             <span className="text-[10px] text-muted-foreground">{comment.timestamp}</span>
@@ -167,30 +179,35 @@ export function NewsCard({ news }: NewsCardProps) {
                         </div>
                       ))
                     ) : (
-                      <p className="text-center text-muted-foreground py-10 italic">ఇంకా కామెంట్స్ ఏవీ లేవు. మొదటిగా కామెంట్ చేయండి!</p>
+                      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                        <MessageCircle className="w-12 h-12 opacity-20 mb-2" />
+                        <p className="italic">ఇంకా కామెంట్స్ ఏవీ లేవు.</p>
+                      </div>
                     )}
                   </div>
-                  <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-muted flex gap-2 items-center">
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t flex gap-2 items-center">
                     <Input 
                       placeholder="కామెంట్ జోడించండి..." 
                       value={newComment}
+                      className="rounded-full h-12"
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
                     />
-                    <Button size="icon" onClick={handleAddComment}>
-                      <Send className="w-4 h-4" />
+                    <Button size="icon" className="rounded-full h-12 w-12" onClick={handleAddComment}>
+                      <Send className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>
               </SheetContent>
             </Sheet>
           </div>
+          
           <button 
             onClick={handleShare}
             className="flex flex-col items-center gap-1 transition-transform active:scale-95"
           >
-            <Share2 className="w-6 h-6 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">Share</span>
+            <Share2 className="w-7 h-7 text-muted-foreground" />
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">Share</span>
           </button>
         </div>
       </div>

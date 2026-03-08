@@ -54,7 +54,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body overflow-hidden;
   }
 }
 
@@ -63,6 +63,7 @@
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .news-scroll-container::-webkit-scrollbar {
@@ -73,4 +74,8 @@
   scroll-snap-align: start;
   scroll-snap-stop: always;
   height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
