@@ -69,37 +69,6 @@ export type NewsPost = {
   };
 };
 
-export const MOCK_USERS: UserProfile[] = [
-  {
-    id: "REP001",
-    phone: "9876543210",
-    name: "రాహుల్ కుమార్",
-    role: "reporter",
-    status: "approved",
-    location: { state: "Telangana", district: "Warangal", mandal: "Hanamkonda" }
-  }
-];
+export const MOCK_USERS: UserProfile[] = [];
 
-export const MOCK_NEWS: NewsPost[] = [
-  {
-    id: "1",
-    unique_code: "54231",
-    title: "హన్మకొండలో నూతన స్మార్ట్ పార్క్ ప్రారంభం",
-    content: "హన్మకొండ నడిబొడ్డున స్థానిక యంత్రాంగం నూతన గ్రీన్ స్మార్ట్ పార్క్‌ను అధికారికంగా ప్రారంభించింది. ఈ పార్కులో సోలార్ లైటింగ్ మరియు ఆటోమేటెడ్ ఇరిగేషన్ సిస్టమ్స్ ఉన్నాయి, ఇది అన్ని వయసుల నివాసితులకు ఆధునిక వినోద స్థలాన్ని అందిస్తుంది.",
-    image_url: "https://picsum.photos/seed/hanamkonda/800/600",
-    location: { state: "Telangana", district: "Warangal", mandal: "Hanamkonda" },
-    status: "approved",
-    author_id: "REP001",
-    author_name: "రాహుల్ కుమార్",
-    author_role: "Sr. Reporter",
-    author_stars: 4,
-    timestamp: new Date().toISOString(),
-    engagement: { 
-      likes: 125, 
-      comments: 2,
-      commentList: [
-        { id: "c1", userName: "Srinivas", text: "చాలా మంచి వార్త!", timestamp: "10 mins ago" }
-      ]
-    }
-  }
-];
+export const MOCK_NEWS: NewsPost[] = [];

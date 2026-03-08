@@ -156,7 +156,7 @@ export const UserService = {
       'user': null
     };
 
-    const collectionName = roleCollectionMap[profile.role];
+    const collectionName = roleCollectionMap[profile.role as keyof typeof roleCollectionMap];
     if (collectionName) {
       const roleRef = doc(db, collectionName, profile.id);
       await setDoc(roleRef, { active: true, updatedAt: serverTimestamp() }, { merge: true });

@@ -41,8 +41,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // Only fire query when auth and location are ready
-    if (!firestore || isUserLoading || !user?.uid || !selectedDistrict) {
+    // News is now public, only wait for firestore and basic location selection
+    if (!firestore || !selectedDistrict) {
       return null;
     }
     
@@ -58,7 +58,7 @@ function NewsFeedContent() {
     }
 
     return q;
-  }, [firestore, selectedDistrict, selectedMandal, isUserLoading, user?.uid]);
+  }, [firestore, selectedDistrict, selectedMandal]);
 
   const { data: news, isLoading } = useCollection(newsQuery);
 
@@ -69,7 +69,7 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  if (isUserLoading || (isLoading && !news)) {
+  if (isLoading && !news) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">

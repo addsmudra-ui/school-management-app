@@ -30,32 +30,32 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      // Allow creation/update if owner or admin
-      allow create, update: if isOwner(userId) || isAdmin();
+      // Allow creation if owner, update/delete if admin or owner
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
       
       match /private/{docId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
 
-    // Role Markers (Managed by Admins or self-provisioned during registration)
+    // Role Markers
     match /roles_admins/{uid} { 
-      allow read: if isSignedIn(); 
-      allow write: if isAdmin() || isOwner(uid); 
+      allow read: if true; 
+      allow write: if isAdmin(); 
     }
     match /roles_reporters/{uid} { 
-      allow read: if isSignedIn(); 
+      allow read: if true; 
       allow write: if isAdmin() || isOwner(uid); 
     }
     match /roles_editors/{uid} { 
-      allow read: if isSignedIn(); 
+      allow read: if true; 
       allow write: if isAdmin(); 
     }
 
-    // News Content
+    // News Content - PUBLICLY READABLE
     match /approved_news_posts/{newsPostId} {
-      // News is public for better user engagement
       allow read: if true; 
       allow create, update, delete: if isStaff();
 
@@ -68,11 +68,11 @@ service cloud.firestore {
 
     match /pending_news_posts/{newsPostId} {
       allow read: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
-      allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
+      allow create: if isSignedIn() && (isReporter() || isAdmin());
       allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
     }
 
-    // System Metadata & Config
+    // System Metadata & Config - PUBLIC READ, ADMIN WRITE
     match /notifications/{id} { 
       allow read: if true; 
       allow write: if isStaff(); 
@@ -82,7 +82,8 @@ service cloud.firestore {
       allow write: if isAdmin(); 
     }
     match /config/{id} { 
-      allow read, write: if isAdmin(); 
+      allow read: if isAdmin();
+      allow write: if isAdmin(); 
     }
   }
 }
