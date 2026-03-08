@@ -1,0 +1,24 @@
+
+{
+  "name": "MandalPulse",
+  "short_name": "MandalPulse",
+  "description": "మీ ప్రాంతీయ వార్తలు (Local News)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/mandalpulse/192/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/mandalpulse/512/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
