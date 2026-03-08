@@ -1,10 +1,20 @@
 "use client";
 
-import { NewsPost, MOCK_NEWS, UserProfile, MOCK_USERS } from "./mock-data";
+import { NewsPost, MOCK_NEWS, UserProfile, MOCK_USERS, LOCATIONS_BY_STATE } from "./mock-data";
 
 const STORAGE_KEY = 'mandalPulse_news_v2';
 const LIKES_KEY = 'mandalPulse_liked_posts';
 const USERS_KEY = 'mandalPulse_users_v1';
+const LOCATIONS_KEY = 'mandalPulse_locations_v1';
+const NOTIFICATIONS_KEY = 'mandalPulse_notifications_v1';
+
+export type SentNotification = {
+  id: string;
+  title: string;
+  body: string;
+  target: string;
+  timestamp: string;
+};
 
 export const NewsService = {
   getAll: (): NewsPost[] => {
@@ -80,7 +90,6 @@ export const UserService = {
 
   add: (user: UserProfile) => {
     const users = UserService.getAll();
-    // Check if user already exists by phone
     const exists = users.find(u => u.phone === user.phone);
     if (exists) return exists;
     
@@ -94,7 +103,6 @@ export const UserService = {
     const updated = users.map(u => u.id === id ? { ...u, ...updates } : u);
     UserService.save(updated);
     
-    // If the updated user is the current user, update localStorage auth
     const currentPhone = localStorage.getItem('mandalPulse_userPhone');
     const updatedUser = updated.find(u => u.id === id);
     if (updatedUser && updatedUser.phone === currentPhone) {
@@ -106,5 +114,64 @@ export const UserService = {
   getByPhone: (phone: string): UserProfile | undefined => {
     const users = UserService.getAll();
     return users.find(u => u.phone === phone);
+  }
+};
+
+export const LocationService = {
+  getLocations: (): Record<string, Record<string, string[]>> => {
+    if (typeof window === 'undefined') return LOCATIONS_BY_STATE;
+    const stored = localStorage.getItem(LOCATIONS_KEY);
+    if (!stored) {
+      localStorage.setItem(LOCATIONS_KEY, JSON.stringify(LOCATIONS_BY_STATE));
+      return LOCATIONS_BY_STATE;
+    }
+    return JSON.parse(stored);
+  },
+
+  save: (locations: Record<string, Record<string, string[]>>) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(locations));
+    window.dispatchEvent(new Event('mandalPulse_locationsChanged'));
+  },
+
+  addMandal: (state: string, district: string, mandal: string) => {
+    const locs = LocationService.getLocations();
+    if (!locs[state]) locs[state] = {};
+    if (!locs[state][district]) locs[state][district] = [];
+    
+    if (!locs[state][district].includes(mandal)) {
+      locs[state][district].push(mandal);
+      LocationService.save(locs);
+    }
+  },
+
+  addDistrict: (state: string, district: string) => {
+    const locs = LocationService.getLocations();
+    if (!locs[state]) locs[state] = {};
+    if (!locs[state][district]) {
+      locs[state][district] = [];
+      LocationService.save(locs);
+    }
+  }
+};
+
+export const NotificationService = {
+  getAll: (): SentNotification[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(NOTIFICATIONS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  send: (notification: Omit<SentNotification, 'id' | 'timestamp'>) => {
+    const history = NotificationService.getAll();
+    const newNotif: SentNotification = {
+      ...notification,
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString()
+    };
+    const updated = [newNotif, ...history];
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event('mandalPulse_notificationsChanged'));
+    return newNotif;
   }
 };

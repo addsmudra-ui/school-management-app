@@ -1,15 +1,157 @@
 "use client";
 
-import { MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Plus, Trash2, Globe, Search } from "lucide-react";
+import { LocationService } from "@/lib/storage";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { STATES } from "@/lib/mock-data";
 
 export default function AdminLocations() {
+  const [locations, setLocations] = useState<Record<string, Record<string, string[]>>>({});
+  const [selectedState, setSelectedState] = useState<string>("Telangana");
+  const [newDistrict, setNewDistrict] = useState("");
+  const [newMandal, setNewMandal] = useState("");
+  const [targetDistrict, setTargetDistrict] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setLocations(LocationService.getLocations());
+    const handleUpdate = () => setLocations(LocationService.getLocations());
+    window.addEventListener('mandalPulse_locationsChanged', handleUpdate);
+    return () => window.removeEventListener('mandalPulse_locationsChanged', handleUpdate);
+  }, []);
+
+  const handleAddDistrict = () => {
+    if (!newDistrict) return;
+    LocationService.addDistrict(selectedState, newDistrict);
+    setNewDistrict("");
+    toast({ title: "జిల్లా జోడించబడింది", description: `${newDistrict} విజయవంతంగా చేర్చబడింది.` });
+  };
+
+  const handleAddMandal = () => {
+    if (!targetDistrict || !newMandal) return;
+    LocationService.addMandal(selectedState, targetDistrict, newMandal);
+    setNewMandal("");
+    toast({ title: "మండలం జోడించబడింది", description: `${newMandal} విజయవంతంగా చేర్చబడింది.` });
+  };
+
+  const currentStateDistricts = locations[selectedState] || {};
+
   return (
-    <div className="max-w-4xl mx-auto py-12 text-center space-y-4">
-      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-        <MapPin className="w-8 h-8 text-primary" />
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold font-headline tracking-tight">ప్రాంతాల నిర్వహణ (Locations)</h1>
+          <p className="text-muted-foreground mt-1">కొత్త జిల్లాలు మరియు మండలాలను ఇక్కడ జోడించవచ్చు.</p>
+        </div>
+        <Select value={selectedState} onValueChange={setSelectedState}>
+          <SelectTrigger className="w-[200px] h-11 bg-white shadow-sm">
+            <Globe className="w-4 h-4 mr-2" />
+            <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
+          </SelectTrigger>
+          <SelectContent>
+            {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
-      <h2 className="text-2xl font-bold">Location Management</h2>
-      <p className="text-muted-foreground">Manage Mandals and Districts. Coming soon.</p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Add Section */}
+        <div className="space-y-6">
+          <Card className="border-none shadow-xl rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" />
+                జిల్లాను చేర్చండి
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>జిల్లా పేరు (District Name)</Label>
+                <Input 
+                  value={newDistrict} 
+                  onChange={(e) => setNewDistrict(e.target.value)} 
+                  placeholder="ఉదా: కొత్తగూడెం"
+                />
+              </div>
+              <Button className="w-full" onClick={handleAddDistrict} disabled={!newDistrict}>
+                జిల్లాను జోడించు
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-accent" />
+                మండలాన్ని చేర్చండి
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>జిల్లాను ఎంచుకోండి</Label>
+                <Select value={targetDistrict} onValueChange={setTargetDistrict}>
+                  <SelectTrigger><SelectValue placeholder="జిల్లా" /></SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(currentStateDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>మండలం పేరు (Mandal Name)</Label>
+                <Input 
+                  value={newMandal} 
+                  onChange={(e) => setNewMandal(e.target.value)} 
+                  placeholder="ఉదా: కొత్త మండలం"
+                />
+              </div>
+              <Button className="w-full" onClick={handleAddMandal} disabled={!targetDistrict || !newMandal}>
+                మండలాన్ని జోడించు
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* List Section */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="ప్రాంతాలను వెతకండి..." className="pl-10 h-12 bg-white rounded-xl shadow-sm border-muted" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(currentStateDistricts).map(([district, mandals]) => (
+              <Card key={district} className="border-none shadow-md rounded-2xl overflow-hidden group hover:shadow-lg transition-all">
+                <CardHeader className="bg-primary/5 py-4 border-b border-primary/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <h3 className="font-bold text-primary">{district}</h3>
+                    </div>
+                    <Badge variant="outline" className="bg-white">{mandals.length} మండలాలు</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {mandals.map(mandal => (
+                      <Badge key={mandal} variant="secondary" className="font-normal bg-slate-100 hover:bg-slate-200 transition-colors">
+                        {mandal}
+                      </Badge>
+                    ))}
+                    {mandals.length === 0 && <span className="text-xs text-muted-foreground italic">మండలాలు లేవు.</span>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
