@@ -1,20 +1,24 @@
 
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper } from "lucide-react";
+import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2 } from "lucide-react";
 import { NewsService } from "@/lib/storage";
 import { NewsPost } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<{ name: string; role: string; location: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; role: string; location: string; photo?: string } | null>(null);
   const [likedNews, setLikedNews] = useState<NewsPost[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const loadProfileData = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -24,12 +28,14 @@ export default function ProfilePage() {
     const state = localStorage.getItem('mandalPulse_state');
     const district = localStorage.getItem('mandalPulse_district');
     const mandal = localStorage.getItem('mandalPulse_mandal');
+    const photo = localStorage.getItem('mandalPulse_userPhoto');
 
     if (name) {
       setUser({
         name,
         role: role || 'user',
-        location: state ? `${mandal}, ${district}, ${state}` : 'Location not set'
+        location: state ? `${mandal}, ${district}, ${state}` : 'Location not set',
+        photo: photo || undefined
       });
 
       const likedIds = NewsService.getLikedPostIds();
@@ -41,8 +47,52 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfileData();
     window.addEventListener('mandalPulse_likesChanged', loadProfileData);
-    return () => window.removeEventListener('mandalPulse_likesChanged', loadProfileData);
+    window.addEventListener('mandalPulse_authChanged', loadProfileData);
+    return () => {
+      window.removeEventListener('mandalPulse_likesChanged', loadProfileData);
+      window.removeEventListener('mandalPulse_authChanged', loadProfileData);
+    };
   }, [loadProfileData]);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validation: Type
+    if (!['image/jpeg', 'image/jpg'].includes(file.type)) {
+      toast({
+        variant: "destructive",
+        title: "అనుమతించబడని ఫైల్",
+        description: "దయచేసి కేవలం JPG లేదా JPEG చిత్రాలను మాత్రమే అప్‌లోడ్ చేయండి.",
+      });
+      return;
+    }
+
+    // Validation: Size (1MB)
+    if (file.size > 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "పెద్ద ఫైల్",
+        description: "చిత్రం పరిమాణం 1MB కంటే తక్కువ ఉండాలి.",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      localStorage.setItem('mandalPulse_userPhoto', base64String);
+      setIsUploading(false);
+      loadProfileData();
+      window.dispatchEvent(new Event('mandalPulse_authChanged'));
+      toast({
+        title: "ఫోటో అప్‌లోడ్ అయ్యింది",
+        description: "మీ ప్రొఫైల్ ఫోటో విజయవంతంగా మార్చబడింది.",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('mandalPulse_role');
@@ -50,6 +100,7 @@ export default function ProfilePage() {
     localStorage.removeItem('mandalPulse_state');
     localStorage.removeItem('mandalPulse_district');
     localStorage.removeItem('mandalPulse_mandal');
+    localStorage.removeItem('mandalPulse_userPhoto');
     window.dispatchEvent(new Event('mandalPulse_authChanged'));
     window.location.href = '/login';
   };
@@ -77,9 +128,26 @@ export default function ProfilePage() {
           <div className="h-24 bg-primary/10 relative" />
           <CardContent className="relative pt-0 px-6 pb-6">
             <div className="absolute -top-12 left-6">
-              <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-4xl font-bold shadow-xl border-4 border-white">
-                {user.name[0]}
+              <div 
+                className="relative w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-4xl font-bold shadow-xl border-4 border-white overflow-hidden group cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {user.photo ? (
+                  <Image src={user.photo} alt={user.name} fill className="object-cover" />
+                ) : (
+                  user.name[0]
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : <Camera className="w-6 h-6 text-white" />}
+                </div>
               </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept=".jpg,.jpeg" 
+                onChange={handlePhotoUpload} 
+              />
             </div>
             
             <div className="mt-14 space-y-4">

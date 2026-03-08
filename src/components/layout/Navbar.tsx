@@ -2,12 +2,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Newspaper, User, PlusCircle, LayoutDashboard, LogOut, MapPin } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
 export function Navbar() {
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [location, setLocation] = useState({ mandal: "", district: "" });
 
   const updateLocationState = useCallback(() => {
@@ -21,8 +23,10 @@ export function Navbar() {
     if (typeof window === 'undefined') return;
     const savedRole = localStorage.getItem('mandalPulse_role') as any;
     const savedName = localStorage.getItem('mandalPulse_userName');
+    const savedPhoto = localStorage.getItem('mandalPulse_userPhoto');
     setRole(savedRole || 'user');
     setUserName(savedName || "");
+    setUserPhoto(savedPhoto || null);
   }, []);
 
   useEffect(() => {
@@ -44,8 +48,10 @@ export function Navbar() {
     localStorage.removeItem('mandalPulse_state');
     localStorage.removeItem('mandalPulse_district');
     localStorage.removeItem('mandalPulse_mandal');
+    localStorage.removeItem('mandalPulse_userPhoto');
     setRole(null);
     setUserName("");
+    setUserPhoto(null);
     window.dispatchEvent(new Event('mandalPulse_authChanged'));
     window.location.href = '/login';
   };
@@ -85,7 +91,13 @@ export function Navbar() {
           )}
 
           <Link href={userName ? "/profile" : "/login"} className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-            <User className="w-5 h-5 text-primary" />
+            {userPhoto ? (
+              <div className="relative w-6 h-6 rounded-full overflow-hidden border border-primary/20">
+                <Image src={userPhoto} alt={userName} fill className="object-cover" />
+              </div>
+            ) : (
+              <User className="w-5 h-5 text-primary" />
+            )}
             <span className="text-[10px] md:text-sm font-semibold truncate max-w-[60px] md:max-w-none">
               {userName || "Login"}
             </span>
