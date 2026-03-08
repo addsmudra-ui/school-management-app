@@ -4,6 +4,7 @@
 import { NewsPost, MOCK_NEWS } from "./mock-data";
 
 const STORAGE_KEY = 'mandalPulse_news_v1';
+const LIKES_KEY = 'mandalPulse_liked_posts';
 
 export const NewsService = {
   getAll: (): NewsPost[] => {
@@ -38,5 +39,24 @@ export const NewsService = {
     const news = NewsService.getAll();
     const updated = news.filter(n => n.id !== id);
     NewsService.save(updated);
+  },
+
+  getLikedPostIds: (): string[] => {
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(LIKES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  },
+
+  toggleLike: (postId: string) => {
+    if (typeof window === 'undefined') return false;
+    const liked = NewsService.getLikedPostIds();
+    const isLiked = liked.includes(postId);
+    const updated = isLiked 
+      ? liked.filter(id => id !== postId)
+      : [...liked, postId];
+    
+    localStorage.setItem(LIKES_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event('mandalPulse_likesChanged'));
+    return !isLiked;
   }
 };

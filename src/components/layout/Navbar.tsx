@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -10,12 +11,14 @@ export function Navbar() {
   const [location, setLocation] = useState({ mandal: "", district: "" });
 
   const updateLocationState = useCallback(() => {
+    if (typeof window === 'undefined') return;
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
     setLocation({ district: savedDistrict, mandal: savedMandal === "All" ? "అన్ని మండలాలు" : savedMandal });
   }, []);
 
   const updateAuthState = useCallback(() => {
+    if (typeof window === 'undefined') return;
     const savedRole = localStorage.getItem('mandalPulse_role') as any;
     const savedName = localStorage.getItem('mandalPulse_userName');
     setRole(savedRole || 'user');
@@ -26,9 +29,7 @@ export function Navbar() {
     updateAuthState();
     updateLocationState();
 
-    // Listen for custom location change events
     window.addEventListener('mandalPulse_locationChanged', updateLocationState);
-    // Listen for auth changes
     window.addEventListener('mandalPulse_authChanged', updateAuthState);
     
     return () => {
@@ -40,8 +41,12 @@ export function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem('mandalPulse_role');
     localStorage.removeItem('mandalPulse_userName');
+    localStorage.removeItem('mandalPulse_state');
+    localStorage.removeItem('mandalPulse_district');
+    localStorage.removeItem('mandalPulse_mandal');
     setRole(null);
     setUserName("");
+    window.dispatchEvent(new Event('mandalPulse_authChanged'));
     window.location.href = '/login';
   };
 
@@ -79,10 +84,10 @@ export function Navbar() {
             </Link>
           )}
 
-          <Link href="/login" className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+          <Link href={userName ? "/profile" : "/login"} className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
             <User className="w-5 h-5 text-primary" />
             <span className="text-[10px] md:text-sm font-semibold truncate max-w-[60px] md:max-w-none">
-              {userName || "Account"}
+              {userName || "Login"}
             </span>
           </Link>
 

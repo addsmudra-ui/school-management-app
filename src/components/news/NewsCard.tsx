@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -6,9 +7,10 @@ import { Heart, MessageCircle, Share2, MapPin, User, Hash, Send, Star } from "lu
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { NewsService } from "@/lib/storage";
 
 interface NewsCardProps {
   news: NewsPost;
@@ -21,13 +23,15 @@ export function NewsCard({ news }: NewsCardProps) {
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
 
+  useEffect(() => {
+    const likedIds = NewsService.getLikedPostIds();
+    setLiked(likedIds.includes(news.id));
+  }, [news.id]);
+
   const toggleLike = () => {
-    if (liked) {
-      setLikesCount(prev => prev - 1);
-    } else {
-      setLikesCount(prev => prev + 1);
-    }
-    setLiked(!liked);
+    const isNowLiked = NewsService.toggleLike(news.id);
+    setLiked(isNowLiked);
+    setLikesCount(prev => isNowLiked ? prev + 1 : prev - 1);
   };
 
   const handleAddComment = () => {
@@ -35,7 +39,7 @@ export function NewsCard({ news }: NewsCardProps) {
 
     const comment: Comment = {
       id: Date.now().toString(),
-      userName: "You",
+      userName: localStorage.getItem('mandalPulse_userName') || "You",
       text: newComment,
       timestamp: "Just now"
     };
@@ -85,7 +89,7 @@ export function NewsCard({ news }: NewsCardProps) {
 
   return (
     <div className="w-full h-full max-w-md mx-auto bg-white relative flex flex-col md:h-[90vh] md:rounded-3xl md:my-8 md:shadow-2xl overflow-hidden">
-      {/* Image Section - Optimized for High Res */}
+      {/* Image Section */}
       <div className="relative h-[45%] w-full overflow-hidden bg-muted">
         <Image
           src={news.image_url}
@@ -94,7 +98,6 @@ export function NewsCard({ news }: NewsCardProps) {
           priority
           sizes="(max-width: 768px) 100vw, 450px"
           className="object-cover transition-transform duration-700 hover:scale-105"
-          data-ai-hint="news coverage"
         />
         <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
           <div className="bg-primary/90 text-white px-3 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1 shadow-lg backdrop-blur-sm">
