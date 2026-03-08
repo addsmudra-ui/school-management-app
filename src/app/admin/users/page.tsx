@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
@@ -36,7 +36,7 @@ export default function AdminUsers() {
   const [newState, setNewState] = useState("");
   const [newDistrict, setNewDistrict] = useState("");
   const [newMandal, setNewMandal] = useState("");
-  const [newRole, setNewRole] = useState<'reporter' | 'admin' | 'user'>('reporter');
+  const [newRole, setNewRole] = useState<'reporter' | 'admin' | 'user' | 'editor'>('reporter');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleToggleStatus = (id: string, currentStatus: string) => {
@@ -44,7 +44,7 @@ export default function AdminUsers() {
     const newStatus = currentStatus === 'approved' ? 'pending' : 'approved';
     UserService.update(firestore, id, { status: newStatus as any });
     toast({
-      title: newStatus === 'approved' ? "User Approved" : "Moved to Pending",
+      title: "వినియోగదారు స్థితి మార్చబడింది",
       description: `User status changed to ${newStatus}.`,
     });
   };
@@ -54,7 +54,7 @@ export default function AdminUsers() {
     if (confirm(`${name} అకౌంట్‌ను శాశ్వతంగా తొలగించాలనుకుంటున్నారా?`)) {
       UserService.delete(firestore, id);
       toast({
-        title: "User Removed",
+        title: "వినియోగదారు తొలగించబడ్డారు",
         description: `${name} has been deleted from the system.`,
         variant: "destructive"
       });
@@ -80,7 +80,7 @@ export default function AdminUsers() {
     try {
       await UserService.create(firestore, newUser);
       setIsAddDialogOpen(false);
-      toast({ title: "User Added", description: `Successfully created ${newRole} account.` });
+      toast({ title: "వినియోగదారు చేర్చబడ్డారు", description: `Successfully created ${newRole} account.` });
       setNewName(""); setNewPhone(""); setNewState(""); setNewDistrict(""); setNewMandal("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -131,6 +131,7 @@ export default function AdminUsers() {
                     <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
                     <SelectItem value="user">పాఠకుడు (User)</SelectItem>
                     <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
+                    <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -188,7 +189,8 @@ export default function AdminUsers() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4 pl-6">పేరు & నంబర్</TableHead>
+                <TableHead className="font-bold py-4 pl-6">పేరు (Name)</TableHead>
+                <TableHead className="font-bold">కాంటాక్ట్ (Contact)</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold">స్థితి</TableHead>
@@ -197,14 +199,17 @@ export default function AdminUsers() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
               ) : filtered.length > 0 ? (
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell className="pl-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">{user.phone}</span>
+                      <span className="font-bold text-slate-900">{user.name}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Phone className="w-3 h-3" />
+                        {user.phone}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -239,7 +244,6 @@ export default function AdminUsers() {
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase hidden sm:inline">Approved</span>
                           <Switch 
                             checked={user.status === 'approved'} 
                             onCheckedChange={() => handleToggleStatus(user.id, user.status)}
@@ -259,7 +263,7 @@ export default function AdminUsers() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic">
+                  <TableCell colSpan={6} className="h-48 text-center text-muted-foreground italic">
                     వినియోగదారులు ఎవరూ లేరు.
                   </TableCell>
                 </TableRow>

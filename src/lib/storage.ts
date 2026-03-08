@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -43,12 +42,11 @@ export const AdminService = {
       }
       return null;
     } catch (e) {
-      console.error("Error fetching admin password:", e);
       return null;
     }
   },
   /**
-   * Updates the administrative password. Only allowed for admins via Security Rules.
+   * Updates the administrative password.
    */
   setPassword: (db: Firestore, newPassword: string) => {
     const configRef = doc(db, 'config', 'admin');
@@ -145,7 +143,6 @@ export const UserService = {
       const data = querySnapshot.docs[0].data();
       return { ...data, id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
-      console.error("Error fetching user by phone:", e);
       return null;
     }
   },
