@@ -19,7 +19,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { NewsPost, UserProfile, Comment, DEFAULT_ADMIN_PASSWORD } from './mock-data';
+import { NewsPost, UserProfile, Comment } from './mock-data';
 
 export type SentNotification = {
   id: string;
@@ -30,16 +30,16 @@ export type SentNotification = {
 };
 
 export const AdminService = {
-  getPassword: async (db: Firestore): Promise<string> => {
+  getPassword: async (db: Firestore): Promise<string | null> => {
     try {
       const docRef = doc(db, 'config', 'admin');
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
-        return snapshot.data().password || DEFAULT_ADMIN_PASSWORD;
+        return snapshot.data().password || null;
       }
-      return DEFAULT_ADMIN_PASSWORD;
+      return null;
     } catch (e) {
-      return DEFAULT_ADMIN_PASSWORD;
+      return null;
     }
   },
   setPassword: (db: Firestore, newPassword: string) => {

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { STATES, LOCATIONS_BY_STATE, UserProfile, DEFAULT_ADMIN_PHONE } from "@/lib/mock-data";
+import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
@@ -45,7 +45,7 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          // If already registered, sync local state and redirect
+          // Sync local state
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -96,7 +96,7 @@ export default function LoginPage() {
           location: role !== 'admin' ? { state, district, mandal } : undefined
         };
 
-        // Create in Firestore (including role markers)
+        // Create in Firestore
         await UserService.create(firestore, newUser);
 
         // Sync local
@@ -177,9 +177,6 @@ export default function LoginPage() {
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   />
                 </div>
-                {phone === DEFAULT_ADMIN_PHONE && (
-                  <p className="text-[10px] text-rose-500 font-bold animate-pulse">Admin ID Recognized</p>
-                )}
               </div>
               <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={phone.length < 10 || isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
