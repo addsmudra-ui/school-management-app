@@ -5,15 +5,14 @@ service cloud.firestore {
     /**
      * MANDALPULSE SECURITY RULES
      *
-     * CORE PHILOSOPHY:
-     * This ruleset implements a robust Role-Based Access Control (RBAC) model using "Authorization Independence."
-     * Instead of relying on fields within user documents, roles are verified via specific lookup collections
-     * (/roles_admins, /roles_editors, /roles_reporters).
+     * Updated to simplify sign-in checks and ensure robust access for anonymous users.
+     * Triggering deployment: 2024-05-20T12:00:00Z
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
 
     function isSignedIn() {
+      // Robust check for any authenticated user (anonymous or provider-based)
       return request.auth != null && request.auth.uid != null;
     }
 
@@ -45,13 +44,18 @@ service cloud.firestore {
 
     /**
      * @description Rules for user profiles.
-     * Note: allow list is needed for the login phone number lookup.
+     * Allows authenticated users to look up profiles (needed for login and display).
      */
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && request.resource.data.id == userId;
       allow update: if (isOwner(userId) || isAdmin());
       allow delete: if isAdmin();
+
+      // Nested private data (e.g., likes)
+      match /private/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     /**
@@ -77,8 +81,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(resource.data.authorId) || isStaff());
       allow list: if isStaff();
       allow create: if isReporter() && request.resource.data.authorId == request.auth.uid;
-      allow update: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
-      allow delete: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
+      allow update, delete: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
     }
 
     /**
@@ -94,8 +97,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow get, list: if isSignedIn();
         allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update: if (isExistingOwner(resource.data.authorId) || isAdmin());
-        allow delete: if isExistingOwner(resource.data.authorId) || isAdmin();
+        allow update, delete: if (isExistingOwner(resource.data.authorId) || isAdmin());
       }
     }
 

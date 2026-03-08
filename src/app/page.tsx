@@ -2,10 +2,9 @@
 
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
-import { useEffect, useState, useMemo, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Newspaper, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
 import {
@@ -33,6 +32,7 @@ function NewsFeedContent() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   useEffect(() => {
+    // Load saved preferences or defaults
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
     setSelectedDistrict(savedDistrict);
@@ -40,9 +40,10 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // Only run query if services, user, and district are definitely ready
+    // CRITICAL: Guard against running the query before auth is fully ready to prevent permission errors
     if (!firestore || !selectedDistrict || isUserLoading || !user || !user.uid) return null;
     
+    // Build query for approved news
     let q = query(
       collection(firestore, 'approved_news_posts'),
       where('location.district', '==', selectedDistrict),
@@ -50,6 +51,7 @@ function NewsFeedContent() {
       limit(20)
     );
 
+    // Apply mandal filter if not "All"
     if (selectedMandal && selectedMandal !== "All") {
       q = query(q, where('location.mandal', '==', selectedMandal));
     }
@@ -66,7 +68,8 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  if (isLoading || isUserLoading) {
+  // Show loading while auth or initial query is processing
+  if (isUserLoading || (isLoading && !news)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -79,6 +82,7 @@ function NewsFeedContent() {
 
   return (
     <>
+      {/* Mobile Location Header */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -133,6 +137,7 @@ function NewsFeedContent() {
         </div>
       </div>
 
+      {/* Main News Scroll Container */}
       <div className="news-scroll-container">
         {news && news.length > 0 ? (
           news.map((item) => (
