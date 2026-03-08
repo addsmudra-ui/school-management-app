@@ -12,33 +12,37 @@ import { NotificationService, SentNotification, LocationService } from "@/lib/st
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 
 export default function AdminNotifications() {
+  const firestore = useFirestore();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [target, setTarget] = useState("All Users");
-  const [history, setHistory] = useState<SentNotification[]>([]);
-  const [districts, setDistricts] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setHistory(NotificationService.getAll());
-    const locs = LocationService.getLocations();
-    const telanganaDistricts = Object.keys(locs["Telangana"] || {});
-    setDistricts(telanganaDistricts);
+  // Real-time notification history
+  const historyQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'notifications'), orderBy('timestamp', 'desc'), limit(50));
+  }, [firestore]);
 
-    const handleUpdate = () => setHistory(NotificationService.getAll());
-    window.addEventListener('mandalPulse_notificationsChanged', handleUpdate);
-    return () => window.removeEventListener('mandalPulse_notificationsChanged', handleUpdate);
-  }, []);
+  const { data: history } = useCollection<SentNotification>(historyQuery);
+
+  // Real-time locations for target audience
+  const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locDocRef);
+  const districts = locationsDoc ? Object.keys(locationsDoc["Telangana"] || {}) : [];
 
   const handleSend = () => {
-    if (!title || !body) return;
+    if (!firestore || !title || !body) return;
     setIsSending(true);
 
+    NotificationService.send(firestore, { title, body, target });
+    
     setTimeout(() => {
-      NotificationService.send({ title, body, target });
       setTitle("");
       setBody("");
       setIsSending(false);
@@ -46,7 +50,7 @@ export default function AdminNotifications() {
         title: "నోటిఫికేషన్ పంపబడింది",
         description: "వినియోగదారులందరికీ అలర్ట్ విజయవంతంగా చేరింది."
       });
-    }, 1500);
+    }, 500);
   };
 
   return (
@@ -135,11 +139,11 @@ export default function AdminNotifications() {
               <History className="w-5 h-5 text-muted-foreground" />
               గత నోటిఫికేషన్లు (History)
             </h2>
-            <Badge variant="secondary" className="rounded-full">{history.length}</Badge>
+            <Badge variant="secondary" className="rounded-full">{history?.length || 0}</Badge>
           </div>
 
           <div className="space-y-4">
-            {history.length > 0 ? (
+            {history && history.length > 0 ? (
               history.map((notif) => (
                 <Card key={notif.id} className="border-none shadow-md rounded-2xl overflow-hidden hover:shadow-lg transition-all group">
                   <CardContent className="p-5">
@@ -149,7 +153,7 @@ export default function AdminNotifications() {
                           {notif.target}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(notif.timestamp), 'MMM d, h:mm a')}
+                          {notif.timestamp?.toDate ? format(notif.timestamp.toDate(), 'MMM d, h:mm a') : 'Just now'}
                         </span>
                       </div>
                       <button className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">

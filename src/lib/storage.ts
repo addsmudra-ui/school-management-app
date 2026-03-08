@@ -20,6 +20,14 @@ import {
 import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { NewsPost, UserProfile, Comment } from './mock-data';
 
+export type SentNotification = {
+  id: string;
+  title: string;
+  body: string;
+  target: string;
+  timestamp: any;
+};
+
 /**
  * Service for administrative configurations.
  */
@@ -50,6 +58,11 @@ export const NewsService = {
     };
     setDocumentNonBlocking(newDocRef, data, { merge: true });
     return newDocRef.id;
+  },
+
+  update: (db: Firestore, postId: string, data: Partial<NewsPost>) => {
+    const postRef = doc(db, 'pending_news_posts', postId);
+    updateDocumentNonBlocking(postRef, data);
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
@@ -135,9 +148,9 @@ export const UserService = {
     }
   },
 
-  updateStatus: (db: Firestore, userId: string, status: 'approved' | 'pending' | 'rejected') => {
+  update: (db: Firestore, userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, 'users', userId);
-    updateDocumentNonBlocking(userRef, { status });
+    updateDocumentNonBlocking(userRef, data);
   }
 };
 

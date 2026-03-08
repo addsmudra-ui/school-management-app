@@ -9,15 +9,25 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 
 export function Navbar() {
+  const firestore = useFirestore();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [userStatus, setUserStatus] = useState<string>("");
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [location, setLocation] = useState({ mandal: "", district: "" });
-  const [notifications, setNotifications] = useState<SentNotification[]>([]);
   const [hasNewNotif, setHasNewNotif] = useState(false);
+
+  // Real-time notifications
+  const notifQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'notifications'), orderBy('timestamp', 'desc'), limit(20));
+  }, [firestore]);
+
+  const { data: notifications } = useCollection<SentNotification>(notifQuery);
 
   const updateLocationState = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -38,33 +48,28 @@ export function Navbar() {
     setUserPhoto(savedPhoto || null);
   }, []);
 
-  const updateNotifications = useCallback(() => {
-    const history = NotificationService.getAll();
-    setNotifications(history);
-    if (history.length > 0) {
-      // Check if the latest notification is newer than last seen (simple check)
-      const lastSeen = localStorage.getItem('mandalPulse_lastSeenNotif');
-      if (history[0].id !== lastSeen) {
-        setHasNewNotif(true);
-      }
-    }
-  }, []);
-
   useEffect(() => {
     updateAuthState();
     updateLocationState();
-    updateNotifications();
 
     window.addEventListener('mandalPulse_locationChanged', updateLocationState);
     window.addEventListener('mandalPulse_authChanged', updateAuthState);
-    window.addEventListener('mandalPulse_notificationsChanged', updateNotifications);
     
     return () => {
       window.removeEventListener('mandalPulse_locationChanged', updateLocationState);
       window.removeEventListener('mandalPulse_authChanged', updateAuthState);
-      window.removeEventListener('mandalPulse_notificationsChanged', updateNotifications);
     };
-  }, [updateLocationState, updateAuthState, updateNotifications]);
+  }, [updateLocationState, updateAuthState]);
+
+  // Check for new notifications reactively
+  useEffect(() => {
+    if (notifications && notifications.length > 0) {
+      const lastSeen = localStorage.getItem('mandalPulse_lastSeenNotif');
+      if (notifications[0].id !== lastSeen) {
+        setHasNewNotif(true);
+      }
+    }
+  }, [notifications]);
 
   const handleLogout = () => {
     localStorage.removeItem('mandalPulse_role');
@@ -84,7 +89,7 @@ export function Navbar() {
   };
 
   const markAsRead = () => {
-    if (notifications.length > 0) {
+    if (notifications && notifications.length > 0) {
       localStorage.setItem('mandalPulse_lastSeenNotif', notifications[0].id);
       setHasNewNotif(false);
     }
@@ -133,7 +138,7 @@ export function Navbar() {
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4 pb-32">
-                {notifications.length > 0 ? (
+                {notifications && notifications.length > 0 ? (
                   notifications.map((n) => (
                     <div key={n.id} className="p-4 bg-muted/30 rounded-2xl border border-muted group hover:bg-white hover:shadow-md transition-all">
                       <div className="flex justify-between items-start mb-1">
@@ -141,7 +146,7 @@ export function Navbar() {
                           {n.target}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(n.timestamp), 'h:mm a')}
+                          {n.timestamp?.toDate ? format(n.timestamp.toDate(), 'h:mm a') : 'Just now'}
                         </span>
                       </div>
                       <h4 className="font-bold text-sm mb-1">{n.title}</h4>
