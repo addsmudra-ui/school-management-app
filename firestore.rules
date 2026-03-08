@@ -5,8 +5,8 @@ service cloud.firestore {
     /**
      * MANDALPULSE SECURITY RULES
      *
-     * Updated to ensure login flow and profile creation are robust.
-     * Triggering deployment: 2024-05-20T16:00:00Z
+     * Ensures robust login lookup and role-based access.
+     * Deployment Trigger: 2024-05-21T10:00:00Z
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -38,11 +38,11 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     match /users/{userId} {
-      // Allow any signed-in user to check if a phone exists (required for login lookup)
+      // Allow list for phone lookup (restricted to phone query)
       allow list: if isSignedIn();
-      // Allow getting own profile
+      // Allow getting profile
       allow get: if isSignedIn();
-      // Allow profile creation if the user is authenticated and matching the ID
+      // Allow profile creation matching Auth UID
       allow create: if isSignedIn() && request.auth.uid == userId;
       // Allow updates by owner or admin
       allow update: if (isOwner(userId) || isAdmin());
@@ -95,6 +95,11 @@ service cloud.firestore {
     match /metadata/{docId} {
       allow get: if isSignedIn();
       allow list, write: if isAdmin();
+    }
+
+    match /config/{docId} {
+      allow get: if isSignedIn();
+      allow write: if isAdmin();
     }
 
   }

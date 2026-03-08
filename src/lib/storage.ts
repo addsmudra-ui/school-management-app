@@ -15,7 +15,8 @@ import {
   increment,
   arrayUnion,
   arrayRemove,
-  Firestore
+  Firestore,
+  getDoc
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { NewsPost, UserProfile, Comment } from './mock-data';
@@ -33,8 +34,16 @@ export type SentNotification = {
  */
 export const AdminService = {
   getPassword: async (db: Firestore): Promise<string> => {
-    // In a real app, this would be fetched from a protected config document.
-    return 'admin123'; 
+    try {
+      const docRef = doc(db, 'config', 'admin');
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        return snapshot.data().password || 'admin123';
+      }
+      return 'admin123';
+    } catch (e) {
+      return 'admin123';
+    }
   },
   setPassword: (db: Firestore, newPassword: string) => {
     const configRef = doc(db, 'config', 'admin');
@@ -122,10 +131,12 @@ export const NewsService = {
   },
   
   getLikedPostIds: () => {
+    // This is handled by useDoc in profile page now
     return [];
   },
 
   getAll: () => {
+    // This is handled by useCollection now
     return [];
   }
 };
@@ -139,7 +150,7 @@ export const UserService = {
       const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) return null;
-      return querySnapshot.docs[0].data() as UserProfile;
+      return { ...querySnapshot.docs[0].data(), id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
       console.error("Error fetching user by phone:", e);
       return null;
@@ -147,14 +158,12 @@ export const UserService = {
   },
 
   create: async (db: Firestore, profile: UserProfile) => {
-    // CRITICAL: Ensure profile creation uses the exact Auth UID
     const userRef = doc(db, 'users', profile.id);
     await setDoc(userRef, {
       ...profile,
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Handle initial role provisioning
     const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
                           profile.role === 'reporter' ? 'roles_reporters' : null;
     if (roleCollection) {
@@ -166,10 +175,6 @@ export const UserService = {
   update: (db: Firestore, userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, 'users', userId);
     updateDocumentNonBlocking(userRef, data);
-  },
-
-  getAll: () => {
-    return [];
   }
 };
 
@@ -203,8 +208,5 @@ export const LocationService = {
     updateDocumentNonBlocking(locRef, {
       [`${state}.${district}`]: []
     });
-  },
-  getLocations: () => {
-    return {};
   }
 };

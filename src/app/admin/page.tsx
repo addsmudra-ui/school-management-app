@@ -1,12 +1,8 @@
-
 "use client";
 
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell } from "lucide-react";
-import { NewsPost } from "@/lib/mock-data";
-import { NewsService } from "@/lib/storage";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -14,6 +10,8 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit } from "firebase/firestore";
 
 const chartData = [
   { name: "Mon", posts: 4 },
@@ -26,18 +24,29 @@ const chartData = [
 ];
 
 export default function AdminDashboard() {
-  const [news, setNews] = useState<NewsPost[]>([]);
-  
-  useEffect(() => {
-    setNews(NewsService.getAll());
-    
-    const handleUpdate = () => setNews(NewsService.getAll());
-    window.addEventListener('mandalPulse_newsChanged', handleUpdate);
-    return () => window.removeEventListener('mandalPulse_newsChanged', handleUpdate);
-  }, []);
-  
-  const pending = news.filter(n => n.status === 'pending');
-  const approved = news.filter(n => n.status === 'approved');
+  const firestore = useFirestore();
+
+  const pendingQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'pending_news_posts'), limit(100));
+  }, [firestore]);
+
+  const approvedQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'approved_news_posts'), orderBy('timestamp', 'desc'), limit(5));
+  }, [firestore]);
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), limit(500));
+  }, [firestore]);
+
+  const { data: pendingNews } = useCollection(pendingQuery);
+  const { data: recentApprovals } = useCollection(approvedQuery);
+  const { data: users } = useCollection(usersQuery);
+
+  const pendingCount = pendingNews?.filter(n => n.status === 'pending').length || 0;
+  const reportersCount = users?.filter(u => u.role === 'reporter').length || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -54,36 +63,36 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
-          title="మొత్తం వార్తలు" 
-          value={news.length} 
+          title="మొత్తం ఆమోదాలు" 
+          value={recentApprovals?.length || 0} 
           icon={Newspaper} 
           color="text-primary" 
           bgColor="bg-primary/10"
-          desc={`+${Math.floor(Math.random() * 20)}% since last week`}
+          desc="Recently live"
         />
         <StatsCard 
           title="పెండింగ్ రివ్యూలు" 
-          value={pending.length} 
+          value={pendingCount} 
           icon={Clock} 
           color="text-amber-500" 
           bgColor="bg-amber-500/10"
-          desc={pending.length > 0 ? "Action required" : "All caught up"}
+          desc={pendingCount > 0 ? "Action required" : "All caught up"}
         />
         <StatsCard 
-          title="యాక్టివ్ రిపోర్టర్లు" 
-          value="42" 
+          title="రిపోర్టర్లు" 
+          value={reportersCount} 
           icon={Users} 
           color="text-indigo-500" 
           bgColor="bg-indigo-500/10"
-          desc="7 currently online"
+          desc="Registered members"
         />
         <StatsCard 
-          title="నోటిఫికేషన్లు" 
-          value="18" 
-          icon={Bell} 
+          title="మొత్తం వినియోగదారులు" 
+          value={users?.length || 0} 
+          icon={Users} 
           color="text-rose-500" 
           bgColor="bg-rose-500/10"
-          desc="3 urgent alerts"
+          desc="Platform wide"
         />
       </div>
 
@@ -113,8 +122,8 @@ export default function AdminDashboard() {
             <CardDescription>చివరిగా ఆమోదించబడిన వార్తలు.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {approved.length > 0 ? (
-              approved.slice(0, 5).map((post) => (
+            {recentApprovals && recentApprovals.length > 0 ? (
+              recentApprovals.map((post) => (
                 <div key={post.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/30 transition-colors">
                   <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />

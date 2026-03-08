@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +15,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, limit } from "firebase/firestore";
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const firestore = useFirestore();
   const [search, setSearch] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), limit(500));
+  }, [firestore]);
+
+  const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
 
   // Add User Form State
   const [newName, setNewName] = useState("");
@@ -30,30 +38,27 @@ export default function AdminUsers() {
   const [newDistrict, setNewDistrict] = useState("");
   const [newMandal, setNewMandal] = useState("");
 
-  useEffect(() => {
-    setUsers(UserService.getAll());
-    const handleUpdate = () => setUsers(UserService.getAll());
-    window.addEventListener('mandalPulse_usersChanged', handleUpdate);
-    return () => window.removeEventListener('mandalPulse_usersChanged', handleUpdate);
-  }, []);
-
   const handleToggleStatus = (id: string, currentStatus: string) => {
+    if (!firestore) return;
     const newStatus = currentStatus === 'approved' ? 'pending' : 'approved';
-    UserService.update(id, { status: newStatus });
+    UserService.update(firestore, id, { status: newStatus as any });
     toast({
       title: newStatus === 'approved' ? "User Approved" : "Moved to Pending",
       description: `రిపోర్టర్ స్థితి విజయవంతంగా ${newStatus === 'approved' ? 'ఆమోదించబడింది' : 'పెండింగ్‌కు మార్చబడింది'}.`,
     });
   };
 
-  const handleAddUser = () => {
-    if (!newName || !newPhone || !newState || !newDistrict || !newMandal) {
+  const handleAddUser = async () => {
+    if (!firestore || !newName || !newPhone || !newState || !newDistrict || !newMandal) {
       toast({ title: "Error", description: "All fields are required", variant: "destructive" });
       return;
     }
 
+    // Since we are creating manually, we don't have a UID. 
+    // In a real flow, the user would sign up and we'd update their profile.
+    // For admin-driven creation, we'll use the phone as a temporary ID.
     const newUser: UserProfile = {
-      id: "REP" + Date.now(),
+      id: "REP_" + newPhone,
       name: newName,
       phone: newPhone,
       role: 'reporter',
@@ -61,7 +66,7 @@ export default function AdminUsers() {
       location: { state: newState, district: newDistrict, mandal: newMandal }
     };
 
-    UserService.add(newUser);
+    await UserService.create(firestore, newUser);
     setIsAddDialogOpen(false);
     toast({ title: "Success", description: "కొత్త రిపోర్టర్ విజయవంతంగా సృష్టించబడ్డారు." });
     
@@ -73,11 +78,11 @@ export default function AdminUsers() {
     setNewMandal("");
   };
 
-  const filtered = users.filter(u => 
+  const filtered = users?.filter(u => 
     u.name.toLowerCase().includes(search.toLowerCase()) || 
     u.phone.includes(search) ||
     u.role.includes(search)
-  );
+  ) || [];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -166,7 +171,9 @@ export default function AdminUsers() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length > 0 ? (
+              {isLoading ? (
+                <TableRow><TableCell colSpan={5} className="h-48 text-center">Loading users...</TableCell></TableRow>
+              ) : filtered.length > 0 ? (
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell className="pl-6 py-4">
