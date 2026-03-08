@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -20,7 +21,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<'user' | 'reporter' | 'admin'>("user");
+  const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor'>("user");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
@@ -59,8 +60,8 @@ export default function LoginPage() {
           
           window.dispatchEvent(new Event('mandalPulse_authChanged'));
           
-          if (existing.role === 'admin') {
-            setRole('admin');
+          if (existing.role === 'admin' || existing.role === 'editor') {
+            setRole(existing.role);
             setName(existing.name);
             setStep('details'); 
           } else {
@@ -75,10 +76,10 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
-        if (role === 'admin') {
+        if (role === 'admin' || role === 'editor') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
-            toast({ variant: "destructive", title: "Admin Login Failed", description: "Invalid password." });
+            toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid administrator password." });
             setIsLoading(false);
             return;
           }
@@ -93,8 +94,8 @@ export default function LoginPage() {
           phone,
           name,
           role,
-          status: role === 'reporter' ? 'pending' : 'approved',
-          location: role !== 'admin' ? { state, district, mandal } : undefined
+          status: (role === 'reporter') ? 'pending' : 'approved',
+          location: (role !== 'admin' && role !== 'editor') ? { state, district, mandal } : undefined
         };
 
         await UserService.create(firestore, newUser);
@@ -104,7 +105,7 @@ export default function LoginPage() {
         localStorage.setItem('mandalPulse_userPhone', phone);
         localStorage.setItem('mandalPulse_userStatus', newUser.status);
         
-        if (role !== 'admin' && state) {
+        if (role !== 'admin' && role !== 'editor' && state) {
           localStorage.setItem('mandalPulse_state', state);
           localStorage.setItem('mandalPulse_district', district);
           localStorage.setItem('mandalPulse_mandal', mandal);
@@ -112,7 +113,7 @@ export default function LoginPage() {
 
         window.dispatchEvent(new Event('mandalPulse_authChanged'));
         toast({ title: "Welcome", description: "Profile setup complete." });
-        router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
+        router.push((role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/');
       }
     } catch (error: any) {
       console.error("Login process failed:", error);
@@ -128,7 +129,7 @@ export default function LoginPage() {
 
   const isDetailsValid = () => {
     if (!name) return false;
-    if (role === 'admin') return password.length > 0;
+    if (role === 'admin' || role === 'editor') return password.length > 0;
     return state && district && mandal;
   };
 
@@ -209,24 +210,25 @@ export default function LoginPage() {
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
                     <SelectTrigger className="h-11 rounded-xl">
                       <div className="flex items-center gap-2">
-                        {role === 'admin' ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
+                        {(role === 'admin' || role === 'editor') ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
                         <SelectValue />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">సాధారణ పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">స్థానిక రిపోర్టర్ (Reporter)</SelectItem>
-                      <SelectItem value="admin">అడ్మిన్ / ఎడిటర్ (Admin)</SelectItem>
+                      <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
+                      <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
-                {role === 'admin' && (
+                {(role === 'admin' || role === 'editor') && (
                   <div className="space-y-2 animate-in zoom-in-95 duration-200">
-                    <Label className="text-rose-600 font-bold">అడ్మిన్ పాస్‌వర్డ్ (Admin Password)</Label>
+                    <Label className="text-rose-600 font-bold">పాస్‌వర్డ్ (Password)</Label>
                     <Input 
                       type="password" 
-                      placeholder="Enter Admin Password" 
+                      placeholder="Enter Password" 
                       value={password} 
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-11 rounded-xl border-rose-200 focus:ring-rose-500"
@@ -234,7 +236,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {role !== 'admin' && (
+                {role !== 'admin' && role !== 'editor' && (
                   <>
                     <div className="space-y-2">
                       <Label>రాష్ట్రం (State)</Label>

@@ -1,7 +1,7 @@
+
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
       "description": "Represents a user of the MandalPulse app.",
@@ -9,8 +9,8 @@
         "id": { "type": "string", "description": "Firebase Auth UID" },
         "phone": { "type": "string", "description": "User's phone number" },
         "name": { "type": "string", "description": "User's full name" },
-        "role": { "type": "string", "enum": ["user", "reporter", "admin"] },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "role": { "type": "string", "enum": ["user", "reporter", "admin", "editor"], "description": "Role of the user" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Approval status for reporters" },
         "location": {
           "type": "object",
           "properties": {
@@ -18,14 +18,15 @@
             "district": { "type": "string" },
             "mandal": { "type": "string" }
           }
-        }
+        },
+        "photo": { "type": "string", "description": "Base64 encoded profile photo" }
       },
       "required": ["id", "phone", "role", "name", "status"]
     },
     "NewsPost": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "NewsPost",
       "type": "object",
+      "description": "A news article posted by a reporter or admin.",
       "properties": {
         "id": { "type": "string" },
         "unique_code": { "type": "string" },
@@ -40,26 +41,43 @@
             "mandal": { "type": "string" }
           }
         },
-        "status": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "author_id": { "type": "string" },
         "author_name": { "type": "string" },
-        "timestamp": { "type": "string" },
+        "author_role": { "type": "string" },
+        "author_stars": { "type": "number" },
+        "timestamp": { "type": "object", "description": "Firestore server timestamp" },
         "likes": { "type": "number" },
         "commentsCount": { "type": "number" }
       },
       "required": ["id", "title", "content", "location", "status", "author_id"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["id", "userName", "text"]
     }
   },
   "auth": {
     "providers": ["password", "anonymous"]
   },
   "firestore": {
-    "/users/{userId}": { "schema": { "$ref": "#/entities/User" }, "description": "User profiles" },
-    "/approved_news_posts/{id}": { "schema": { "$ref": "#/entities/NewsPost" }, "description": "Approved news" },
-    "/pending_news_posts/{id}": { "schema": { "$ref": "#/entities/NewsPost" }, "description": "Reporter submissions" },
+    "/users/{userId}": { "schema": { "$ref": "#/backend/entities/User" }, "description": "User profiles" },
+    "/users/{userId}/private/likes": { "schema": { "type": "object" }, "description": "User private liked posts" },
+    "/approved_news_posts/{id}": { "schema": { "$ref": "#/backend/entities/NewsPost" }, "description": "Approved news" },
+    "/approved_news_posts/{postId}/comments/{commentId}": { "schema": { "$ref": "#/backend/entities/Comment" }, "description": "Comments on news posts" },
+    "/pending_news_posts/{id}": { "schema": { "$ref": "#/backend/entities/NewsPost" }, "description": "Reporter submissions" },
     "/notifications/{id}": { "schema": { "type": "object" }, "description": "Push notifications history" },
     "/metadata/locations": { "schema": { "type": "object" }, "description": "App location data" },
     "/roles_admins/{uid}": { "schema": { "type": "object" }, "description": "Admin role markers" },
-    "/roles_reporters/{uid}": { "schema": { "type": "object" }, "description": "Reporter role markers" }
+    "/roles_reporters/{uid}": { "schema": { "type": "object" }, "description": "Reporter role markers" },
+    "/roles_editors/{uid}": { "schema": { "type": "object" }, "description": "Editor role markers" },
+    "/config/admin": { "schema": { "type": "object" }, "description": "Admin system configuration" }
   }
 }

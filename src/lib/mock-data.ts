@@ -1,3 +1,4 @@
+
 export const STATES = ["Telangana", "Andhra Pradesh"];
 
 export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
@@ -26,7 +27,7 @@ export type Comment = {
   id: string;
   userName: string;
   text: string;
-  timestamp: string;
+  timestamp: any;
 };
 
 export type ReporterRole = 'Reporter' | 'Sr. Reporter' | 'Desk Incharge';
@@ -35,7 +36,7 @@ export type UserProfile = {
   id: string;
   phone: string;
   name: string;
-  role: 'user' | 'reporter' | 'admin';
+  role: 'user' | 'reporter' | 'admin' | 'editor';
   status: 'pending' | 'approved' | 'rejected';
   location?: {
     state: string;

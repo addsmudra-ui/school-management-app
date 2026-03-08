@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -30,6 +31,9 @@ export type SentNotification = {
 };
 
 export const AdminService = {
+  /**
+   * Fetches the administrative password from Firestore.
+   */
   getPassword: async (db: Firestore): Promise<string | null> => {
     try {
       const docRef = doc(db, 'config', 'admin');
@@ -39,9 +43,13 @@ export const AdminService = {
       }
       return null;
     } catch (e) {
+      console.error("Error fetching admin password:", e);
       return null;
     }
   },
+  /**
+   * Updates the administrative password. Only allowed for admins via Security Rules.
+   */
   setPassword: (db: Firestore, newPassword: string) => {
     const configRef = doc(db, 'config', 'admin');
     setDocumentNonBlocking(configRef, { password: newPassword }, { merge: true });
@@ -154,6 +162,7 @@ export const UserService = {
     const roleCollectionMap = {
       'admin': 'roles_admins',
       'reporter': 'roles_reporters',
+      'editor': 'roles_editors',
       'user': null
     };
 
