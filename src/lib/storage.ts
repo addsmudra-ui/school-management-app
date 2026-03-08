@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -11,6 +10,7 @@ import {
   where, 
   orderBy, 
   getDocs,
+  limit,
   serverTimestamp,
   increment,
   arrayUnion,
@@ -22,13 +22,10 @@ import { NewsPost, UserProfile, Comment } from './mock-data';
 
 /**
  * Service for administrative configurations.
- * In a real Firebase app, this might be a 'config' document or custom claims.
- * For this prototype, we'll use a single document in a 'config' collection.
  */
 export const AdminService = {
   getPassword: async (db: Firestore): Promise<string> => {
-    // In a real app, you wouldn't store passwords in Firestore like this.
-    // This is for demonstration of the requested "admin password" feature.
+    // In a real app, this would be fetched from a protected config document.
     return 'admin123'; 
   },
   setPassword: (db: Firestore, newPassword: string) => {
@@ -56,11 +53,9 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
-    // 1. Delete from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
-    // 2. Add to approved
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -68,7 +63,6 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // 3. Trigger Notification
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చదవండి!`,
@@ -110,7 +104,6 @@ export const NewsService = {
     };
     setDocumentNonBlocking(commentDoc, commentData, { merge: true });
     
-    // Update count on post
     const postRef = doc(db, 'approved_news_posts', postId);
     updateDocumentNonBlocking(postRef, { commentsCount: increment(1) });
   }
@@ -120,6 +113,13 @@ export const NewsService = {
  * Service for User Profiles using Firestore.
  */
 export const UserService = {
+  getByPhone: async (db: Firestore, phone: string): Promise<UserProfile | null> => {
+    const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+    return querySnapshot.docs[0].data() as UserProfile;
+  },
+
   create: (db: Firestore, profile: UserProfile) => {
     const userRef = doc(db, 'users', profile.id);
     setDocumentNonBlocking(userRef, {
@@ -127,7 +127,6 @@ export const UserService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Handle role shadow collections for RBAC
     const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
                           profile.role === 'reporter' ? 'roles_reporters' : null;
     if (roleCollection) {
@@ -163,7 +162,6 @@ export const NotificationService = {
 export const LocationService = {
   addMandal: (db: Firestore, state: string, district: string, mandal: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    // Using nested objects in metadata to avoid flat structure issues
     updateDocumentNonBlocking(locRef, {
       [`${state}.${district}`]: arrayUnion(mandal)
     });

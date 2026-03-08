@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
+import { useFirestore } from "@/firebase";
 
 export default function LoginPage() {
+  const firestore = useFirestore();
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -22,73 +23,88 @@ export default function LoginPage() {
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (!firestore) return;
+
     if (step === 'phone') {
       if (!phone || phone.length < 10) return;
       
-      const existing = UserService.getByPhone(phone);
-      if (existing) {
-        if (existing.role === 'admin') {
-          // Admins need a password check
-          setStep('details');
-          setRole('admin');
+      setIsLoading(true);
+      try {
+        const existing = await UserService.getByPhone(firestore, phone);
+        if (existing) {
+          if (existing.role === 'admin') {
+            setStep('details');
+            setRole('admin');
+            return;
+          }
+          
+          localStorage.setItem('mandalPulse_role', existing.role);
+          localStorage.setItem('mandalPulse_userName', existing.name);
+          localStorage.setItem('mandalPulse_userPhone', existing.phone);
+          localStorage.setItem('mandalPulse_userStatus', existing.status);
+          
+          if (existing.location) {
+            localStorage.setItem('mandalPulse_state', existing.location.state);
+            localStorage.setItem('mandalPulse_district', existing.location.district);
+            localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
+          }
+          
+          window.dispatchEvent(new Event('mandalPulse_authChanged'));
+          router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
           return;
         }
-        
-        localStorage.setItem('mandalPulse_role', existing.role);
-        localStorage.setItem('mandalPulse_userName', existing.name);
-        localStorage.setItem('mandalPulse_userPhone', existing.phone);
-        localStorage.setItem('mandalPulse_userStatus', existing.status);
-        
-        if (existing.location) {
-          localStorage.setItem('mandalPulse_state', existing.location.state);
-          localStorage.setItem('mandalPulse_district', existing.location.district);
-          localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
-        }
-        
-        window.dispatchEvent(new Event('mandalPulse_authChanged'));
-        router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
-        return;
+        setStep('otp');
+      } finally {
+        setIsLoading(false);
       }
-      setStep('otp');
     }
-    else if (step === 'otp') setStep('details');
+    else if (step === 'otp') {
+      setStep('details');
+    }
     else {
-      if (role === 'admin') {
-        const correctPassword = AdminService.getPassword();
-        if (password !== correctPassword) {
-          toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid admin password." });
-          return;
+      setIsLoading(true);
+      try {
+        if (role === 'admin') {
+          const correctPassword = await AdminService.getPassword(firestore);
+          if (password !== correctPassword) {
+            toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid admin password." });
+            return;
+          }
         }
+
+        const newUser: UserProfile = {
+          id: role === 'admin' ? "ADM_ROOT" : "USR" + Date.now(),
+          phone,
+          name,
+          role,
+          status: role === 'reporter' ? 'pending' : 'approved',
+          location: role !== 'admin' ? { state, district, mandal } : undefined
+        };
+
+        UserService.create(firestore, newUser);
+
+        localStorage.setItem('mandalPulse_role', role);
+        localStorage.setItem('mandalPulse_userName', name);
+        localStorage.setItem('mandalPulse_userPhone', phone);
+        localStorage.setItem('mandalPulse_userStatus', newUser.status);
+        
+        if (role !== 'admin') {
+          localStorage.setItem('mandalPulse_state', state || "");
+          localStorage.setItem('mandalPulse_district', district || "");
+          localStorage.setItem('mandalPulse_mandal', mandal || "");
+        }
+
+        window.dispatchEvent(new Event('mandalPulse_authChanged'));
+        router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
+      } finally {
+        setIsLoading(false);
       }
-
-      const newUser: UserProfile = {
-        id: role === 'admin' ? "ADM_ROOT" : "USR" + Date.now(),
-        phone,
-        name,
-        role,
-        status: role === 'reporter' ? 'pending' : 'approved',
-        location: role !== 'admin' ? { state, district, mandal } : undefined
-      };
-
-      UserService.add(newUser);
-
-      localStorage.setItem('mandalPulse_role', role);
-      localStorage.setItem('mandalPulse_userName', name);
-      localStorage.setItem('mandalPulse_userPhone', phone);
-      localStorage.setItem('mandalPulse_userStatus', newUser.status);
-      
-      if (role !== 'admin') {
-        localStorage.setItem('mandalPulse_state', state);
-        localStorage.setItem('mandalPulse_district', district);
-        localStorage.setItem('mandalPulse_mandal', mandal);
-      }
-
-      window.dispatchEvent(new Event('mandalPulse_authChanged'));
-      router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
     }
   };
 
@@ -108,6 +124,7 @@ export default function LoginPage() {
               size="icon" 
               className="absolute left-4 top-4"
               onClick={() => setStep(step === 'details' ? 'otp' : 'phone')}
+              disabled={isLoading}
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
@@ -134,7 +151,9 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={phone.length < 10}>ప్రవేశించండి</Button>
+              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={phone.length < 10 || isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
+              </Button>
             </div>
           )}
 
@@ -148,7 +167,9 @@ export default function LoginPage() {
                   ))}
                 </div>
               </div>
-              <Button className="w-full h-12 text-lg" onClick={handleNext}>ధృవీకరించండి</Button>
+              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "ధృవీకరించండి"}
+              </Button>
             </div>
           )}
 
@@ -230,7 +251,9 @@ export default function LoginPage() {
                   </>
                 )}
               </div>
-              <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={!isDetailsValid()}>ప్రారంభించండి</Button>
+              <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={!isDetailsValid() || isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "ప్రారంభించండి"}
+              </Button>
             </div>
           )}
         </CardContent>
