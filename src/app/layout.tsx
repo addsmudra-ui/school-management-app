@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   title: 'MandalPulse - మీ ప్రాంతీయ వార్తలు (Local News)',
   description: 'మీ మండలం మరియు జిల్లా స్థాయి వార్తల కోసం మీ నమ్మకమైన మూలం.',
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -15,6 +14,9 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  }
 };
 
 export const viewport: Viewport = {
