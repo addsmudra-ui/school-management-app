@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -11,10 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { STATES, LOCATIONS_BY_STATE, MOCK_NEWS, NewsPost } from "@/lib/mock-data";
-import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
-import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
-import { Sparkles, Loader2, Send, Wand2, Upload, X, ImageIcon, User, Briefcase, FileText, Pencil, Trash2, Star } from "lucide-react";
+import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
+import { NewsService } from "@/lib/storage";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star } from "lucide-react";
 import Image from "next/image";
 
 export default function ReporterPage() {
@@ -26,9 +26,6 @@ export default function ReporterPage() {
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
-  const [isGeneratingHeadlines, setIsGeneratingHeadlines] = useState(false);
-  const [isSummarizing, setIsSummarizing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myNews, setMyNews] = useState<NewsPost[]>([]);
   
@@ -36,21 +33,20 @@ export default function ReporterPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // In a real app, we would filter by the current logged in reporter ID
-    setMyNews(MOCK_NEWS.filter(n => n.author_id === "REP001"));
+    const loadMyNews = () => {
+      // For demo purposes, we're considering REP001 as the current user
+      const allNews = NewsService.getAll();
+      setMyNews(allNews.filter(n => n.author_id === "REP001" || n.author_id === "NEW_REP"));
+    };
+
+    loadMyNews();
+    window.addEventListener('mandalPulse_newsChanged', loadMyNews);
+    return () => window.removeEventListener('mandalPulse_newsChanged', loadMyNews);
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.match('image/jpe?g')) {
-      toast({ title: "Error", description: "JPG/JPEG మాత్రమే అనుమతించబడతాయి.", variant: "destructive" });
-      return;
-    }
-    if (file.size > 1024 * 1024) {
-      toast({ title: "Error", description: "చిత్రం 1MB కంటే తక్కువ ఉండాలి.", variant: "destructive" });
-      return;
-    }
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
@@ -65,10 +61,14 @@ export default function ReporterPage() {
     setMandal(post.location.mandal);
     setImagePreview(post.image_url);
     setActiveTab("submit");
-    toast({ title: "ఎడిట్ మోడ్", description: "వార్తలను నవీకరించండి." });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleDelete = (id: string) => {
+    NewsService.delete(id);
+    toast({ title: "వార్త తొలగించబడింది", variant: "destructive" });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content || !state || !district || !mandal || !imagePreview) {
       toast({ title: "Error", description: "అన్ని ఫీల్డ్‌లు తప్పనిసరి.", variant: "destructive" });
@@ -76,37 +76,30 @@ export default function ReporterPage() {
     }
     setIsSubmitting(true);
     
-    // Simulate API call
     setTimeout(() => {
-      const uniqueCode = editingId ? myNews.find(n => n.id === editingId)?.unique_code || "55555" : Math.floor(10000 + Math.random() * 90000).toString();
-      
-      const newPost: NewsPost = {
+      const post: NewsPost = {
         id: editingId || Date.now().toString(),
-        unique_code: uniqueCode,
+        unique_code: editingId ? (myNews.find(n => n.id === editingId)?.unique_code || "00000") : Math.floor(10000 + Math.random() * 90000).toString(),
         title,
         content,
         image_url: imagePreview,
         location: { state, district, mandal },
         status: 'pending',
         author_id: "REP001",
-        author_name: "రాహుల్ కుమార్",
+        author_name: localStorage.getItem('mandalPulse_userName') || "రాహుల్ కుమార్",
         timestamp: new Date().toISOString(),
         engagement: { likes: 0, comments: 0, commentList: [] }
       };
 
       if (editingId) {
-        setMyNews(prev => prev.map(n => n.id === editingId ? newPost : n));
+        NewsService.update(editingId, post);
       } else {
-        setMyNews(prev => [newPost, ...prev]);
+        NewsService.add(post);
       }
 
       setIsSubmitting(false);
-      toast({ 
-        title: editingId ? "వార్తలు నవీకరించబడ్డాయి" : "వార్తలు సమర్పించబడ్డాయి", 
-        description: `స్టేటస్: పెండింగ్. కోడ్: ${uniqueCode}` 
-      });
+      toast({ title: editingId ? "వార్తలు నవీకరించబడ్డాయి" : "వార్తలు సమర్పించబడ్డాయి" });
       
-      // Reset form
       setEditingId(null);
       setTitle("");
       setContent("");
@@ -114,8 +107,7 @@ export default function ReporterPage() {
       setDistrict("");
       setMandal("");
       setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }, 1200);
+    }, 1000);
   };
 
   const getStatusBadge = (status: string) => {
@@ -180,10 +172,7 @@ export default function ReporterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label>వార్త ముఖ్యాంశం</Label>
-                    <Button variant="ghost" size="sm" className="h-7 text-accent" onClick={() => setTitle("AI Generating...")}><Sparkles className="w-3 h-3 mr-1"/>AI</Button>
-                  </div>
+                  <Label>వార్త ముఖ్యాంశం</Label>
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ముఖ్యాంశం" />
                 </div>
 
@@ -235,11 +224,11 @@ export default function ReporterPage() {
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-mono text-muted-foreground">CODE: {post.unique_code}</span>
+                            <span className="text-[10px] font-mono text-muted-foreground uppercase">CODE: {post.unique_code}</span>
                             {getStatusBadge(post.status)}
                           </div>
                           <h3 className="font-bold text-lg line-clamp-1">{post.title}</h3>
-                          <div className="flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <p className="text-xs text-muted-foreground">
                               {post.location.mandal}, {post.location.district} • {new Date(post.timestamp).toLocaleDateString()}
                             </p>
@@ -261,7 +250,7 @@ export default function ReporterPage() {
                           <Button variant="outline" size="sm" onClick={() => handleEdit(post)} disabled={post.status === 'approved'}>
                             <Pencil className="w-3 h-3 mr-1" /> ఎడిట్
                           </Button>
-                          <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/5 border-destructive/20">
+                          <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/5 border-destructive/20" onClick={() => handleDelete(post.id)}>
                             <Trash2 className="w-3 h-3 mr-1" /> డిలీట్
                           </Button>
                         </div>

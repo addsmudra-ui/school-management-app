@@ -1,13 +1,15 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Clock, Star, Edit3, Save, User as UserIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { MOCK_NEWS, NewsPost, ReporterRole } from "@/lib/mock-data";
+import { NewsPost, ReporterRole } from "@/lib/mock-data";
+import { NewsService } from "@/lib/storage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,19 +17,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 
 export default function ApprovalsPage() {
-  const [news, setNews] = useState<NewsPost[]>(MOCK_NEWS);
+  const [news, setNews] = useState<NewsPost[]>([]);
   const [editingPost, setEditingPost] = useState<NewsPost | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleAction = (id: string, action: 'approve' | 'reject') => {
-    setNews(prev => prev.map(item => {
-      if (item.id === id) {
-        return { ...item, status: action === 'approve' ? 'approved' : 'rejected' };
-      }
-      return item;
-    }));
+  useEffect(() => {
+    setNews(NewsService.getAll());
+    
+    const handleUpdate = () => setNews(NewsService.getAll());
+    window.addEventListener('mandalPulse_newsChanged', handleUpdate);
+    return () => window.removeEventListener('mandalPulse_newsChanged', handleUpdate);
+  }, []);
 
+  const handleAction = (id: string, action: 'approve' | 'reject') => {
+    NewsService.update(id, { status: action === 'approve' ? 'approved' : 'rejected' });
     toast({
       title: action === 'approve' ? "Approved (Success)" : "Rejected",
       description: `వార్తలు విజయవంతంగా ${action === 'approve' ? 'ఆమోదించబడ్డాయి' : 'తిరస్కరించబడ్డాయి'}.`,
@@ -42,7 +46,7 @@ export default function ApprovalsPage() {
 
   const handleSaveEdit = () => {
     if (!editingPost) return;
-    setNews(prev => prev.map(n => n.id === editingPost.id ? editingPost : n));
+    NewsService.update(editingPost.id, editingPost);
     setIsEditDialogOpen(false);
     toast({
       title: "వార్త సేవ్ చేయబడింది",
@@ -52,8 +56,7 @@ export default function ApprovalsPage() {
 
   const handleApproveFromEdit = () => {
     if (!editingPost) return;
-    const updatedPost = { ...editingPost, status: 'approved' as const };
-    setNews(prev => prev.map(n => n.id === updatedPost.id ? updatedPost : n));
+    NewsService.update(editingPost.id, { ...editingPost, status: 'approved' });
     setIsEditDialogOpen(false);
     toast({
       title: "Approved (Success)",
@@ -84,7 +87,7 @@ export default function ApprovalsPage() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4">ముఖ్యాంశం (Headline)</TableHead>
+                <TableHead className="font-bold py-4 pl-6">ముఖ్యాంశం (Headline)</TableHead>
                 <TableHead className="font-bold">రిపోర్టర్</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold">ID / కోడ్</TableHead>
@@ -153,7 +156,6 @@ export default function ApprovalsPage() {
         </CardContent>
       </Card>
 
-      {/* Edit & Approve Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>

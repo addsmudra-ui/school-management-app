@@ -1,16 +1,18 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell } from "lucide-react";
-import { MOCK_NEWS } from "@/lib/mock-data";
+import { NewsPost } from "@/lib/mock-data";
+import { NewsService } from "@/lib/storage";
 import { 
   ChartContainer, 
   ChartTooltip, 
   ChartTooltipContent 
 } from "@/components/ui/chart";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
 
 const chartData = [
@@ -24,7 +26,15 @@ const chartData = [
 ];
 
 export default function AdminDashboard() {
-  const [news] = useState(MOCK_NEWS);
+  const [news, setNews] = useState<NewsPost[]>([]);
+  
+  useEffect(() => {
+    setNews(NewsService.getAll());
+    
+    const handleUpdate = () => setNews(NewsService.getAll());
+    window.addEventListener('mandalPulse_newsChanged', handleUpdate);
+    return () => window.removeEventListener('mandalPulse_newsChanged', handleUpdate);
+  }, []);
   
   const pending = news.filter(n => n.status === 'pending');
   const approved = news.filter(n => n.status === 'approved');
@@ -49,7 +59,7 @@ export default function AdminDashboard() {
           icon={Newspaper} 
           color="text-primary" 
           bgColor="bg-primary/10"
-          desc="+12% since last week"
+          desc={`+${Math.floor(Math.random() * 20)}% since last week`}
         />
         <StatsCard 
           title="పెండింగ్ రివ్యూలు" 
@@ -57,7 +67,7 @@ export default function AdminDashboard() {
           icon={Clock} 
           color="text-amber-500" 
           bgColor="bg-amber-500/10"
-          desc="Action required"
+          desc={pending.length > 0 ? "Action required" : "All caught up"}
         />
         <StatsCard 
           title="యాక్టివ్ రిపోర్టర్లు" 
@@ -103,17 +113,21 @@ export default function AdminDashboard() {
             <CardDescription>చివరిగా ఆమోదించబడిన వార్తలు.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {approved.slice(0, 3).map((post) => (
-              <div key={post.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/30 transition-colors">
-                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            {approved.length > 0 ? (
+              approved.slice(0, 5).map((post) => (
+                <div key={post.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/30 transition-colors">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate">{post.title}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">{post.author_name} • {post.location.mandal}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold truncate">{post.title}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">{post.author_name} • {post.location.mandal}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-center py-8 text-muted-foreground italic">ఇంకా ఆమోదాలు ఏవీ లేవు.</p>
+            )}
           </CardContent>
         </Card>
       </div>
