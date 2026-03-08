@@ -1,10 +1,10 @@
-
 "use client";
 
-import { NewsPost, MOCK_NEWS } from "./mock-data";
+import { NewsPost, MOCK_NEWS, UserProfile, MOCK_USERS } from "./mock-data";
 
-const STORAGE_KEY = 'mandalPulse_news_v1';
+const STORAGE_KEY = 'mandalPulse_news_v2';
 const LIKES_KEY = 'mandalPulse_liked_posts';
+const USERS_KEY = 'mandalPulse_users_v1';
 
 export const NewsService = {
   getAll: (): NewsPost[] => {
@@ -58,5 +58,53 @@ export const NewsService = {
     localStorage.setItem(LIKES_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event('mandalPulse_likesChanged'));
     return !isLiked;
+  }
+};
+
+export const UserService = {
+  getAll: (): UserProfile[] => {
+    if (typeof window === 'undefined') return MOCK_USERS;
+    const stored = localStorage.getItem(USERS_KEY);
+    if (!stored) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(MOCK_USERS));
+      return MOCK_USERS;
+    }
+    return JSON.parse(stored);
+  },
+
+  save: (users: UserProfile[]) => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    window.dispatchEvent(new Event('mandalPulse_usersChanged'));
+  },
+
+  add: (user: UserProfile) => {
+    const users = UserService.getAll();
+    // Check if user already exists by phone
+    const exists = users.find(u => u.phone === user.phone);
+    if (exists) return exists;
+    
+    const updated = [...users, user];
+    UserService.save(updated);
+    return user;
+  },
+
+  update: (id: string, updates: Partial<UserProfile>) => {
+    const users = UserService.getAll();
+    const updated = users.map(u => u.id === id ? { ...u, ...updates } : u);
+    UserService.save(updated);
+    
+    // If the updated user is the current user, update localStorage auth
+    const currentPhone = localStorage.getItem('mandalPulse_userPhone');
+    const updatedUser = updated.find(u => u.id === id);
+    if (updatedUser && updatedUser.phone === currentPhone) {
+      localStorage.setItem('mandalPulse_userStatus', updatedUser.status);
+      window.dispatchEvent(new Event('mandalPulse_authChanged'));
+    }
+  },
+
+  getByPhone: (phone: string): UserProfile | undefined => {
+    const users = UserService.getAll();
+    return users.find(u => u.phone === phone);
   }
 };

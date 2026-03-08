@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -13,8 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
-import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star } from "lucide-react";
+import { NewsService, UserService } from "@/lib/storage";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock } from "lucide-react";
 import Image from "next/image";
 
 export default function ReporterPage() {
@@ -28,20 +27,31 @@ export default function ReporterPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myNews, setMyNews] = useState<NewsPost[]>([]);
+  const [userStatus, setUserStatus] = useState<string>("pending");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadMyNews = () => {
-      // For demo purposes, we're considering REP001 as the current user
-      const allNews = NewsService.getAll();
-      setMyNews(allNews.filter(n => n.author_id === "REP001" || n.author_id === "NEW_REP"));
+    const phone = localStorage.getItem('mandalPulse_userPhone');
+    const loadData = () => {
+      if (phone) {
+        const user = UserService.getByPhone(phone);
+        if (user) {
+          setUserStatus(user.status);
+          const allNews = NewsService.getAll();
+          setMyNews(allNews.filter(n => n.author_id === user.id || n.author_id === "REP001"));
+        }
+      }
     };
 
-    loadMyNews();
-    window.addEventListener('mandalPulse_newsChanged', loadMyNews);
-    return () => window.removeEventListener('mandalPulse_newsChanged', loadMyNews);
+    loadData();
+    window.addEventListener('mandalPulse_newsChanged', loadData);
+    window.addEventListener('mandalPulse_usersChanged', loadData);
+    return () => {
+      window.removeEventListener('mandalPulse_newsChanged', loadData);
+      window.removeEventListener('mandalPulse_usersChanged', loadData);
+    };
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,12 +80,17 @@ export default function ReporterPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (userStatus !== 'approved') return;
+
     if (!title || !content || !state || !district || !mandal || !imagePreview) {
       toast({ title: "Error", description: "అన్ని ఫీల్డ్‌లు తప్పనిసరి.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
     
+    const phone = localStorage.getItem('mandalPulse_userPhone') || "";
+    const user = UserService.getByPhone(phone);
+
     setTimeout(() => {
       const post: NewsPost = {
         id: editingId || Date.now().toString(),
@@ -85,8 +100,8 @@ export default function ReporterPage() {
         image_url: imagePreview,
         location: { state, district, mandal },
         status: 'pending',
-        author_id: "REP001",
-        author_name: localStorage.getItem('mandalPulse_userName') || "రాహుల్ కుమార్",
+        author_id: user?.id || "REP_NEW",
+        author_name: user?.name || "రాహుల్ కుమార్",
         timestamp: new Date().toISOString(),
         engagement: { likes: 0, comments: 0, commentList: [] }
       };
@@ -117,6 +132,41 @@ export default function ReporterPage() {
       default: return <Badge variant="secondary" className="bg-amber-100 text-amber-700">Pending Review</Badge>;
     }
   };
+
+  if (userStatus === 'pending') {
+    return (
+      <main className="min-h-screen bg-background pt-20">
+        <Navbar />
+        <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-6">
+          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10 text-amber-600 animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold font-headline">ప్రొఫైల్ ఆమోదం కోసం వేచి ఉంది</h1>
+            <p className="text-muted-foreground">
+              మీ రిపోర్టర్ ప్రొఫైల్ ప్రస్తుతం అడ్మిన్ పరిశీలనలో ఉంది. ఆమోదం పొందిన తర్వాత మీరు వార్తలను సమర్పించగలరు.
+            </p>
+          </div>
+          <Card className="border-none shadow-md p-6 bg-white">
+            <div className="text-left space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                <span className="text-sm font-medium">మీ అభ్యర్థన సమర్పించబడింది.</span>
+              </div>
+              <div className="flex items-center gap-3 opacity-50">
+                <div className="w-2 h-2 bg-slate-300 rounded-full" />
+                <span className="text-sm font-medium">అడ్మిన్ మీ వివరాలను ధృవీకరిస్తున్నారు.</span>
+              </div>
+              <div className="flex items-center gap-3 opacity-50">
+                <div className="w-2 h-2 bg-slate-300 rounded-full" />
+                <span className="text-sm font-medium">ఆమోదం పొందిన తర్వాత వార్తలు రాయవచ్చు.</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background pt-20 pb-24 md:pb-8">

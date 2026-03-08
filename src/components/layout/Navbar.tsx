@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -9,6 +8,7 @@ import { useState, useEffect, useCallback } from "react";
 export function Navbar() {
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | null>(null);
   const [userName, setUserName] = useState<string>("");
+  const [userStatus, setUserStatus] = useState<string>("");
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [location, setLocation] = useState({ mandal: "", district: "" });
 
@@ -23,9 +23,11 @@ export function Navbar() {
     if (typeof window === 'undefined') return;
     const savedRole = localStorage.getItem('mandalPulse_role') as any;
     const savedName = localStorage.getItem('mandalPulse_userName');
+    const savedStatus = localStorage.getItem('mandalPulse_userStatus');
     const savedPhoto = localStorage.getItem('mandalPulse_userPhoto');
     setRole(savedRole || 'user');
     setUserName(savedName || "");
+    setUserStatus(savedStatus || "");
     setUserPhoto(savedPhoto || null);
   }, []);
 
@@ -45,6 +47,8 @@ export function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem('mandalPulse_role');
     localStorage.removeItem('mandalPulse_userName');
+    localStorage.removeItem('mandalPulse_userPhone');
+    localStorage.removeItem('mandalPulse_userStatus');
     localStorage.removeItem('mandalPulse_state');
     localStorage.removeItem('mandalPulse_district');
     localStorage.removeItem('mandalPulse_mandal');
@@ -55,6 +59,8 @@ export function Navbar() {
     window.dispatchEvent(new Event('mandalPulse_authChanged'));
     window.location.href = '/login';
   };
+
+  const canPost = role === 'admin' || (role === 'reporter' && userStatus === 'approved');
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted h-16 md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-sm">
@@ -76,7 +82,7 @@ export function Navbar() {
             <span className="text-[10px] md:text-sm font-semibold">Home</span>
           </Link>
 
-          {(role === 'reporter' || role === 'admin') && (
+          {canPost && (
             <Link href="/reporter" className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
               <PlusCircle className="w-5 h-5" />
               <span className="text-[10px] md:text-sm font-semibold">Post</span>

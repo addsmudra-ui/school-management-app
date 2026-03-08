@@ -31,6 +31,20 @@ export type Comment = {
 
 export type ReporterRole = 'Reporter' | 'Sr. Reporter' | 'Desk Incharge';
 
+export type UserProfile = {
+  id: string;
+  phone: string;
+  name: string;
+  role: 'user' | 'reporter' | 'admin';
+  status: 'pending' | 'approved' | 'rejected';
+  location?: {
+    state: string;
+    district: string;
+    mandal: string;
+  };
+  photo?: string;
+};
+
 export type NewsPost = {
   id: string;
   unique_code: string;
@@ -55,6 +69,24 @@ export type NewsPost = {
   };
 };
 
+export const MOCK_USERS: UserProfile[] = [
+  {
+    id: "REP001",
+    phone: "9876543210",
+    name: "రాహుల్ కుమార్",
+    role: "reporter",
+    status: "approved",
+    location: { state: "Telangana", district: "Warangal", mandal: "Hanamkonda" }
+  },
+  {
+    id: "ADM001",
+    phone: "9999999999",
+    name: "Admin Office",
+    role: "admin",
+    status: "approved"
+  }
+];
+
 export const MOCK_NEWS: NewsPost[] = [
   {
     id: "1",
@@ -76,18 +108,5 @@ export const MOCK_NEWS: NewsPost[] = [
         { id: "c1", userName: "Srinivas", text: "చాలా మంచి వార్త!", timestamp: "10 mins ago" }
       ]
     }
-  },
-  {
-    id: "2",
-    unique_code: "88293",
-    title: "కాజీపేట జంక్షన్ ఆధునీకరణ పనులు ప్రారంభం",
-    content: "కాజీపేట రైల్వే జంక్షన్ ఆధునీకరణ పనులు ఈ ఉదయం ప్రారంభమయ్యాయి. ఈ ప్రాజెక్ట్ ప్రయాణీకుల సౌకర్యాలను మెరుగుపరచడం మరియు రాబోయే రెండేళ్లలో సామర్థ్యాన్ని విస్తరించడం లక్ష్యంగా పెట్టుకుంది.",
-    image_url: "https://picsum.photos/seed/kazipet/800/600",
-    location: { state: "Telangana", district: "Warangal", mandal: "Kazipet" },
-    status: "pending",
-    author_id: "REP001",
-    author_name: "రాహుల్ కుమార్",
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    engagement: { likes: 0, comments: 0, commentList: [] }
   }
 ];

@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
+import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
+import { UserService } from "@/lib/storage";
 
 export default function LoginPage() {
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState("user");
+  const [role, setRole] = useState<'user' | 'reporter' | 'admin'>("user");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
@@ -23,22 +24,51 @@ export default function LoginPage() {
   const handleNext = () => {
     if (step === 'phone') {
       if (!phone || phone.length < 10) return;
+      
+      // Check if user exists
+      const existing = UserService.getByPhone(phone);
+      if (existing) {
+        // Simple mock: log them in immediately if they exist
+        localStorage.setItem('mandalPulse_role', existing.role);
+        localStorage.setItem('mandalPulse_userName', existing.name);
+        localStorage.setItem('mandalPulse_userPhone', existing.phone);
+        localStorage.setItem('mandalPulse_userStatus', existing.status);
+        
+        if (existing.location) {
+          localStorage.setItem('mandalPulse_state', existing.location.state);
+          localStorage.setItem('mandalPulse_district', existing.location.district);
+          localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
+        }
+        
+        window.dispatchEvent(new Event('mandalPulse_authChanged'));
+        router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
+        return;
+      }
       setStep('otp');
     }
     else if (step === 'otp') setStep('details');
     else {
+      // Register new user
+      const newUser: UserProfile = {
+        id: "USR" + Date.now(),
+        phone,
+        name,
+        role,
+        status: role === 'reporter' ? 'pending' : 'approved',
+        location: role !== 'admin' ? { state, district, mandal } : undefined
+      };
+
+      UserService.add(newUser);
+
       localStorage.setItem('mandalPulse_role', role);
-      localStorage.setItem('mandalPulse_userName', name || 'User');
+      localStorage.setItem('mandalPulse_userName', name);
+      localStorage.setItem('mandalPulse_userPhone', phone);
+      localStorage.setItem('mandalPulse_userStatus', newUser.status);
       
-      // Admin doesn't require location storage for operation
       if (role !== 'admin') {
         localStorage.setItem('mandalPulse_state', state);
         localStorage.setItem('mandalPulse_district', district);
         localStorage.setItem('mandalPulse_mandal', mandal);
-      } else {
-        localStorage.removeItem('mandalPulse_state');
-        localStorage.removeItem('mandalPulse_district');
-        localStorage.removeItem('mandalPulse_mandal');
       }
 
       window.dispatchEvent(new Event('mandalPulse_authChanged'));
@@ -88,7 +118,7 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={phone.length < 10}>OTP పంపండి</Button>
+              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={phone.length < 10}>ప్రవేశించండి</Button>
             </div>
           )}
 
@@ -115,7 +145,7 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>నేను ఒక... (I am a...)</Label>
-                  <Select onValueChange={setRole} value={role}>
+                  <Select onValueChange={(v: any) => setRole(v)} value={role}>
                     <SelectTrigger className="h-11">
                       <SelectValue />
                     </SelectTrigger>
