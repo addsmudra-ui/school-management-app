@@ -4,7 +4,7 @@ service cloud.firestore {
     
     /**
      * MANDALPULSE SECURITY RULES
-     * Deployment Trigger: 2024-05-23T11:00:00Z - Permission Denied Fix
+     * Deployment Trigger: 2024-05-24T12:00:00Z - Fixed Admin permissions for user management
      */
 
     // --- HELPER FUNCTIONS ---
@@ -41,7 +41,6 @@ service cloud.firestore {
 
     // Reporter drafts and moderation queue
     match /pending_news_posts/{newsPostId} {
-      // Allow read if user is the author or is staff
       allow read: if isSignedIn() && (resource == null || resource.data.author_id == request.auth.uid || isStaff());
       allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
       allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
@@ -51,8 +50,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Allow creation if it's the user themselves OR an admin
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Allow updates if it's the user themselves OR an admin
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Explicitly allow admins to delete users
+      allow delete: if isAdmin();
       
       match /private/{docId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;

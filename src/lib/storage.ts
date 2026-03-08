@@ -170,6 +170,17 @@ export const UserService = {
   update: (db: Firestore, userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, 'users', userId);
     updateDocumentNonBlocking(userRef, data);
+  },
+
+  delete: (db: Firestore, userId: string) => {
+    // Delete from users collection
+    const userRef = doc(db, 'users', userId);
+    deleteDocumentNonBlocking(userRef);
+
+    // Also attempt to delete role markers
+    deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
+    deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
+    deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
   }
 };
 

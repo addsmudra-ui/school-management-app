@@ -48,15 +48,25 @@ export default function AdminUsers() {
     });
   };
 
+  const handleDeleteUser = (id: string, name: string) => {
+    if (!firestore) return;
+    if (confirm(`${name} అకౌంట్‌ను తొలగించాలనుకుంటున్నారా?`)) {
+      UserService.delete(firestore, id);
+      toast({
+        title: "User Deleted",
+        description: `${name} విజయవంతంగా తొలగించబడ్డారు.`,
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAddUser = async () => {
     if (!firestore || !newName || !newPhone || !newState || !newDistrict || !newMandal) {
       toast({ title: "Error", description: "All fields are required", variant: "destructive" });
       return;
     }
 
-    // Since we are creating manually, we don't have a UID. 
-    // In a real flow, the user would sign up and we'd update their profile.
-    // For admin-driven creation, we'll use the phone as a temporary ID.
+    // For admin-driven creation, we use the phone as a unique ID prefix if UID is not known
     const newUser: UserProfile = {
       id: "REP_" + newPhone,
       name: newName,
@@ -66,16 +76,20 @@ export default function AdminUsers() {
       location: { state: newState, district: newDistrict, mandal: newMandal }
     };
 
-    await UserService.create(firestore, newUser);
-    setIsAddDialogOpen(false);
-    toast({ title: "Success", description: "కొత్త రిపోర్టర్ విజయవంతంగా సృష్టించబడ్డారు." });
-    
-    // Reset
-    setNewName("");
-    setNewPhone("");
-    setNewState("");
-    setNewDistrict("");
-    setNewMandal("");
+    try {
+      await UserService.create(firestore, newUser);
+      setIsAddDialogOpen(false);
+      toast({ title: "Success", description: "కొత్త రిపోర్టర్ విజయవంతంగా సృష్టించబడ్డారు." });
+      
+      // Reset
+      setNewName("");
+      setNewPhone("");
+      setNewState("");
+      setNewDistrict("");
+      setNewMandal("");
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
   };
 
   const filtered = users?.filter(u => 
@@ -221,6 +235,7 @@ export default function AdminUsers() {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteUser(user.id, user.name)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
