@@ -41,7 +41,8 @@ function NewsFeedContent() {
 
   const newsQuery = useMemoFirebase(() => {
     // CRITICAL: Guard against running the query before auth is fully ready to prevent permission errors
-    if (!firestore || !selectedDistrict || isUserLoading || !user || !user.uid) return null;
+    // We strictly check for user.uid to ensure the anonymous or real session is active
+    if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) return null;
     
     // Build query for approved news
     let q = query(
@@ -57,7 +58,7 @@ function NewsFeedContent() {
     }
 
     return q;
-  }, [firestore, selectedDistrict, selectedMandal, user, isUserLoading]);
+  }, [firestore, selectedDistrict, selectedMandal, user?.uid, isUserLoading]);
 
   const { data: news, isLoading } = useCollection(newsQuery);
 

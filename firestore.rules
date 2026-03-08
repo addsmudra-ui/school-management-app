@@ -5,20 +5,20 @@ service cloud.firestore {
     /**
      * MANDALPULSE SECURITY RULES
      *
-     * Ensures robust login lookup and role-based access.
-     * Deployment Trigger: 2024-05-21T11:00:00Z
+     * Robust role-based access control with explicit list permissions.
+     * Deployment Trigger: 2024-05-21T14:30:00Z
      */
 
     // --- HELPER FUNCTIONS ---
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Checking roles via your dedicated collections
+    // Role verification via dedicated collections
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
     }
@@ -38,10 +38,10 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     match /users/{userId} {
-      // Allow get for any signed in user (needed for profile fetching)
+      // Allow individual lookups for profile fetching
       allow get: if isSignedIn();
-      // Only admins can see the full user list for management
-      allow list: if isAdmin(); 
+      // Allow querying by phone number during login lookup
+      allow list: if isSignedIn();
       // Users can only create their own profile matching their Auth UID
       allow create: if isOwner(userId);
       // Updates allowed by owner or admin
@@ -54,15 +54,13 @@ service cloud.firestore {
       }
     }
 
-    // Role verification (Required for the exists() checks above)
-    // We allow read to any signed-in user to allow the app to verify roles client-side if needed,
-    // but restricted write to admins only.
+    // Role verification docs
     match /roles_admins/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /roles_editors/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /roles_reporters/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
     match /pending_news_posts/{newsPostId} {
-      // Staff can see all pending posts; Reporters can only see their own drafts
+      // Staff see all; Reporters see only their own drafts
       allow read: if isSignedIn() && (isOwner(resource.data.author_id) || isStaff());
       // Only approved reporters can create new posts
       allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
@@ -71,8 +69,8 @@ service cloud.firestore {
     }
 
     match /approved_news_posts/{newsPostId} {
-      // Publicly readable by all authenticated users
-      allow read: if isSignedIn(); 
+      // Publicly readable by all authenticated (including anonymous) users
+      allow get, list: if isSignedIn(); 
       // Only editors and admins can manage approved content
       allow create, update, delete: if isStaff();
 
@@ -82,18 +80,23 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
         // Users can edit their own comments
         allow update: if isSignedIn() && resource.data.author_id == request.auth.uid;
-        // Users can delete their own comments, and admins can moderate them
+        // Users can delete their own comments, and admins can moderate
         allow delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin());
       }
     }
 
     match /notifications/{notifId} {
-      allow read: if isSignedIn();
+      allow get, list: if isSignedIn();
       allow create: if isStaff();
       allow update, delete: if isAdmin();
     }
 
     match /metadata/{docId} {
+      allow get: if isSignedIn();
+      allow list, write: if isAdmin();
+    }
+
+    match /config/{docId} {
       allow get: if isSignedIn();
       allow list, write: if isAdmin();
     }
