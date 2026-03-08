@@ -32,6 +32,7 @@ function NewsFeedContent() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
     setSelectedDistrict(savedDistrict);
@@ -39,9 +40,9 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL: Ensure firestore, location, and user are fully ready.
-    // The user must be signed in (anonymous or identified) to satisfy security rules.
-    if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) {
+    // CRITICAL GUARD: Only initiate query if firestore is ready, user is fully authenticated (UID present),
+    // and district is selected. This prevents "Missing Permissions" errors during initial hydration.
+    if (!firestore || isUserLoading || !user?.uid || !selectedDistrict) {
       return null;
     }
     

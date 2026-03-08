@@ -1,10 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     /**
      * MANDALPULSE SECURITY RULES
-     * Deployment Trigger: 2024-05-23T10:00:00Z - Permission Denied Fix
+     * Deployment Trigger: 2024-05-23T11:00:00Z - Permission Denied Fix
      */
 
     // --- HELPER FUNCTIONS ---
@@ -12,17 +12,8 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Role verification via dedicated collections
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admins/$(request.auth.uid));
-    }
-
-    function isEditor() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid));
     }
 
     function isReporter() {
@@ -30,38 +21,13 @@ service cloud.firestore {
     }
 
     function isStaff() {
-      return isAdmin() || isEditor();
+      return isAdmin() || exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid));
     }
 
     // --- COLLECTION RULES ---
 
-    match /users/{userId} {
-      allow get: if isSignedIn();
-      // Allow list for login lookups and admins
-      allow list: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
-
-      match /private/{docId} {
-        allow read, write: if isOwner(userId);
-      }
-    }
-
-    // Role verification docs
-    match /roles_admins/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /roles_editors/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /roles_reporters/{userId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-
-    match /pending_news_posts/{newsPostId} {
-      // Staff see all; Reporters see only their own drafts
-      allow read: if isSignedIn() && (resource == null || resource.data.author_id == request.auth.uid || isStaff());
-      allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
-      allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
-    }
-
+    // Publicly readable news for all signed-in users (including anonymous)
     match /approved_news_posts/{newsPostId} {
-      // Publicly readable by all authenticated (including anonymous) users
       allow read: if isSignedIn(); 
       allow create, update, delete: if isStaff();
 
@@ -73,20 +39,33 @@ service cloud.firestore {
       }
     }
 
-    match /notifications/{notifId} {
-      allow read: if isSignedIn();
-      allow create: if isStaff();
-      allow update, delete: if isAdmin();
+    // Reporter drafts and moderation queue
+    match /pending_news_posts/{newsPostId} {
+      // Allow read if user is the author or is staff
+      allow read: if isSignedIn() && (resource == null || resource.data.author_id == request.auth.uid || isStaff());
+      allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
     }
 
-    match /metadata/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+    // User profiles and role lookups
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      
+      match /private/{docId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
-    match /config/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
+    match /roles_admins/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /roles_editors/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /roles_reporters/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+
+    // System notifications and metadata
+    match /notifications/{id} { allow read: if isSignedIn(); allow write: if isStaff(); }
+    match /metadata/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /config/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
   }
 }
