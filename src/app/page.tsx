@@ -3,7 +3,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense } from "react";
-import { Newspaper, MapPin, SlidersHorizontal } from "lucide-react";
+import { Newspaper, MapPin, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
@@ -40,8 +40,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL: Guard against running the query before auth is fully ready to prevent permission errors
-    // We strictly check for user.uid to ensure the anonymous or real session is active
+    // CRITICAL: Ensure we have a valid auth UID before running the query
+    // This prevents permission errors during initial anonymous sign-in
     if (!firestore || !selectedDistrict || isUserLoading || !user?.uid) return null;
     
     // Build query for approved news
@@ -74,7 +74,7 @@ function NewsFeedContent() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
-          <Newspaper className="w-12 h-12 text-primary animate-pulse" />
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
           <p className="text-primary font-medium">వార్తలు లోడ్ అవుతున్నాయి...</p>
         </div>
       </div>
@@ -93,7 +93,7 @@ function NewsFeedContent() {
             <div>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">మీ ప్రాంతం</p>
               <h2 className="text-sm font-bold flex items-center gap-1">
-                {selectedMandal === "All" ? "అన్ని మండలాలు" : selectedMandal}, {selectedDistrict}
+                {selectedMandal === "All" || !selectedMandal ? "అన్ని మండలాలు" : selectedMandal}, {selectedDistrict}
               </h2>
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function Home() {
       <Navbar />
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-screen bg-background">
-          <Newspaper className="w-12 h-12 text-primary animate-pulse" />
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>
       }>
         <NewsFeedContent />

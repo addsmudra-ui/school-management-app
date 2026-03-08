@@ -6,11 +6,12 @@ service cloud.firestore {
      * MANDALPULSE SECURITY RULES
      *
      * Robust role-based access control with explicit list permissions.
-     * Deployment Trigger: 2024-05-21T14:30:00Z
+     * Deployment Trigger: 2024-05-21T16:45:00Z - Permission Fix
      */
 
     // --- HELPER FUNCTIONS ---
     function isSignedIn() {
+      // Robust check for authentication session
       return request.auth != null && request.auth.uid != null;
     }
 
@@ -40,8 +41,8 @@ service cloud.firestore {
     match /users/{userId} {
       // Allow individual lookups for profile fetching
       allow get: if isSignedIn();
-      // Allow querying by phone number during login lookup
-      allow list: if isSignedIn();
+      // Allow list for admins to manage users
+      allow list: if isAdmin();
       // Users can only create their own profile matching their Auth UID
       allow create: if isOwner(userId);
       // Updates allowed by owner or admin
@@ -70,7 +71,7 @@ service cloud.firestore {
 
     match /approved_news_posts/{newsPostId} {
       // Publicly readable by all authenticated (including anonymous) users
-      allow get, list: if isSignedIn(); 
+      allow read: if isSignedIn(); 
       // Only editors and admins can manage approved content
       allow create, update, delete: if isStaff();
 
@@ -86,7 +87,7 @@ service cloud.firestore {
     }
 
     match /notifications/{notifId} {
-      allow get, list: if isSignedIn();
+      allow read: if isSignedIn();
       allow create: if isStaff();
       allow update, delete: if isAdmin();
     }
