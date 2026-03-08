@@ -29,9 +29,6 @@ export type SentNotification = {
   timestamp: any;
 };
 
-/**
- * Service for administrative configurations.
- */
 export const AdminService = {
   getPassword: async (db: Firestore): Promise<string> => {
     try {
@@ -42,7 +39,6 @@ export const AdminService = {
       }
       return DEFAULT_ADMIN_PASSWORD;
     } catch (e) {
-      console.error("Error fetching admin password:", e);
       return DEFAULT_ADMIN_PASSWORD;
     }
   },
@@ -52,9 +48,6 @@ export const AdminService = {
   }
 };
 
-/**
- * Service for News Management using Firestore.
- */
 export const NewsService = {
   add: (db: Firestore, post: Omit<NewsPost, 'id' | 'timestamp'>) => {
     const newsRef = collection(db, 'pending_news_posts');
@@ -76,11 +69,9 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
-    // Delete from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
-    // Add to approved
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -88,7 +79,6 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Send push notification locally in Firestore
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చదవండి!`,
@@ -135,9 +125,6 @@ export const NewsService = {
   }
 };
 
-/**
- * Service for User Profiles using Firestore.
- */
 export const UserService = {
   getByPhone: async (db: Firestore, phone: string): Promise<UserProfile | null> => {
     try {
@@ -146,7 +133,6 @@ export const UserService = {
       if (querySnapshot.empty) return null;
       return { ...querySnapshot.docs[0].data(), id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
-      console.error("Error fetching user by phone:", e);
       return null;
     }
   },
@@ -158,12 +144,11 @@ export const UserService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Sync roles collection for security rules exists() check
     const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
                           profile.role === 'reporter' ? 'roles_reporters' : null;
     if (roleCollection) {
       const roleRef = doc(db, roleCollection, profile.id);
-      await setDoc(roleRef, { active: true }, { merge: true });
+      await setDoc(roleRef, { active: true, updatedAt: serverTimestamp() }, { merge: true });
     }
   },
 
@@ -173,20 +158,16 @@ export const UserService = {
   },
 
   delete: (db: Firestore, userId: string) => {
-    // Delete from users collection
     const userRef = doc(db, 'users', userId);
     deleteDocumentNonBlocking(userRef);
 
-    // Also attempt to delete role markers
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
+    deleteDocumentNonBlocking(doc(db, 'users', userId, 'private', 'likes'));
   }
 };
 
-/**
- * Service for Notifications using Firestore.
- */
 export const NotificationService = {
   send: (db: Firestore, notification: { title: string; body: string; target: string }) => {
     const notifRef = collection(db, 'notifications');
@@ -199,13 +180,9 @@ export const NotificationService = {
   }
 };
 
-/**
- * Service for Locations using Firestore.
- */
 export const LocationService = {
   addMandal: (db: Firestore, state: string, district: string, mandal: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    // Using dot notation for nested field update
     updateDocumentNonBlocking(locRef, {
       [`${state}.${district}`]: arrayUnion(mandal)
     });

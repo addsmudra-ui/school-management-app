@@ -4,12 +4,16 @@ service cloud.firestore {
     
     /**
      * MANDALPULSE SECURITY RULES
-     * Deployment Trigger: 2024-05-24T12:00:00Z - Fixed Admin permissions for user management
+     * Deployment Trigger: 2024-05-24T18:30:00Z - Resolved Admin Delete & News List permissions
      */
 
     // --- HELPER FUNCTIONS ---
     function isSignedIn() {
-      return request.auth != null && request.auth.uid != null;
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
@@ -26,8 +30,31 @@ service cloud.firestore {
 
     // --- COLLECTION RULES ---
 
-    // Publicly readable news for all signed-in users (including anonymous)
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+      
+      match /private/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Role markers (Managed by Admins or during registration)
+    match /roles_admins/{uid} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin() || (isSignedIn() && !exists(/databases/$(database)/documents/roles_admins/$(uid)) && request.auth.uid == uid); 
+    }
+    match /roles_editors/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /roles_reporters/{uid} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin() || (isSignedIn() && !exists(/databases/$(database)/documents/roles_reporters/$(uid)) && request.auth.uid == uid); 
+    }
+
     match /approved_news_posts/{newsPostId} {
+      // Changed to 'read' to allow both 'get' and 'list'
       allow read: if isSignedIn(); 
       allow create, update, delete: if isStaff();
 
@@ -39,34 +66,12 @@ service cloud.firestore {
       }
     }
 
-    // Reporter drafts and moderation queue
     match /pending_news_posts/{newsPostId} {
-      allow read: if isSignedIn() && (resource == null || resource.data.author_id == request.auth.uid || isStaff());
+      allow read: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
       allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
       allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
     }
 
-    // User profiles and role lookups
-    match /users/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-      // Allow creation if it's the user themselves OR an admin
-      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Allow updates if it's the user themselves OR an admin
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      // Explicitly allow admins to delete users
-      allow delete: if isAdmin();
-      
-      match /private/{docId} {
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
-      }
-    }
-
-    match /roles_admins/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /roles_editors/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /roles_reporters/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-
-    // System notifications and metadata
     match /notifications/{id} { allow read: if isSignedIn(); allow write: if isStaff(); }
     match /metadata/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /config/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }

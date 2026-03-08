@@ -40,8 +40,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL GUARD: Only initiate query if firestore is ready, user is fully authenticated (UID present),
-    // and district is selected. This prevents "Missing Permissions" errors during initial hydration.
+    // CRITICAL: Ensure firestore and authenticated user are ready.
+    // The security rules check for request.auth != null.
     if (!firestore || isUserLoading || !user?.uid || !selectedDistrict) {
       return null;
     }
@@ -99,7 +99,7 @@ function NewsFeedContent() {
           <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="rounded-full gap-1 h-8 border-primary/20 text-primary hover:bg-primary/5">
-                <SlidersHorizontal className="w-3 h-3" />
+                <SlidersHorizontal className="w-3" />
                 మార్చండి
               </Button>
             </DialogTrigger>

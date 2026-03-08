@@ -4,13 +4,13 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the MandalPulse app, storing identity, role, and associated location.",
+      "description": "Represents a user of the MandalPulse app.",
       "properties": {
         "id": { "type": "string", "description": "Firebase Auth UID" },
-        "phone": { "type": "string", "description": "User's phone number", "format": "e164" },
+        "phone": { "type": "string", "description": "User's phone number" },
         "name": { "type": "string", "description": "User's full name" },
-        "role": { "type": "string", "description": "user, reporter, or admin" },
-        "status": { "type": "string", "description": "pending, approved, or rejected" },
+        "role": { "type": "string", "enum": ["user", "reporter", "admin"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "location": {
           "type": "object",
           "properties": {
@@ -26,13 +26,12 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "NewsPost",
       "type": "object",
-      "description": "Represents a news article.",
       "properties": {
         "id": { "type": "string" },
         "unique_code": { "type": "string" },
         "title": { "type": "string" },
         "content": { "type": "string" },
-        "image_url": { "type": "string", "format": "uri" },
+        "image_url": { "type": "string" },
         "location": {
           "type": "object",
           "properties": {
@@ -44,25 +43,11 @@
         "status": { "type": "string" },
         "author_id": { "type": "string" },
         "author_name": { "type": "string" },
-        "author_role": { "type": "string" },
-        "author_stars": { "type": "number" },
-        "timestamp": { "type": "string", "format": "date-time" },
+        "timestamp": { "type": "string" },
         "likes": { "type": "number" },
         "commentsCount": { "type": "number" }
       },
       "required": ["id", "title", "content", "location", "status", "author_id"]
-    },
-    "Comment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Comment",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userName": { "type": "string" },
-        "text": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userName", "text", "timestamp"]
     }
   },
   "auth": {
@@ -70,9 +55,11 @@
   },
   "firestore": {
     "/users/{userId}": { "schema": { "$ref": "#/entities/User" }, "description": "User profiles" },
-    "/approved_news_posts/{newsPostId}": { "schema": { "$ref": "#/entities/NewsPost" }, "description": "Approved public news" },
-    "/pending_news_posts/{newsPostId}": { "schema": { "$ref": "#/entities/NewsPost" }, "description": "Pending news drafts" },
-    "/approved_news_posts/{newsPostId}/comments/{commentId}": { "schema": { "$ref": "#/entities/Comment" }, "description": "Comments on news" },
-    "/notifications/{id}": { "schema": { "type": "object" }, "description": "System alerts" }
+    "/approved_news_posts/{id}": { "schema": { "$ref": "#/entities/NewsPost" }, "description": "Approved news" },
+    "/pending_news_posts/{id}": { "schema": { "$ref": "#/entities/NewsPost" }, "description": "Reporter submissions" },
+    "/notifications/{id}": { "schema": { "type": "object" }, "description": "Push notifications history" },
+    "/metadata/locations": { "schema": { "type": "object" }, "description": "App location data" },
+    "/roles_admins/{uid}": { "schema": { "type": "object" }, "description": "Admin role markers" },
+    "/roles_reporters/{uid}": { "schema": { "type": "object" }, "description": "Reporter role markers" }
   }
 }
