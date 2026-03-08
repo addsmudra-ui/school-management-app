@@ -40,9 +40,8 @@ function NewsFeedContent() {
   }, []);
 
   const newsQuery = useMemoFirebase(() => {
-    // CRITICAL: Ensure firestore and authenticated user are ready.
-    // The security rules check for request.auth != null.
-    if (!firestore || isUserLoading || !user?.uid || !selectedDistrict) {
+    // News is now publicly readable in rules, but we still guard the query construction
+    if (!firestore || isUserLoading || !selectedDistrict) {
       return null;
     }
     
@@ -58,7 +57,7 @@ function NewsFeedContent() {
     }
 
     return q;
-  }, [firestore, selectedDistrict, selectedMandal, user?.uid, isUserLoading]);
+  }, [firestore, selectedDistrict, selectedMandal, isUserLoading]);
 
   const { data: news, isLoading } = useCollection(newsQuery);
 
