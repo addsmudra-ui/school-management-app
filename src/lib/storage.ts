@@ -19,7 +19,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { NewsPost, UserProfile, Comment } from './mock-data';
+import { NewsPost, UserProfile, Comment, DEFAULT_ADMIN_PASSWORD } from './mock-data';
 
 export type SentNotification = {
   id: string;
@@ -38,11 +38,12 @@ export const AdminService = {
       const docRef = doc(db, 'config', 'admin');
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
-        return snapshot.data().password || 'admin123';
+        return snapshot.data().password || DEFAULT_ADMIN_PASSWORD;
       }
-      return 'admin123';
+      return DEFAULT_ADMIN_PASSWORD;
     } catch (e) {
-      return 'admin123';
+      console.error("Error fetching admin password:", e);
+      return DEFAULT_ADMIN_PASSWORD;
     }
   },
   setPassword: (db: Firestore, newPassword: string) => {
@@ -128,16 +129,6 @@ export const NewsService = {
     
     const postRef = doc(db, 'approved_news_posts', postId);
     updateDocumentNonBlocking(postRef, { commentsCount: increment(1) });
-  },
-  
-  getLikedPostIds: () => {
-    // This is handled by useDoc in profile page now
-    return [];
-  },
-
-  getAll: () => {
-    // This is handled by useCollection now
-    return [];
   }
 };
 

@@ -1,5 +1,8 @@
 export const STATES = ["Telangana", "Andhra Pradesh"];
 
+export const DEFAULT_ADMIN_PHONE = "9999999999";
+export const DEFAULT_ADMIN_PASSWORD = "admin123";
+
 export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
   "Telangana": {
     "Warangal": ["Hanamkonda", "Kazipet", "Inavole", "Wardhannapet", "Dharmasagar"],
@@ -80,7 +83,7 @@ export const MOCK_USERS: UserProfile[] = [
   },
   {
     id: "ADM001",
-    phone: "9999999999",
+    phone: DEFAULT_ADMIN_PHONE,
     name: "Admin Office",
     role: "admin",
     status: "approved"

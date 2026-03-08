@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
+import { STATES, LOCATIONS_BY_STATE, UserProfile, DEFAULT_ADMIN_PHONE } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
@@ -45,20 +45,27 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          localStorage.setItem('mandalPulse_role', existing.role);
-          localStorage.setItem('mandalPulse_userName', existing.name);
-          localStorage.setItem('mandalPulse_userPhone', existing.phone);
-          localStorage.setItem('mandalPulse_userStatus', existing.status);
-          
-          if (existing.location) {
-            localStorage.setItem('mandalPulse_state', existing.location.state);
-            localStorage.setItem('mandalPulse_district', existing.location.district);
-            localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
+          // If admin, we need to verify password first
+          if (existing.role === 'admin') {
+            setRole('admin');
+            setName(existing.name);
+            setStep('otp'); // Go to simulated OTP, then details for pass
+          } else {
+            localStorage.setItem('mandalPulse_role', existing.role);
+            localStorage.setItem('mandalPulse_userName', existing.name);
+            localStorage.setItem('mandalPulse_userPhone', existing.phone);
+            localStorage.setItem('mandalPulse_userStatus', existing.status);
+            
+            if (existing.location) {
+              localStorage.setItem('mandalPulse_state', existing.location.state);
+              localStorage.setItem('mandalPulse_district', existing.location.district);
+              localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
+            }
+            
+            window.dispatchEvent(new Event('mandalPulse_authChanged'));
+            router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
+            return;
           }
-          
-          window.dispatchEvent(new Event('mandalPulse_authChanged'));
-          router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
-          return;
         }
         setStep('otp');
       }
@@ -167,6 +174,9 @@ export default function LoginPage() {
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   />
                 </div>
+                {phone === DEFAULT_ADMIN_PHONE && (
+                  <p className="text-[10px] text-rose-500 font-bold animate-pulse">Admin ID Recognized</p>
+                )}
               </div>
               <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={phone.length < 10 || isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
@@ -177,10 +187,10 @@ export default function LoginPage() {
           {step === 'otp' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="space-y-2 text-center">
-                <Label>OTP ని నమోదు చేయండి</Label>
+                <Label>OTP ని నమోదు చేయండి (Simulated)</Label>
                 <div className="flex justify-between gap-2">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Input key={i} className="text-center text-xl font-bold h-12 w-full" maxLength={1} />
+                    <Input key={i} className="text-center text-xl font-bold h-12 w-full" maxLength={1} defaultValue="0" />
                   ))}
                 </div>
               </div>
