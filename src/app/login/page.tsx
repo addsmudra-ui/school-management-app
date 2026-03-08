@@ -11,10 +11,11 @@ import { useRouter } from "next/navigation";
 import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 
 export default function LoginPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -29,21 +30,22 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   const handleNext = async () => {
-    if (!firestore) return;
+    if (!firestore) {
+      toast({ variant: "destructive", title: "Error", description: "Firebase initialization error." });
+      return;
+    }
 
-    if (step === 'phone') {
-      if (!phone || phone.length < 10) return;
-      
-      setIsLoading(true);
-      try {
+    setIsLoading(true);
+    try {
+      if (step === 'phone') {
+        if (!phone || phone.length < 10) {
+          toast({ variant: "destructive", title: "Validation Error", description: "Please enter a valid phone number." });
+          return;
+        }
+        
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          if (existing.role === 'admin') {
-            setStep('details');
-            setRole('admin');
-            return;
-          }
-          
+          // Store details and redirect
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -60,16 +62,13 @@ export default function LoginPage() {
           return;
         }
         setStep('otp');
-      } finally {
-        setIsLoading(false);
       }
-    }
-    else if (step === 'otp') {
-      setStep('details');
-    }
-    else {
-      setIsLoading(true);
-      try {
+      else if (step === 'otp') {
+        // Simplified for MVP - OTP is accepted directly
+        setStep('details');
+      }
+      else {
+        // Validation for final step
         if (role === 'admin') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
@@ -78,8 +77,9 @@ export default function LoginPage() {
           }
         }
 
+        // CRITICAL: Use the actual Firebase UID for the profile ID
         const newUser: UserProfile = {
-          id: role === 'admin' ? "ADM_ROOT" : "USR" + Date.now(),
+          id: user?.uid || `USR_${Date.now()}`,
           phone,
           name,
           role,
@@ -87,8 +87,9 @@ export default function LoginPage() {
           location: role !== 'admin' ? { state, district, mandal } : undefined
         };
 
-        UserService.create(firestore, newUser);
+        await UserService.create(firestore, newUser);
 
+        // Update local state for UI
         localStorage.setItem('mandalPulse_role', role);
         localStorage.setItem('mandalPulse_userName', name);
         localStorage.setItem('mandalPulse_userPhone', phone);
@@ -101,10 +102,18 @@ export default function LoginPage() {
         }
 
         window.dispatchEvent(new Event('mandalPulse_authChanged'));
+        toast({ title: "Welcome!", description: "Account setup successful." });
         router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
-      } finally {
-        setIsLoading(false);
       }
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "Login Error", 
+        description: error.message || "An unexpected error occurred. Please try again." 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

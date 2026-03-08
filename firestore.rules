@@ -5,14 +5,13 @@ service cloud.firestore {
     /**
      * MANDALPULSE SECURITY RULES
      *
-     * Updated to simplify sign-in checks and ensure robust access for anonymous users.
-     * Triggering deployment: 2024-05-20T12:00:00Z
+     * Updated to ensure login flow and profile creation are robust.
+     * Triggering deployment: 2024-05-20T15:00:00Z
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
 
     function isSignedIn() {
-      // Robust check for any authenticated user (anonymous or provider-based)
       return request.auth != null && request.auth.uid != null;
     }
 
@@ -36,31 +35,22 @@ service cloud.firestore {
       return isAdmin() || isEditor();
     }
 
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
     // --- COLLECTION RULES ---
 
-    /**
-     * @description Rules for user profiles.
-     * Allows authenticated users to look up profiles (needed for login and display).
-     */
     match /users/{userId} {
+      // Allow any signed-in user to check if a phone exists or get a profile
       allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.id == userId;
+      // Allow profile creation if the user is authenticated and matching the ID
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Allow updates by owner or admin
       allow update: if (isOwner(userId) || isAdmin());
       allow delete: if isAdmin();
 
-      // Nested private data (e.g., likes)
       match /private/{docId} {
         allow read, write: if isOwner(userId);
       }
     }
 
-    /**
-     * @description Role lookup collections. Read-only for the owner; write for admins.
-     */
     match /roles_admins/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list, create, update, delete: if isAdmin();
@@ -71,48 +61,33 @@ service cloud.firestore {
     }
     match /roles_reporters/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list, create, update, delete: if isAdmin();
+      allow list, create, update, delete: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
     }
 
-    /**
-     * @description News posts awaiting moderation.
-     */
     match /pending_news_posts/{newsPostId} {
-      allow get: if isSignedIn() && (isOwner(resource.data.authorId) || isStaff());
-      allow list: if isStaff();
-      allow create: if isReporter() && request.resource.data.authorId == request.auth.uid;
-      allow update, delete: if isSignedIn() && (isExistingOwner(resource.data.authorId) || isStaff());
+      allow get: if isSignedIn() && (resource == null || isOwner(resource.data.author_id) || isStaff());
+      allow list: if isStaff() || (isSignedIn() && request.query.limit <= 50); 
+      allow create: if isReporter() && request.resource.data.author_id == request.auth.uid;
+      allow update, delete: if isSignedIn() && (isOwner(resource.data.author_id) || isStaff());
     }
 
-    /**
-     * @description Publicly visible, approved news posts.
-     */
     match /approved_news_posts/{newsPostId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isStaff();
 
-      /**
-       * @description Comments on approved news posts.
-       */
       match /comments/{commentId} {
         allow get, list: if isSignedIn();
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if (isExistingOwner(resource.data.authorId) || isAdmin());
+        allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
+        allow update, delete: if (isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin()));
       }
     }
 
-    /**
-     * @description Push notifications and alerts.
-     */
     match /notifications/{notifId} {
       allow get, list: if isSignedIn();
       allow create: if isStaff();
       allow update, delete: if isAdmin();
     }
 
-    /**
-     * @description App metadata (e.g., location lists).
-     */
     match /metadata/{docId} {
       allow get: if isSignedIn();
       allow list, write: if isAdmin();

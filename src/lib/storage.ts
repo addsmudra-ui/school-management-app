@@ -119,6 +119,17 @@ export const NewsService = {
     
     const postRef = doc(db, 'approved_news_posts', postId);
     updateDocumentNonBlocking(postRef, { commentsCount: increment(1) });
+  },
+  
+  getLikedPostIds: () => {
+    // Helper to get liked IDs from local cache if needed, 
+    // though real implementation uses the /private/likes subcollection
+    return [];
+  },
+
+  getAll: () => {
+    // Legacy support for mock data if needed
+    return [];
   }
 };
 
@@ -127,30 +138,42 @@ export const NewsService = {
  */
 export const UserService = {
   getByPhone: async (db: Firestore, phone: string): Promise<UserProfile | null> => {
-    const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return null;
-    return querySnapshot.docs[0].data() as UserProfile;
+    try {
+      const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) return null;
+      return querySnapshot.docs[0].data() as UserProfile;
+    } catch (e) {
+      console.error("Error fetching user by phone:", e);
+      return null;
+    }
   },
 
-  create: (db: Firestore, profile: UserProfile) => {
+  create: async (db: Firestore, profile: UserProfile) => {
     const userRef = doc(db, 'users', profile.id);
-    setDocumentNonBlocking(userRef, {
+    await setDoc(userRef, {
       ...profile,
       timestamp: serverTimestamp()
     }, { merge: true });
 
+    // Handle initial role provisioning if necessary (usually done by admin/backend)
+    // For MVP self-provisioning (demo only)
     const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
                           profile.role === 'reporter' ? 'roles_reporters' : null;
     if (roleCollection) {
       const roleRef = doc(db, roleCollection, profile.id);
-      setDocumentNonBlocking(roleRef, { active: true }, { merge: true });
+      await setDoc(roleRef, { active: true }, { merge: true });
     }
   },
 
   update: (db: Firestore, userId: string, data: Partial<UserProfile>) => {
     const userRef = doc(db, 'users', userId);
     updateDocumentNonBlocking(userRef, data);
+  },
+
+  getAll: () => {
+    // Legacy support
+    return [];
   }
 };
 
@@ -184,5 +207,9 @@ export const LocationService = {
     updateDocumentNonBlocking(locRef, {
       [`${state}.${district}`]: []
     });
+  },
+  getLocations: () => {
+    // Legacy support
+    return {};
   }
 };
