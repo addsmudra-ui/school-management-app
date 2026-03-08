@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Trash2, Search, MapPin, Loader2 } from "lucide-react";
+import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
@@ -36,6 +36,7 @@ export default function AdminUsers() {
   const [newState, setNewState] = useState("");
   const [newDistrict, setNewDistrict] = useState("");
   const [newMandal, setNewMandal] = useState("");
+  const [newRole, setNewRole] = useState<'reporter' | 'admin' | 'user'>('reporter');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleToggleStatus = (id: string, currentStatus: string) => {
@@ -44,7 +45,7 @@ export default function AdminUsers() {
     UserService.update(firestore, id, { status: newStatus as any });
     toast({
       title: newStatus === 'approved' ? "User Approved" : "Moved to Pending",
-      description: `రిపోర్టర్ స్థితి విజయవంతంగా మార్చబడింది.`,
+      description: `User status changed to ${newStatus}.`,
     });
   };
 
@@ -53,8 +54,8 @@ export default function AdminUsers() {
     if (confirm(`${name} అకౌంట్‌ను శాశ్వతంగా తొలగించాలనుకుంటున్నారా?`)) {
       UserService.delete(firestore, id);
       toast({
-        title: "User Deleted",
-        description: `${name} విజయవంతంగా తొలగించబడ్డారు.`,
+        title: "User Removed",
+        description: `${name} has been deleted from the system.`,
         variant: "destructive"
       });
     }
@@ -62,7 +63,7 @@ export default function AdminUsers() {
 
   const handleAddUser = async () => {
     if (!firestore || !newName || !newPhone || !newState || !newDistrict || !newMandal) {
-      toast({ title: "Error", description: "All fields are required", variant: "destructive" });
+      toast({ title: "Validation Error", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
 
@@ -71,7 +72,7 @@ export default function AdminUsers() {
       id: "MANUAL_" + Date.now(),
       name: newName,
       phone: newPhone,
-      role: 'reporter',
+      role: newRole,
       status: 'approved',
       location: { state: newState, district: newDistrict, mandal: newMandal }
     };
@@ -79,7 +80,7 @@ export default function AdminUsers() {
     try {
       await UserService.create(firestore, newUser);
       setIsAddDialogOpen(false);
-      toast({ title: "Success", description: "కొత్త రిపోర్టర్ విజయవంతంగా సృష్టించబడ్డారు." });
+      toast({ title: "User Added", description: `Successfully created ${newRole} account.` });
       setNewName(""); setNewPhone(""); setNewState(""); setNewDistrict(""); setNewMandal("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -104,28 +105,39 @@ export default function AdminUsers() {
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 shadow-lg shadow-primary/20 h-11">
+            <Button className="gap-2 shadow-lg shadow-primary/20 h-11 rounded-xl">
               <UserPlus className="w-4 h-4" />
               రిపోర్టర్‌ను చేర్చండి
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md rounded-2xl">
+          <DialogContent className="max-w-md rounded-3xl">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">కొత్త రిపోర్టర్</DialogTitle>
+              <DialogTitle className="text-xl font-bold">కొత్త వినియోగదారు</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>పేరు (Name)</Label>
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="పూర్తి పేరు" />
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="పూర్తి పేరు" className="rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label>ఫోన్ నంబర్</Label>
-                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="10 అంకెల నంబర్" />
+                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="10 అంకెల నంబర్" className="rounded-xl" />
+              </div>
+              <div className="space-y-2">
+                <Label>పాత్ర (Role)</Label>
+                <Select onValueChange={(v: any) => setNewRole(v)} value={newRole}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
+                    <SelectItem value="user">పాఠకుడు (User)</SelectItem>
+                    <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>రాష్ట్రం</Label>
                 <Select onValueChange={(v) => { setNewState(v); setNewDistrict(""); setNewMandal(""); }} value={newState}>
-                  <SelectTrigger><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
                   <SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -133,7 +145,7 @@ export default function AdminUsers() {
                 <div className="space-y-2">
                   <Label>జిల్లా</Label>
                   <Select onValueChange={(v) => { setNewDistrict(v); setNewMandal(""); }} value={newDistrict} disabled={!newState}>
-                    <SelectTrigger><SelectValue placeholder="జిల్లా" /></SelectTrigger>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
                     <SelectContent>
                       {newState && Object.keys(LOCATIONS_BY_STATE[newState]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
@@ -142,7 +154,7 @@ export default function AdminUsers() {
                 <div className="space-y-2">
                   <Label>మండలం</Label>
                   <Select onValueChange={setNewMandal} value={newMandal} disabled={!newDistrict}>
-                    <SelectTrigger><SelectValue placeholder="మండలం" /></SelectTrigger>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="మండలం" /></SelectTrigger>
                     <SelectContent>
                       {newDistrict && LOCATIONS_BY_STATE[newState][newDistrict].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     </SelectContent>
@@ -151,8 +163,8 @@ export default function AdminUsers() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>రద్దు</Button>
-              <Button onClick={handleAddUser} disabled={isCreating}>
+              <Button variant="outline" className="rounded-xl" onClick={() => setIsAddDialogOpen(false)}>రద్దు</Button>
+              <Button className="rounded-xl" onClick={handleAddUser} disabled={isCreating}>
                 {isCreating ? <Loader2 className="animate-spin mr-2" /> : null}
                 సృష్టించు
               </Button>
@@ -185,7 +197,7 @@ export default function AdminUsers() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="h-48 text-center">Loading users...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
               ) : filtered.length > 0 ? (
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
@@ -196,29 +208,32 @@ export default function AdminUsers() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">{user.role}</Badge>
+                      <div className="flex items-center gap-1.5">
+                        {user.role === 'admin' ? <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> : <ShieldCheck className="w-3.5 h-3.5 text-primary" />}
+                        <Badge variant="outline" className="capitalize text-[10px] font-bold">{user.role}</Badge>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.location ? (
-                        <div className="flex items-center gap-1 text-xs">
-                          <MapPin className="w-3.5 h-3.5 text-primary" />
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <MapPin className="w-3 h-3 text-primary" />
                           {user.location.mandal}, {user.location.district}
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Global</span>
+                        <span className="text-xs text-muted-foreground italic">Global</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <Badge 
                         variant="secondary" 
                         className={cn(
-                          "font-normal",
+                          "font-bold text-[10px] uppercase",
                           user.status === 'approved' ? "bg-emerald-50 text-emerald-700" :
                           user.status === 'pending' ? "bg-amber-50 text-amber-700" :
                           "bg-rose-50 text-rose-700"
                         )}
                       >
-                        {user.status.toUpperCase()}
+                        {user.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right pr-6">
@@ -233,7 +248,7 @@ export default function AdminUsers() {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                          className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-full"
                           onClick={() => handleDeleteUser(user.id, user.name)}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -244,7 +259,7 @@ export default function AdminUsers() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic">
                     వినియోగదారులు ఎవరూ లేరు.
                   </TableCell>
                 </TableRow>

@@ -3,8 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     /**
-     * MANDALPULSE SECURITY RULES
-     * Deployment Trigger: 2024-05-24T18:30:00Z - Resolved Admin Delete & News List permissions
+     * MANDALPULSE ROLE-BASED SECURITY RULES
+     * Roles: Admin, Editor, Reporter, User (Reader)
+     * Staff = Admin + Editor
      */
 
     // --- HELPER FUNCTIONS ---
@@ -24,12 +25,17 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_reporters/$(request.auth.uid));
     }
 
+    function isEditor() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid));
+    }
+
     function isStaff() {
-      return isAdmin() || exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid));
+      return isAdmin() || isEditor();
     }
 
     // --- COLLECTION RULES ---
 
+    // User Profiles
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
@@ -42,19 +48,22 @@ service cloud.firestore {
       }
     }
 
-    // Role markers (Managed by Admins or during registration)
+    // Role Markers (Managed by Admins or during verified registration)
     match /roles_admins/{uid} { 
       allow read: if isSignedIn(); 
-      allow write: if isAdmin() || (isSignedIn() && !exists(/databases/$(database)/documents/roles_admins/$(uid)) && request.auth.uid == uid); 
+      allow write: if isAdmin() || (isOwner(uid) && !exists(/databases/$(database)/documents/roles_admins/$(uid))); 
     }
-    match /roles_editors/{uid} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /roles_editors/{uid} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin(); 
+    }
     match /roles_reporters/{uid} { 
       allow read: if isSignedIn(); 
-      allow write: if isAdmin() || (isSignedIn() && !exists(/databases/$(database)/documents/roles_reporters/$(uid)) && request.auth.uid == uid); 
+      allow write: if isAdmin() || (isOwner(uid) && !exists(/databases/$(database)/documents/roles_reporters/$(uid))); 
     }
 
+    // News Content
     match /approved_news_posts/{newsPostId} {
-      // Changed to 'read' to allow both 'get' and 'list'
       allow read: if isSignedIn(); 
       allow create, update, delete: if isStaff();
 
@@ -62,7 +71,7 @@ service cloud.firestore {
         allow read: if isSignedIn();
         allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
         allow update: if isSignedIn() && resource.data.author_id == request.auth.uid;
-        allow delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin());
+        allow delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
       }
     }
 
@@ -72,8 +81,18 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
     }
 
-    match /notifications/{id} { allow read: if isSignedIn(); allow write: if isStaff(); }
-    match /metadata/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /config/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    // System Metadata & Config
+    match /notifications/{id} { 
+      allow read: if isSignedIn(); 
+      allow write: if isStaff(); 
+    }
+    match /metadata/{id} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin(); 
+    }
+    match /config/{id} { 
+      allow read: if isSignedIn(); 
+      allow write: if isAdmin(); 
+    }
   }
 }

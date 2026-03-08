@@ -69,9 +69,11 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
+    // Delete from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
+    // Add to approved
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -79,6 +81,7 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
+    // Send push notification history
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చదవండి!`,
@@ -144,10 +147,16 @@ export const UserService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    const roleCollection = profile.role === 'admin' ? 'roles_admins' : 
-                          profile.role === 'reporter' ? 'roles_reporters' : null;
-    if (roleCollection) {
-      const roleRef = doc(db, roleCollection, profile.id);
+    // Atomically provision role marker for security rules 'exists' checks
+    const roleCollectionMap = {
+      'admin': 'roles_admins',
+      'reporter': 'roles_reporters',
+      'user': null
+    };
+
+    const collectionName = roleCollectionMap[profile.role];
+    if (collectionName) {
+      const roleRef = doc(db, collectionName, profile.id);
       await setDoc(roleRef, { active: true, updatedAt: serverTimestamp() }, { merge: true });
     }
   },
@@ -158,12 +167,16 @@ export const UserService = {
   },
 
   delete: (db: Firestore, userId: string) => {
+    // 1. Delete main user profile
     const userRef = doc(db, 'users', userId);
     deleteDocumentNonBlocking(userRef);
 
+    // 2. Clean up all potential role markers
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
+    
+    // 3. Clean up sub-collections (manually in a real app, or here for MVP)
     deleteDocumentNonBlocking(doc(db, 'users', userId, 'private', 'likes'));
   }
 };

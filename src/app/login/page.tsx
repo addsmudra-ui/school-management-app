@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   const handleNext = async () => {
     if (!firestore || isUserLoading) {
-      toast({ variant: "destructive", title: "Error", description: "Firebase initializing..." });
+      toast({ variant: "destructive", title: "Initializing", description: "Firebase is warming up..." });
       return;
     }
 
@@ -45,24 +45,25 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          if (existing.role === 'admin' || phone === DEFAULT_ADMIN_PHONE) {
+          // If already registered, sync local state and redirect
+          localStorage.setItem('mandalPulse_role', existing.role);
+          localStorage.setItem('mandalPulse_userName', existing.name);
+          localStorage.setItem('mandalPulse_userPhone', existing.phone);
+          localStorage.setItem('mandalPulse_userStatus', existing.status);
+          
+          if (existing.location) {
+            localStorage.setItem('mandalPulse_state', existing.location.state);
+            localStorage.setItem('mandalPulse_district', existing.location.district);
+            localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
+          }
+          
+          window.dispatchEvent(new Event('mandalPulse_authChanged'));
+          
+          if (existing.role === 'admin') {
             setRole('admin');
-            setName(existing?.name || "Admin");
-            setStep('otp');
+            setStep('details'); // Proceed to password check
           } else {
-            localStorage.setItem('mandalPulse_role', existing.role);
-            localStorage.setItem('mandalPulse_userName', existing.name);
-            localStorage.setItem('mandalPulse_userPhone', existing.phone);
-            localStorage.setItem('mandalPulse_userStatus', existing.status);
-            
-            if (existing.location) {
-              localStorage.setItem('mandalPulse_state', existing.location.state);
-              localStorage.setItem('mandalPulse_district', existing.location.district);
-              localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
-            }
-            
-            window.dispatchEvent(new Event('mandalPulse_authChanged'));
-            router.push(existing.role === 'admin' ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/');
+            router.push(existing.role === 'reporter' ? '/reporter' : '/');
             return;
           }
         } else {
@@ -73,16 +74,17 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
+        // Validation for new or admin users
         if (role === 'admin') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
-            toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid admin password." });
+            toast({ variant: "destructive", title: "Admin Auth Failed", description: "Invalid administrator password." });
             return;
           }
         }
 
         if (!user?.uid) {
-          throw new Error("Authentication session not found. Please refresh.");
+          throw new Error("Auth session not ready. Please refresh the page.");
         }
 
         const newUser: UserProfile = {
@@ -94,8 +96,10 @@ export default function LoginPage() {
           location: role !== 'admin' ? { state, district, mandal } : undefined
         };
 
+        // Create in Firestore (including role markers)
         await UserService.create(firestore, newUser);
 
+        // Sync local
         localStorage.setItem('mandalPulse_role', role);
         localStorage.setItem('mandalPulse_userName', name);
         localStorage.setItem('mandalPulse_userPhone', phone);
@@ -108,7 +112,7 @@ export default function LoginPage() {
         }
 
         window.dispatchEvent(new Event('mandalPulse_authChanged'));
-        toast({ title: "Welcome!", description: "Account setup successful." });
+        toast({ title: "Welcome to MandalPulse", description: "Account setup successful." });
         router.push(role === 'admin' ? '/admin' : role === 'reporter' ? '/reporter' : '/');
       }
     } catch (error: any) {
@@ -116,7 +120,7 @@ export default function LoginPage() {
       toast({ 
         variant: "destructive", 
         title: "Login Error", 
-        description: error.message || "An unexpected error occurred." 
+        description: error.message || "An unexpected error occurred during login." 
       });
     } finally {
       setIsLoading(false);
@@ -139,26 +143,26 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-2xl border-none">
-        <CardHeader className="text-center relative">
+      <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden">
+        <CardHeader className="text-center relative bg-primary/5 pb-8">
           {step !== 'phone' && (
             <Button 
               variant="ghost" 
               size="icon" 
-              className="absolute left-4 top-4"
+              className="absolute left-4 top-4 rounded-full"
               onClick={() => setStep(step === 'details' ? 'otp' : 'phone')}
               disabled={isLoading}
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
           )}
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
             <Newspaper className="w-10 h-10 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold font-headline">MandalPulse</CardTitle>
-          <CardDescription>స్థానిక వార్తలు (Local News)</CardDescription>
+          <CardDescription>మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-8">
           {step === 'phone' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="space-y-2">
@@ -167,7 +171,7 @@ export default function LoginPage() {
                   <span className="absolute left-3 top-2.5 text-muted-foreground">+91</span>
                   <Input 
                     id="phone" 
-                    className="pl-12 h-12" 
+                    className="pl-12 h-12 rounded-xl" 
                     placeholder="10 అంకెల నంబర్" 
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -177,7 +181,7 @@ export default function LoginPage() {
                   <p className="text-[10px] text-rose-500 font-bold animate-pulse">Admin ID Recognized</p>
                 )}
               </div>
-              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={phone.length < 10 || isLoading}>
+              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={phone.length < 10 || isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
               </Button>
             </div>
@@ -185,15 +189,15 @@ export default function LoginPage() {
 
           {step === 'otp' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="space-y-2 text-center">
-                <Label>OTP ని నమోదు చేయండి (Simulated)</Label>
+              <div className="space-y-4 text-center">
+                <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">OTP ని నమోదు చేయండి (Simulated)</Label>
                 <div className="flex justify-between gap-2">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Input key={i} className="text-center text-xl font-bold h-12 w-full" maxLength={1} defaultValue="0" />
+                    <Input key={i} className="text-center text-xl font-bold h-12 w-full rounded-xl" maxLength={1} defaultValue="0" />
                   ))}
                 </div>
               </div>
-              <Button className="w-full h-12 text-lg" onClick={handleNext} disabled={isLoading}>
+              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ధృవీకరించండి"}
               </Button>
             </div>
@@ -204,12 +208,12 @@ export default function LoginPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>మీ పేరు (Your Name)</Label>
-                  <Input placeholder="పూర్తి పేరు" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input placeholder="పూర్తి పేరు" className="h-11 rounded-xl" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>నేను ఒక... (I am a...)</Label>
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 rounded-xl">
                       <div className="flex items-center gap-2">
                         {role === 'admin' ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
                         <SelectValue />
@@ -231,7 +235,7 @@ export default function LoginPage() {
                       placeholder="Enter Admin Password" 
                       value={password} 
                       onChange={(e) => setPassword(e.target.value)}
-                      className="border-rose-200 focus:ring-rose-500"
+                      className="h-11 rounded-xl border-rose-200 focus:ring-rose-500"
                     />
                   </div>
                 )}
@@ -241,7 +245,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                       <Label>రాష్ట్రం (State)</Label>
                       <Select onValueChange={(val) => { setState(val); setDistrict(""); setMandal(""); }} value={state}>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-11 rounded-xl">
                           <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
                         </SelectTrigger>
                         <SelectContent>
@@ -254,7 +258,7 @@ export default function LoginPage() {
                       <div className="space-y-2">
                         <Label>జిల్లా (District)</Label>
                         <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
-                          <SelectTrigger className="h-11">
+                          <SelectTrigger className="h-11 rounded-xl">
                             <SelectValue placeholder="జిల్లా" />
                           </SelectTrigger>
                           <SelectContent>
@@ -265,7 +269,7 @@ export default function LoginPage() {
                       <div className="space-y-2">
                         <Label>మండలం (Mandal)</Label>
                         <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                          <SelectTrigger className="h-11">
+                          <SelectTrigger className="h-11 rounded-xl">
                             <SelectValue placeholder="మండలం" />
                           </SelectTrigger>
                           <SelectContent>
@@ -277,7 +281,7 @@ export default function LoginPage() {
                   </>
                 )}
               </div>
-              <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={!isDetailsValid() || isLoading}>
+              <Button className="w-full h-12 text-lg mt-4 rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={!isDetailsValid() || isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ప్రారంభించండి"}
               </Button>
             </div>
