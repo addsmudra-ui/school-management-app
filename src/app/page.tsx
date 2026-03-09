@@ -3,7 +3,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense, useMemo } from "react";
-import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle } from "lucide-react";
+import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, limit } from "firebase/firestore";
@@ -29,7 +29,6 @@ function NewsFeedContent() {
   const searchParams = useSearchParams();
   const targetPostId = searchParams.get('postId');
 
-  // Default to "All" (Global) instead of a specific district
   const [selectedDistrict, setSelectedDistrict] = useState<string>("All");
   const [selectedMandal, setSelectedMandal] = useState<string>("All");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -40,16 +39,13 @@ function NewsFeedContent() {
     const savedDistrict = localStorage.getItem('mandalPulse_district');
     const savedMandal = localStorage.getItem('mandalPulse_mandal');
     
-    // Only update state if something was previously saved, otherwise stay "All"
     if (savedDistrict) setSelectedDistrict(savedDistrict);
     if (savedMandal) setSelectedMandal(savedMandal);
   }, []);
 
-  // Handle postId from notification
   useEffect(() => {
     if (targetPostId) {
       setForceGlobal(true);
-      // Wait a bit for elements to render
       setTimeout(() => {
         const element = document.getElementById(`post-${targetPostId}`);
         if (element) {
@@ -61,43 +57,44 @@ function NewsFeedContent() {
     }
   }, [targetPostId]);
 
-  // Fetch all approved news (limited) and filter client-side.
   const allApprovedQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'approved_news_posts'), limit(100));
+    return query(collection(firestore, 'approved_news_posts'), limit(150));
   }, [firestore]);
 
   const { data: allNews, isLoading } = useCollection<NewsPost>(allApprovedQuery);
 
-  const { feedToDisplay, isFallbackActive } = useMemo(() => {
-    if (!allNews || allNews.length === 0) return { feedToDisplay: [], isFallbackActive: false };
+  const { feedToDisplay, isFallbackActive, localCount } = useMemo(() => {
+    if (!allNews || allNews.length === 0) return { feedToDisplay: [], isFallbackActive: false, localCount: 0 };
 
-    // 1. Sort by timestamp descending
     const sorted = [...allNews].sort((a, b) => {
       const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
       const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
       return timeB - timeA;
     });
 
-    const isGlobal = selectedDistrict === "All";
+    const isGlobalFilter = selectedDistrict === "All";
 
-    // 2. Decide what to show (Explicit postId or Global filter)
-    if (forceGlobal || isGlobal) {
-      return { feedToDisplay: sorted, isFallbackActive: false };
+    if (forceGlobal || isGlobalFilter) {
+      return { feedToDisplay: sorted, isFallbackActive: false, localCount: sorted.length };
     }
 
-    // 3. Filter for local news
+    // 1. Filter for local news
     const local = sorted.filter(post => {
       const districtMatch = post.location.district === selectedDistrict;
       const mandalMatch = selectedMandal === "All" || post.location.mandal === selectedMandal;
       return districtMatch && mandalMatch;
     });
 
-    // 4. Fallback to Global if no local news
-    const hasLocalNews = local.length > 0;
+    // 2. Identify everything else (Global news excluding what we already found in local)
+    const localIds = new Set(local.map(p => p.id));
+    const others = sorted.filter(p => !localIds.has(p.id));
+
+    // 3. Combine them: Local first, then Global to continue the feed
     return {
-      feedToDisplay: hasLocalNews ? local : sorted,
-      isFallbackActive: !hasLocalNews
+      feedToDisplay: [...local, ...others],
+      isFallbackActive: local.length === 0,
+      localCount: local.length
     };
   }, [allNews, selectedDistrict, selectedMandal, forceGlobal]);
 
@@ -189,24 +186,32 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {(isFallbackActive || (forceGlobal && selectedDistrict !== "All")) && allNews && allNews.length > 0 && (
+        {allNews && allNews.length > 0 && (
           <div className="absolute top-20 left-0 right-0 z-30 px-4 pointer-events-none md:top-24">
-            <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm">
-              <div className="bg-amber-500 p-2 rounded-lg shrink-0">
-                <Globe className="w-4 h-4 text-white" />
+            {isFallbackActive ? (
+              <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm">
+                <div className="bg-amber-500 p-2 rounded-lg shrink-0">
+                  <Globe className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-amber-800 leading-tight">మీ ప్రాంతంలో వార్తలు లేవు.</p>
+                  <p className="text-[10px] text-amber-700 opacity-80 mt-0.5">ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను (Global News) చూస్తున్నారు.</p>
+                </div>
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-amber-900 pointer-events-auto hover:bg-amber-100" onClick={handleResetToGlobal}>
+                  Global Feed
+                </Button>
               </div>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-amber-800 leading-tight">
-                  {forceGlobal ? "బ్రేకింగ్ వార్త" : "మీ ప్రాంతంలో వార్తలు లేవు."}
-                </p>
-                <p className="text-[10px] text-amber-700 opacity-80 mt-0.5">
-                  {forceGlobal ? "మీరు నోటిఫికేషన్ ద్వారా వచ్చిన వార్తను చూస్తున్నారు." : "ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను (Global News) చూస్తున్నారు."}
-                </p>
+            ) : !isActuallyGlobal && localCount > 0 && (
+              <div className="max-w-md mx-auto bg-emerald-50 border border-emerald-200 p-2 rounded-xl shadow-md flex items-center gap-2 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm opacity-90">
+                <div className="bg-emerald-500 p-1.5 rounded-lg shrink-0">
+                  <Info className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] font-bold text-emerald-800 leading-tight">మీ ప్రాంతీయ వార్తలు పైన ఉన్నాయి.</p>
+                  <p className="text-[9px] text-emerald-700 opacity-80 mt-0.5">మరిన్ని వార్తల కోసం క్రిందికి స్క్రోల్ చేయండి.</p>
+                </div>
               </div>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-amber-900 pointer-events-auto hover:bg-amber-100" onClick={handleResetToGlobal}>
-                Global Feed
-              </Button>
-            </div>
+            )}
           </div>
         )}
 
