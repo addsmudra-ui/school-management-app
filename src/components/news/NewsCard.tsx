@@ -94,6 +94,13 @@ export function NewsCard({ news }: NewsCardProps) {
     }
   };
 
+  const scrollToNext = () => {
+    const container = document.querySelector('.news-scroll-container');
+    if (container) {
+      container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="w-full h-full max-w-full md:max-w-xl mx-auto bg-white relative flex flex-col md:h-[95dvh] md:rounded-[2.5rem] md:shadow-2xl overflow-hidden animate-in fade-in duration-500">
       {/* Media Section */}
@@ -154,11 +161,16 @@ export function NewsCard({ news }: NewsCardProps) {
             {news.content}
           </p>
 
-          {/* Swipe Hint for Mobile - only visible on small screens */}
-          <div className="flex flex-col items-center justify-center py-8 opacity-30 md:hidden">
-            <p className="text-[10px] font-bold uppercase tracking-widest mb-1">Scroll for more</p>
-            <ChevronDown className="w-5 h-5 animate-bounce" />
-          </div>
+          {/* Flip Button / Scroll Hint for Mobile */}
+          <button 
+            onClick={scrollToNext}
+            className="flex flex-col items-center justify-center py-8 opacity-50 hover:opacity-100 transition-opacity md:hidden w-full group"
+          >
+            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2 group-active:scale-95 transition-transform">తదుపరి వార్త (Next)</p>
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center animate-bounce">
+              <ChevronDown className="w-6 h-6 text-primary" />
+            </div>
+          </button>
         </div>
       </div>
 
