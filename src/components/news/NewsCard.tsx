@@ -1,8 +1,9 @@
+
 'use client';
 
 import Image from "next/image";
 import { NewsPost } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, User, Hash, Send, Star, ChevronDown } from "lucide-react";
+import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -10,8 +11,8 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { NewsService } from "@/lib/storage";
-import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 
 interface NewsCardProps {
   news: NewsPost;
@@ -22,7 +23,6 @@ export function NewsCard({ news }: NewsCardProps) {
   const { user } = useUser();
   const { toast } = useToast();
   
-  const [liked, setLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
 
   // Real-time comments
@@ -37,19 +37,24 @@ export function NewsCard({ news }: NewsCardProps) {
 
   const { data: comments } = useCollection(commentsQuery);
 
-  // Check if user already liked this post from their profile data
+  // Real-time Liked state for current user
   const userLikesRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return collection(firestore, 'users', user.uid, 'private');
+    return doc(firestore, 'users', user.uid, 'private', 'likes');
   }, [firestore, user?.uid]);
+
+  const { data: userLikesDoc } = useDoc(userLikesRef);
+  const isLiked = useMemo(() => {
+    if (!userLikesDoc || !userLikesDoc.postIds) return false;
+    return (userLikesDoc.postIds as string[]).includes(news.id);
+  }, [userLikesDoc, news.id]);
 
   const toggleLike = () => {
     if (!user) {
       toast({ title: "Login Required", description: "Please login to like posts." });
       return;
     }
-    NewsService.toggleLike(firestore, news.id, user.uid, liked);
-    setLiked(!liked);
+    NewsService.toggleLike(firestore, news.id, user.uid, isLiked);
   };
 
   const handleAddComment = () => {
@@ -163,12 +168,12 @@ export function NewsCard({ news }: NewsCardProps) {
           >
             <div className={cn(
               "w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg backdrop-blur-md md:shadow-none md:w-auto md:h-auto",
-              liked ? "bg-rose-500/10" : "bg-black/20 md:bg-transparent"
+              isLiked ? "bg-rose-500/10" : "bg-black/20 md:bg-transparent"
             )}>
               <Heart 
                 className={cn(
                   "w-7 h-7 transition-all", 
-                  liked ? "fill-destructive text-destructive scale-110" : "text-white md:text-muted-foreground group-hover:scale-110"
+                  isLiked ? "fill-destructive text-destructive scale-110" : "text-white md:text-muted-foreground group-hover:scale-110"
                 )} 
               />
             </div>
@@ -182,7 +187,7 @@ export function NewsCard({ news }: NewsCardProps) {
                 <div className="w-12 h-12 rounded-full bg-black/20 flex items-center justify-center shadow-lg backdrop-blur-md transition-all group-hover:scale-110 md:shadow-none md:bg-transparent md:w-auto md:h-auto">
                   <MessageCircle className="w-7 h-7 text-white md:text-muted-foreground" />
                 </div>
-                <span className="text-[10px] font-bold text-white drop-shadow-md md:text-muted-foreground md:text-xs">{comments?.length || 0}</span>
+                <span className="text-[10px] font-bold text-white drop-shadow-md md:text-muted-foreground md:text-xs">{news.commentsCount || 0}</span>
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="h-[80vh] rounded-t-[2.5rem] p-0 z-[100] border-none shadow-2xl">
@@ -190,7 +195,7 @@ export function NewsCard({ news }: NewsCardProps) {
                 <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-4" />
                 <SheetTitle className="text-xl font-bold flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-primary" />
-                  కామెంట్స్ ({comments?.length || 0})
+                  కామెంట్స్ ({news.commentsCount || 0})
                 </SheetTitle>
               </SheetHeader>
               <div className="flex flex-col h-full bg-white">

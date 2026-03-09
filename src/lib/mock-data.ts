@@ -64,11 +64,8 @@ export type NewsPost = {
   author_role?: ReporterRole;
   author_stars?: number;
   timestamp: any;
-  engagement: {
-    likes: number;
-    comments: number;
-    commentList: Comment[];
-  };
+  likes: number;
+  commentsCount: number;
 };
 
 export const MOCK_USERS: UserProfile[] = [];
@@ -87,7 +84,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Sr. Reporter",
     author_stars: 4,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 120, comments: 15, commentList: [] }
+    likes: 120,
+    commentsCount: 15
   },
   {
     id: "demo-2",
@@ -102,7 +100,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Reporter",
     author_stars: 3,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 85, comments: 4, commentList: [] }
+    likes: 85,
+    commentsCount: 4
   },
   {
     id: "demo-3",
@@ -117,7 +116,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Reporter",
     author_stars: 5,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 200, comments: 22, commentList: [] }
+    likes: 200,
+    commentsCount: 22
   },
   {
     id: "demo-4",
@@ -132,7 +132,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Reporter",
     author_stars: 2,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 45, comments: 2, commentList: [] }
+    likes: 45,
+    commentsCount: 2
   },
   {
     id: "demo-5",
@@ -147,7 +148,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Sr. Reporter",
     author_stars: 4,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 310, comments: 18, commentList: [] }
+    likes: 310,
+    commentsCount: 18
   },
   {
     id: "demo-6",
@@ -162,7 +164,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Desk Incharge",
     author_stars: 5,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 150, comments: 30, commentList: [] }
+    likes: 150,
+    commentsCount: 30
   },
   {
     id: "demo-7",
@@ -177,7 +180,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Reporter",
     author_stars: 3,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 92, comments: 5, commentList: [] }
+    likes: 92,
+    commentsCount: 5
   },
   {
     id: "demo-8",
@@ -192,7 +196,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Reporter",
     author_stars: 4,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 115, comments: 8, commentList: [] }
+    likes: 115,
+    commentsCount: 8
   },
   {
     id: "demo-9",
@@ -207,7 +212,8 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Sr. Reporter",
     author_stars: 4,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 180, comments: 12, commentList: [] }
+    likes: 180,
+    commentsCount: 12
   },
   {
     id: "demo-10",
@@ -222,6 +228,7 @@ export const MOCK_NEWS: NewsPost[] = [
     author_role: "Reporter",
     author_stars: 5,
     timestamp: new Date().toISOString(),
-    engagement: { likes: 420, comments: 45, commentList: [] }
+    likes: 420,
+    commentsCount: 45
   }
 ];
