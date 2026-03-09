@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText } from "lucide-react";
@@ -253,6 +254,8 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        <Footer />
       </div>
     </main>
   );

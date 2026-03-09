@@ -1,6 +1,7 @@
 "use client";
 
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileCheck, AlertCircle, CheckCircle2, ArrowLeft, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,8 @@ export default function GuidelinesPage() {
             </div>
           </CardContent>
         </Card>
+        
+        <Footer />
       </div>
     </main>
   );
