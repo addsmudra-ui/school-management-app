@@ -87,19 +87,19 @@ export default function AdminNewPost() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div className="flex items-center gap-3">
         <div className="bg-primary/10 p-2.5 rounded-2xl">
           <Newspaper className="w-6 h-6 text-primary" />
         </div>
         <div>
           <h1 className="text-3xl font-bold font-headline">కొత్త వార్త రాయండి</h1>
-          <p className="text-muted-foreground mt-1">అడ్మిన్ హోదాలో నేరుగా వార్తలను ప్రచురించండి.</p>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">అడ్మిన్ హోదాలో నేరుగా వార్తలను ప్రచురించండి.</p>
         </div>
       </div>
 
       <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="p-4 md:p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground ml-1">రాష్ట్రం</Label>
@@ -134,7 +134,7 @@ export default function AdminNewPost() {
               value={title} 
               onChange={(e) => setTitle(e.target.value)} 
               placeholder="వార్త ముఖ్యాంశం రాయండి..." 
-              className="h-14 text-xl font-bold rounded-2xl border-primary/10 focus:ring-primary/20"
+              className="h-14 text-lg md:text-xl font-bold rounded-2xl border-primary/10 focus:ring-primary/20"
             />
           </div>
 
@@ -144,7 +144,7 @@ export default function AdminNewPost() {
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
               placeholder="పూర్తి వివరాలు ఇక్కడ నమోదు చేయండి..." 
-              className="min-h-[250px] text-lg leading-relaxed rounded-2xl border-primary/10 focus:ring-primary/20 p-6"
+              className="min-h-[200px] md:min-h-[250px] text-base md:text-lg leading-relaxed rounded-2xl border-primary/10 focus:ring-primary/20 p-4 md:p-6"
             />
           </div>
 
@@ -153,25 +153,25 @@ export default function AdminNewPost() {
             {!imagePreview ? (
               <div 
                 onClick={() => fileInputRef.current?.click()} 
-                className="border-2 border-dashed rounded-3xl p-16 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group"
+                className="border-2 border-dashed rounded-3xl p-8 md:p-16 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group"
               >
-                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6 md:w-8 md:h-8 text-slate-400 group-hover:text-primary" />
                 </div>
-                <p className="text-lg font-bold text-slate-700">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
-                <p className="text-sm text-slate-400 mt-2">JPG/JPEG format, max 1MB</p>
+                <p className="text-base md:text-lg font-bold text-slate-700">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
+                <p className="text-xs text-slate-400 mt-2">JPG/JPEG format, max 1MB</p>
               </div>
             ) : (
-              <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl group border-4 border-white">
+              <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl group border-4 border-white max-w-2xl mx-auto">
                 <Image src={imagePreview} alt="Preview" fill className="object-cover" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                    <Button 
                     variant="destructive" 
                     size="lg" 
-                    className="rounded-full h-14 w-14 p-0 shadow-lg" 
+                    className="rounded-full h-12 w-12 md:h-14 md:w-14 p-0 shadow-lg" 
                     onClick={() => setImagePreview(null)}
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5 md:w-6 md:h-6" />
                   </Button>
                 </div>
               </div>
@@ -179,9 +179,9 @@ export default function AdminNewPost() {
             <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
           </div>
 
-          <Button className="w-full h-16 text-xl font-bold shadow-2xl shadow-primary/30 rounded-2xl mt-8" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-6 w-6" />}
-            వార్తను ప్రచురించండి (Publish Now)
+          <Button className="w-full h-14 md:h-16 text-lg md:text-xl font-bold shadow-2xl shadow-primary/30 rounded-2xl mt-8" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5 md:h-6 md:w-6" />}
+            వార్తను ప్రచురించండి
           </Button>
         </CardContent>
       </Card>

@@ -3,7 +3,7 @@
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Footer } from "@/components/layout/Footer";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
@@ -51,13 +51,15 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-slate-50/50">
+      <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
         <AdminSidebar />
-        <SidebarInset className="flex-1 overflow-y-auto flex flex-col">
-          <div className="p-4 md:p-8 pt-20 md:pt-8 flex-1">
-            {children}
+        <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pt-20 md:pt-8">
+            <div className="max-w-6xl mx-auto">
+              {children}
+            </div>
+            <Footer />
           </div>
-          <Footer />
         </SidebarInset>
       </div>
     </SidebarProvider>

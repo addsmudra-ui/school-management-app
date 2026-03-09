@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,12 +29,12 @@ export default function BrandingPage() {
   const { data: branding, isLoading } = useDoc(brandingRef);
 
   // Initialize form state when data loads
-  useState(() => {
+  useEffect(() => {
     if (branding) {
       setAppName(branding.appName || "MandalPulse");
       setLogoPreview(branding.appLogo || null);
     }
-  });
+  }, [branding]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,7 +84,7 @@ export default function BrandingPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div className="flex items-center gap-3">
         <div className="bg-primary/10 p-2.5 rounded-2xl">
           <Palette className="w-6 h-6 text-primary" />
@@ -96,11 +96,11 @@ export default function BrandingPage() {
       </div>
 
       <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-        <CardContent className="p-8 space-y-8">
+        <CardContent className="p-4 md:p-8 space-y-8">
           <div className="space-y-4">
             <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">యాప్ పేరు (App Name)</Label>
             <Input 
-              value={appName || (branding?.appName || "")} 
+              value={appName} 
               onChange={(e) => setAppName(e.target.value)} 
               placeholder="ఉదా: MandalPulse"
               className="h-12 rounded-xl"
@@ -111,7 +111,7 @@ export default function BrandingPage() {
             <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground">యాప్ లోగో (App Logo)</Label>
             
             <div className="flex flex-col md:flex-row gap-8 items-start">
-              {!logoPreview && !branding?.appLogo ? (
+              {!logoPreview ? (
                 <div 
                   onClick={() => fileInputRef.current?.click()} 
                   className="w-full md:w-64 aspect-square border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group"
@@ -122,7 +122,7 @@ export default function BrandingPage() {
               ) : (
                 <div className="relative w-full md:w-64 aspect-square bg-slate-50 rounded-3xl flex items-center justify-center border p-4 group">
                   <Image 
-                    src={logoPreview || branding?.appLogo || ""} 
+                    src={logoPreview} 
                     alt="App Logo" 
                     width={200} 
                     height={200} 
@@ -136,7 +136,7 @@ export default function BrandingPage() {
                 </div>
               )}
 
-              <div className="flex-1 space-y-4 pt-2">
+              <div className="flex-1 space-y-4 pt-2 w-full">
                 <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                   <h4 className="font-bold text-blue-800 text-sm mb-1">Preview in Header</h4>
                   <div className="bg-white p-2 rounded-xl border flex items-center gap-2">
@@ -147,7 +147,7 @@ export default function BrandingPage() {
                         <Palette className="w-4 h-4 text-primary" />
                       )}
                     </div>
-                    <span className="font-bold text-sm">{appName || branding?.appName || "MandalPulse"}</span>
+                    <span className="font-bold text-sm truncate">{appName || "MandalPulse"}</span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -155,7 +155,7 @@ export default function BrandingPage() {
                   Maximum size: 500KB.
                 </p>
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="rounded-xl">
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="rounded-xl w-full md:w-auto">
                   Change Image
                 </Button>
               </div>
@@ -165,7 +165,7 @@ export default function BrandingPage() {
           <div className="pt-4 border-t">
             <Button className="w-full h-14 text-lg font-bold rounded-2xl shadow-lg shadow-primary/20" onClick={handleSave} disabled={isUpdating}>
               {isUpdating ? <Loader2 className="animate-spin mr-2" /> : <Check className="mr-2" />}
-              మార్పులను సేవ్ చేయండి (Save Changes)
+              మార్పులను సేవ్ చేయండి
             </Button>
           </div>
         </CardContent>

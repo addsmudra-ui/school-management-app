@@ -200,243 +200,242 @@ export default function ReporterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/50 pt-20 pb-24 md:pb-8">
+    <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white p-1 rounded-2xl shadow-sm border border-muted">
-            <TabsTrigger value="submit" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
-              <Pencil className="w-4 h-4 mr-2 hidden sm:inline" /> వార్త
-            </TabsTrigger>
-            <TabsTrigger value="portfolio" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
-              <Briefcase className="w-4 h-4 mr-2 hidden sm:inline" /> పోర్ట్‌ఫోలియో
-            </TabsTrigger>
-            <TabsTrigger value="feed" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
-              <Newspaper className="w-4 h-4 mr-2 hidden sm:inline" /> తాజా వార్తలు
-            </TabsTrigger>
-          </TabsList>
+      <main className="flex-1 overflow-y-auto pt-20 pb-24 md:pb-8 scroll-smooth">
+        <div className="max-w-4xl mx-auto px-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3 bg-white p-1 rounded-2xl shadow-sm border border-muted">
+              <TabsTrigger value="submit" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
+                <Pencil className="w-4 h-4 mr-2 hidden sm:inline" /> వార్త
+              </TabsTrigger>
+              <TabsTrigger value="portfolio" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
+                <Briefcase className="w-4 h-4 mr-2 hidden sm:inline" /> పోర్ట్‌ఫోలియో
+              </TabsTrigger>
+              <TabsTrigger value="feed" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
+                <Newspaper className="w-4 h-4 mr-2 hidden sm:inline" /> తాజా వార్తలు
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="submit" className="animate-in fade-in duration-500">
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-              <CardHeader className="bg-primary/5 border-b border-primary/10">
-                <CardTitle className="text-xl font-bold font-headline">కొత్త వార్తను సమర్పించండి</CardTitle>
-                <CardDescription>మీ మండలం మరియు జిల్లా వార్తలను ఇక్కడ నమోదు చేయండి.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">రాష్ట్రం</Label>
-                    <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
-                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
-                      <SelectContent>
-                        {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా</Label>
-                    <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
-                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
-                      <SelectContent>
-                        {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం</Label>
-                    <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="మండలం" /></SelectTrigger>
-                      <SelectContent>
-                        {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">వార్త వివరాలు (Content)</Label>
-                    <div className="relative">
-                      <Textarea 
-                        className="min-h-[200px] rounded-2xl p-4 text-base leading-relaxed border-muted focus:ring-primary" 
-                        value={content} 
-                        onChange={(e) => setContent(e.target.value)} 
-                        placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
-                      />
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="absolute bottom-4 right-4 gap-2 rounded-full bg-accent/10 text-accent hover:bg-accent/20"
-                        onClick={handleAiSummarize}
-                        disabled={isGeneratingAI || !content}
-                      >
-                        {isGeneratingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                        AI సారాంశం (Summarize)
-                      </Button>
+            <TabsContent value="submit" className="animate-in fade-in duration-500">
+              <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
+                <CardHeader className="bg-primary/5 border-b border-primary/10">
+                  <CardTitle className="text-xl font-bold font-headline">కొత్త వార్తను సమర్పించండి</CardTitle>
+                  <CardDescription>మీ మండలం మరియు జిల్లా వార్తలను ఇక్కడ నమోదు చేయండి.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 p-4 md:p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">రాష్ట్రం</Label>
+                      <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
+                        <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
+                        <SelectContent>
+                          {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా</Label>
+                      <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
+                        <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
+                        <SelectContent>
+                          {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం</Label>
+                      <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+                        <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="మండలం" /></SelectTrigger>
+                        <SelectContent>
+                          {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">ముఖ్యాంశం (Headline)</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={title} 
-                        onChange={(e) => setTitle(e.target.value)} 
-                        placeholder="వార్త ముఖ్యాంశం..." 
-                        className="h-12 rounded-xl font-bold text-lg"
-                      />
-                      <Button 
-                        variant="outline" 
-                        className="h-12 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5"
-                        onClick={handleAiHeadlines}
-                        disabled={isGeneratingAI || !content}
-                      >
-                        {isGeneratingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                        AI
-                      </Button>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">వార్త వివరాలు (Content)</Label>
+                      <div className="relative">
+                        <Textarea 
+                          className="min-h-[200px] rounded-2xl p-4 text-base leading-relaxed border-muted focus:ring-primary" 
+                          value={content} 
+                          onChange={(e) => setContent(e.target.value)} 
+                          placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
+                        />
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="absolute bottom-4 right-4 gap-2 rounded-full bg-accent/10 text-accent hover:bg-accent/20"
+                          onClick={handleAiSummarize}
+                          disabled={isGeneratingAI || !content}
+                        >
+                          {isGeneratingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                          AI సారాంశం
+                        </Button>
+                      </div>
                     </div>
-                    {aiHeadlines.length > 0 && (
-                      <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
-                        <p className="text-[10px] font-bold uppercase text-primary mb-2">AI సూచించిన ముఖ్యాంశాలు:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {aiHeadlines.map((h, i) => (
-                            <Badge 
-                              key={i} 
-                              variant="secondary" 
-                              className="cursor-pointer hover:bg-primary hover:text-white transition-colors py-1.5 px-3 rounded-lg"
-                              onClick={() => setTitle(h)}
-                            >
-                              {h}
-                            </Badge>
-                          ))}
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">ముఖ్యాంశం (Headline)</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={title} 
+                          onChange={(e) => setTitle(e.target.value)} 
+                          placeholder="వార్త ముఖ్యాంశం..." 
+                          className="h-12 rounded-xl font-bold text-lg"
+                        />
+                        <Button 
+                          variant="outline" 
+                          className="h-12 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5"
+                          onClick={handleAiHeadlines}
+                          disabled={isGeneratingAI || !content}
+                        >
+                          {isGeneratingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                          AI
+                        </Button>
+                      </div>
+                      {aiHeadlines.length > 0 && (
+                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
+                          <p className="text-[10px] font-bold uppercase text-primary mb-2">AI సూచించిన ముఖ్యాంశాలు:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {aiHeadlines.map((h, i) => (
+                              <Badge 
+                                key={i} 
+                                variant="secondary" 
+                                className="cursor-pointer hover:bg-primary hover:text-white transition-colors py-1.5 px-3 rounded-lg"
+                                onClick={() => setTitle(h)}
+                              >
+                                {h}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">చిత్రం (Image)</Label>
+                    {!imagePreview ? (
+                      <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors border-muted group">
+                        <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <p className="text-sm font-bold">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
+                        <p className="text-xs text-muted-foreground mt-1">JPG/JPEG మాత్రమే (Max 1MB)</p>
+                      </div>
+                    ) : (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg group">
+                        <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                        <Button 
+                          variant="destructive" 
+                          size="icon" 
+                          className="absolute top-4 right-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
+                          onClick={() => setImagePreview(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
                     )}
+                    <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">చిత్రం (Image)</Label>
-                  {!imagePreview ? (
-                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors border-muted group">
-                      <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                      <p className="text-sm font-bold">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
-                      <p className="text-xs text-muted-foreground mt-1">JPG/JPEG మాత్రమే (Max 1MB)</p>
-                    </div>
-                  ) : (
-                    <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg group">
-                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-4 right-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
-                        onClick={() => setImagePreview(null)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                  <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
-                </div>
-
-                <Button className="w-full h-14 text-xl font-bold shadow-lg shadow-primary/20 rounded-2xl" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
-                  సమర్పించు (Submit News)
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="portfolio" className="space-y-8">
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="border-none shadow-md bg-white rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">పరిశీలనలో (Reviewing)</p>
-                <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews.length}</h3>
+                  <Button className="w-full h-14 text-xl font-bold shadow-lg shadow-primary/20 rounded-2xl" onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
+                    సమర్పించు
+                  </Button>
+                </CardContent>
               </Card>
-              <Card className="border-none shadow-md bg-white rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ప్రచురించబడినవి (Live)</p>
-                <h3 className="text-3xl font-bold text-emerald-500 mt-1">{approvedNews.length}</h3>
-              </Card>
-            </div>
+            </TabsContent>
 
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold font-headline">నా వార్తా ప్రస్థానం (My Submissions)</h2>
+            <TabsContent value="portfolio" className="space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="border-none shadow-md bg-white rounded-2xl p-4 text-center">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">పరిశీలనలో</p>
+                  <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews.length}</h3>
+                </Card>
+                <Card className="border-none shadow-md bg-white rounded-2xl p-4 text-center">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ప్రచురించబడినవి</p>
+                  <h3 className="text-3xl font-bold text-emerald-500 mt-1">{approvedNews.length}</h3>
+                </Card>
               </div>
 
-              {pendingNews.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2 px-2">
-                    <Clock className="w-3.5 h-3.5" />
-                    ఎడిటోరియల్ స్టేజ్ (Review Stage)
-                  </h3>
-                  {pendingNews.map((post) => (
-                    <PortfolioCard key={post.id} post={post as any} />
-                  ))}
-                </div>
-              )}
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold font-headline px-2">నా వార్తా ప్రస్థానం</h2>
 
-              {approvedNews.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase text-emerald-600 tracking-widest flex items-center gap-2 px-2">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    లైవ్ వార్తలు (Live News)
-                  </h3>
-                  {approvedNews.map((post) => (
-                    <PortfolioCard key={post.id} post={post as any} isPublished />
-                  ))}
-                </div>
-              )}
-
-              {pendingNews.length === 0 && approvedNews.length === 0 && (
-                <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-muted">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <FileText className="w-10 h-10 text-muted-foreground/20" />
+                {pendingNews.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2 px-2">
+                      <Clock className="w-3.5 h-3.5" />
+                      ఎడిటోరియల్ స్టేజ్
+                    </h3>
+                    {pendingNews.map((post) => (
+                      <PortfolioCard key={post.id} post={post as any} />
+                    ))}
                   </div>
-                  <h3 className="text-lg font-bold">వార్తలు ఏవీ లేవు</h3>
-                  <p className="text-muted-foreground">మీరు ఇంకా ఎటువంటి వార్తలను సమర్పించలేదు.</p>
-                  <Button variant="link" className="mt-2" onClick={() => setActiveTab("submit")}>మొదటి వార్త రాయండి</Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+                )}
 
-          <TabsContent value="feed" className="space-y-6">
-             <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold font-headline">తాజా వార్తలు (Global Feed)</h2>
-                  <p className="text-sm text-muted-foreground">అన్ని ప్రాంతాల నుండి తాజా అప్‌డేట్‌లు.</p>
-                </div>
-                <Badge variant="outline" className="bg-white">{globalNews.length} Posts</Badge>
-             </div>
+                {approvedNews.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase text-emerald-600 tracking-widest flex items-center gap-2 px-2">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      లైవ్ వార్తలు
+                    </h3>
+                    {approvedNews.map((post) => (
+                      <PortfolioCard key={post.id} post={post as any} isPublished />
+                    ))}
+                  </div>
+                )}
 
-             <div className="grid gap-6">
-               {isGlobalLoading ? (
-                 <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>
-               ) : globalNews.length > 0 ? (
-                 globalNews.map((post) => (
-                   <PortfolioCard key={post.id} post={post as any} isPublished />
-                 ))
-               ) : (
-                 <div className="text-center py-24 bg-white rounded-3xl border border-muted">
-                   <p className="text-muted-foreground italic">తాజా వార్తలు ఏవీ లేవు.</p>
-                 </div>
-               )}
-             </div>
-          </TabsContent>
-        </Tabs>
-        
-        <Footer />
-      </div>
-    </main>
+                {pendingNews.length === 0 && approvedNews.length === 0 && (
+                  <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-muted">
+                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <FileText className="w-10 h-10 text-muted-foreground/20" />
+                    </div>
+                    <h3 className="text-lg font-bold">వార్తలు ఏవీ లేవు</h3>
+                    <p className="text-muted-foreground">మీరు ఇంకా ఎటువంటి వార్తలను సమర్పించలేదు.</p>
+                    <Button variant="link" className="mt-2" onClick={() => setActiveTab("submit")}>మొదటి వార్త రాయండి</Button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="feed" className="space-y-6">
+               <div className="flex items-center justify-between px-2">
+                  <div>
+                    <h2 className="text-xl font-bold font-headline">తాజా వార్తలు</h2>
+                    <p className="text-sm text-muted-foreground">అన్ని ప్రాంతాల నుండి తాజా అప్‌డేట్‌లు.</p>
+                  </div>
+                  <Badge variant="outline" className="bg-white">{globalNews.length} Posts</Badge>
+               </div>
+
+               <div className="grid gap-6">
+                 {isGlobalLoading ? (
+                   <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>
+                 ) : globalNews.length > 0 ? (
+                   globalNews.map((post) => (
+                     <PortfolioCard key={post.id} post={post as any} isPublished />
+                   ))
+                 ) : (
+                   <div className="text-center py-24 bg-white rounded-3xl border border-muted">
+                     <p className="text-muted-foreground italic">తాజా వార్తలు ఏవీ లేవు.</p>
+                   </div>
+                 )}
+               </div>
+            </TabsContent>
+          </Tabs>
+          <Footer />
+        </div>
+      </main>
+    </div>
   );
 }
 
 function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean }) {
   const statusConfig = {
-    pending: { color: "bg-amber-50 text-amber-700", icon: Clock, label: "పరిశీలనలో (Reviewing)" },
-    approved: { color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2, label: "ప్రచురించబడింది (Published)" },
-    rejected: { color: "bg-rose-50 text-rose-700", icon: AlertCircle, label: "తిరస్కరించబడింది (Rejected)" }
+    pending: { color: "bg-amber-50 text-amber-700", icon: Clock, label: "పరిశీలనలో" },
+    approved: { color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2, label: "ప్రచురించబడింది" },
+    rejected: { color: "bg-rose-50 text-rose-700", icon: AlertCircle, label: "తిరస్కరించబడింది" }
   };
 
   const config = statusConfig[post.status as keyof typeof statusConfig] || statusConfig.pending;
@@ -444,7 +443,7 @@ function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean
   return (
     <Card className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all rounded-3xl bg-white group">
       <div className="flex flex-col sm:flex-row">
-        <div className="relative w-full sm:w-64 h-48">
+        <div className="relative w-full sm:w-64 h-48 shrink-0">
           <Image src={post.image_url} alt={post.title} fill className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute bottom-4 left-4 flex gap-2">
@@ -485,7 +484,7 @@ function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean
                 <MessageCircle className={cn("w-4 h-4", isPublished ? "text-primary fill-primary/10" : "text-muted-foreground/40")} />
                 <span className="text-xs font-bold text-slate-700">{post.commentsCount || 0}</span>
               </div>
-              <div className="flex items-center gap-1.5 ml-2 border-l pl-4">
+              <div className="flex items-center gap-1.5 ml-2 border-l pl-4 hidden xs:flex">
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-[11px] font-bold text-muted-foreground">{post.location.mandal}</span>
               </div>
