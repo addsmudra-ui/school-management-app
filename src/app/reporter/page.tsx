@@ -14,12 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock, CheckCircle2, AlertCircle, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, doc } from "firebase/firestore";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
+import { cn } from "@/lib/utils";
 
 export default function ReporterPage() {
   const firestore = useFirestore();
@@ -43,7 +45,7 @@ export default function ReporterPage() {
   const userDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
   const { data: userProfile } = useDoc(userDocRef);
 
-  // Real-time pending news list
+  // Real-time pending news list (includes rejected)
   const pendingNewsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -295,22 +297,30 @@ export default function ReporterPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="portfolio">
-            <div className="grid gap-6">
-              <div className="flex items-center justify-between mb-2">
+          <TabsContent value="portfolio" className="space-y-8">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="border-none shadow-md bg-white rounded-2xl p-4">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">పరిశీలనలో (Reviewing)</p>
+                <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews?.filter(p => p.status === 'pending').length || 0}</h3>
+              </Card>
+              <Card className="border-none shadow-md bg-white rounded-2xl p-4">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ప్రచురించబడినవి (Live)</p>
+                <h3 className="text-3xl font-bold text-emerald-500 mt-1">{approvedNews?.length || 0}</h3>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold font-headline">నా వార్తా ప్రస్థానం (My Submissions)</h2>
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="rounded-full bg-white">In Review: {pendingNews?.length || 0}</Badge>
-                  <Badge variant="outline" className="rounded-full bg-white">Published: {approvedNews?.length || 0}</Badge>
-                </div>
               </div>
 
               {/* Active/Pending Submissions */}
               {pendingNews && pendingNews.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                    <Clock className="w-3 h-3" />
-                    ప్రస్తుత స్థితి (Under Review)
+                  <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2 px-2">
+                    <Clock className="w-3.5 h-3.5" />
+                    ఎడిటోరియల్ స్టేజ్ (Review Stage)
                   </h3>
                   {pendingNews.map((post) => (
                     <PortfolioCard key={post.id} post={post as any} />
@@ -320,10 +330,10 @@ export default function ReporterPage() {
 
               {/* Published History */}
               {approvedNews && approvedNews.length > 0 && (
-                <div className="space-y-4 mt-4">
-                  <h3 className="text-xs font-bold uppercase text-emerald-600 tracking-widest flex items-center gap-2">
-                    <CheckCircle2 className="w-3 h-3" />
-                    ప్రచురించబడినవి (Published)
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase text-emerald-600 tracking-widest flex items-center gap-2 px-2">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    లైవ్ వార్తలు (Live News)
                   </h3>
                   {approvedNews.map((post) => (
                     <PortfolioCard key={post.id} post={post as any} isPublished />
@@ -349,52 +359,73 @@ export default function ReporterPage() {
   );
 }
 
-function PortfolioCard({ post, isPublished }: { post: NewsPost, isPublished?: boolean }) {
+function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean }) {
+  const statusConfig = {
+    pending: { color: "bg-amber-50 text-amber-700", icon: Clock, label: "పరిశీలనలో (Reviewing)" },
+    approved: { color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2, label: "ప్రచురించబడింది (Published)" },
+    rejected: { color: "bg-rose-50 text-rose-700", icon: AlertCircle, label: "తిరస్కరించబడింది (Rejected)" }
+  };
+
+  const config = statusConfig[post.status as keyof typeof statusConfig] || statusConfig.pending;
+
   return (
-    <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all rounded-2xl bg-white group">
+    <Card className="overflow-hidden border-none shadow-md hover:shadow-xl transition-all rounded-3xl bg-white group">
       <div className="flex flex-col sm:flex-row">
-        <div className="relative w-full sm:w-56 h-36">
+        <div className="relative w-full sm:w-64 h-48">
           <Image src={post.image_url} alt={post.title} fill className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent sm:hidden" />
-          <div className="absolute bottom-3 left-3 sm:hidden">
-            <Badge className={cn(
-              "rounded-full",
-              post.status === 'approved' ? "bg-emerald-500" : 
-              post.status === 'rejected' ? "bg-rose-500" : "bg-amber-500"
-            )}>
-              {post.status}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute bottom-4 left-4 flex gap-2">
+            <Badge className={cn("rounded-full border-none px-3 py-1 text-[10px] font-bold uppercase", config.color)}>
+              <config.icon className="w-3 h-3 mr-1" />
+              {config.label}
             </Badge>
           </div>
         </div>
-        <div className="p-5 flex-1 flex flex-col justify-between min-w-0">
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-[10px] font-mono font-bold text-primary/60 uppercase tracking-tighter">
+        <div className="p-6 flex-1 flex flex-col justify-between min-w-0">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-mono font-bold text-primary/60 uppercase tracking-tighter bg-primary/5 px-2 py-0.5 rounded">
                 CODE: {post.unique_code}
               </span>
-              <div className="hidden sm:flex items-center gap-2">
-                <Badge variant="secondary" className={cn(
-                  "font-bold text-[10px] uppercase",
-                  post.status === 'approved' ? "bg-emerald-50 text-emerald-700" : 
-                  post.status === 'rejected' ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"
-                )}>
-                  {post.status === 'approved' ? <CheckCircle2 className="w-3 h-3 mr-1" /> : 
-                   post.status === 'rejected' ? <AlertCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
-                  {post.status}
-                </Badge>
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString('te-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : "Just now"}
+              </span>
+            </div>
+            
+            <div>
+              <h3 className="font-bold text-xl line-clamp-1 group-hover:text-primary transition-colors leading-snug">
+                {post.title}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                {post.content}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between border-t pt-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <Heart className={cn("w-4 h-4", isPublished ? "text-rose-500 fill-rose-500" : "text-muted-foreground/40")} />
+                <span className="text-xs font-bold text-slate-700">{post.likes || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <MessageCircle className={cn("w-4 h-4", isPublished ? "text-primary fill-primary/10" : "text-muted-foreground/40")} />
+                <span className="text-xs font-bold text-slate-700">{post.commentsCount || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5 ml-2 border-l pl-4">
+                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-[11px] font-bold text-muted-foreground">{post.location.mandal}</span>
               </div>
             </div>
-            <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">{post.title}</h3>
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{post.content}</p>
-          </div>
-          <div className="mt-4 flex items-center justify-between border-t pt-3">
-            <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
-              <Star className="w-3 h-3 text-amber-400" />
-              {post.location.mandal}, {post.location.district}
-            </p>
-            <span className="text-[10px] text-muted-foreground">
-              {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString('te-IN') : "Pending"}
-            </span>
+
+            {isPublished && (
+              <Link href={`/?postId=${post.id}`}>
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-bold text-primary hover:bg-primary/5 rounded-full">
+                  View Live
+                  <ChevronRight className="w-3 h-3" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
