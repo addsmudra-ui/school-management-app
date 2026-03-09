@@ -1,22 +1,21 @@
-
 'use client';
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Clock, Star, Edit3, Save, User as UserIcon } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Edit3 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { NewsPost, ReporterRole } from "@/lib/mock-data";
+import { ReporterRole } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 
 export default function ApprovalsPage() {
   const firestore = useFirestore();
@@ -25,12 +24,12 @@ export default function ApprovalsPage() {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  // Simplified query: No orderBy to prevent Index Required errors in the prototype
   const pendingQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'pending_news_posts'),
-      where('status', '==', 'pending'),
-      orderBy('timestamp', 'asc')
+      where('status', '==', 'pending')
     );
   }, [firestore]);
 
@@ -56,10 +55,9 @@ export default function ApprovalsPage() {
 
   const handleSaveEdit = () => {
     if (!editingPost) return;
-    // For pending news updates
     NewsService.update(firestore, editingPost.id, { ...editingPost });
     setIsEditDialogOpen(false);
-    toast({ title: "Saved", description: "Changes updated locally." });
+    toast({ title: "Saved", description: "Changes updated." });
   };
 
   const handleApproveFromEdit = () => {
@@ -71,11 +69,9 @@ export default function ApprovalsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-headline tracking-tight">ఆమోదాల క్యూ (Approvals Queue)</h1>
-          <p className="text-muted-foreground mt-1">రిపోర్టర్ల నుండి వచ్చిన వార్తలను సమీక్షించండి.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold font-headline tracking-tight">ఆమోదాల క్యూ (Approvals)</h1>
+        <p className="text-muted-foreground mt-1">రిపోర్టర్ల నుండి వచ్చిన వార్తలను సమీక్షించండి.</p>
       </div>
 
       <Card className="border-none shadow-xl overflow-hidden rounded-2xl">
@@ -94,7 +90,7 @@ export default function ApprovalsPage() {
                 <TableHead className="font-bold">రిపోర్టర్</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold">ID / కోడ్</TableHead>
-                <TableHead className="font-bold text-right pr-6">చర్యలు (Actions)</TableHead>
+                <TableHead className="font-bold text-right pr-6">చర్యలు</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,7 +128,7 @@ export default function ApprovalsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
-                    {isLoading ? "Loading news..." : "ప్రస్తుతానికి పెండింగ్ వార్తలు ఏవీ లేవు."}
+                    {isLoading ? "Loading news..." : "పెండింగ్ వార్తలు ఏవీ లేవు."}
                   </TableCell>
                 </TableRow>
               )}

@@ -21,8 +21,11 @@ export interface UseCollectionResult<T> {
   error: FirestoreError | Error | null;
 }
 
+/**
+ * React hook to subscribe to a Firestore collection or query in real-time.
+ */
 export function useCollection<T = any>(
-  targetRefOrQuery:
+  memoizedTargetRefOrQuery:
     | CollectionReference<DocumentData>
     | Query<DocumentData>
     | null
@@ -34,8 +37,7 @@ export function useCollection<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-
-    if (!targetRefOrQuery) {
+    if (!memoizedTargetRefOrQuery) {
       setData(null);
       setIsLoading(false);
       return;
@@ -44,10 +46,8 @@ export function useCollection<T = any>(
     setIsLoading(true);
 
     const unsubscribe = onSnapshot(
-      targetRefOrQuery,
-
+      memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
-
         const docs: WithId<T>[] = snapshot.docs.map(doc => ({
           ...(doc.data() as T),
           id: doc.id
@@ -57,19 +57,27 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-
       (err: FirestoreError) => {
-
         if (err.code === "permission-denied") {
+          // Attempt to extract the path for better debugging context
+          let path = "unknown";
+          try {
+             if ('path' in memoizedTargetRefOrQuery) {
+               path = (memoizedTargetRefOrQuery as CollectionReference).path;
+             } else if ((memoizedTargetRefOrQuery as any)._query?.path?.canonicalString) {
+               path = (memoizedTargetRefOrQuery as any)._query.path.canonicalString();
+             }
+          } catch (e) {
+            path = "error-resolving-path";
+          }
 
           const contextualError = new FirestorePermissionError({
             operation: "list",
-            path: "unknown"
+            path: path
           });
 
           errorEmitter.emit("permission-error", contextualError);
           setError(contextualError);
-
         } else {
           setError(err);
         }
@@ -80,8 +88,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-
-  }, [targetRefOrQuery]);
+  }, [memoizedTargetRefOrQuery]);
 
   return { data, isLoading, error };
 }

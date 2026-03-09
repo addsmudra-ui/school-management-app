@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -9,7 +8,6 @@ import {
   deleteDoc, 
   query, 
   where, 
-  orderBy, 
   getDocs,
   limit,
   serverTimestamp,
@@ -21,7 +19,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { NewsPost, UserProfile, Comment, MOCK_NEWS } from './mock-data';
+import { NewsPost, UserProfile, Comment, MOCK_NEWS, LOCATIONS_BY_STATE } from './mock-data';
 
 export type SentNotification = {
   id: string;
@@ -46,12 +44,12 @@ export const AdminService = {
   },
   setPassword: (db: Firestore, newPassword: string) => {
     const configRef = doc(db, 'config', 'admin');
-    setDocumentNonBlocking(configRef, { password: newPassword }, { merge: true });
+    setDocumentNonBlocking(configRef, { password: newPassword, updatedAt: serverTimestamp() }, { merge: true });
   },
   seedDemoNews: async (db: Firestore) => {
     const batch = writeBatch(db);
     
-    // Seed News
+    // 1. Seed News Posts
     MOCK_NEWS.forEach((news) => {
       const docRef = doc(db, 'approved_news_posts', news.id);
       batch.set(docRef, {
@@ -60,17 +58,14 @@ export const AdminService = {
       });
     });
 
-    // Seed Default Admin Password
+    // 2. Seed Default Admin Config
     const adminRef = doc(db, 'config', 'admin');
     batch.set(adminRef, { password: 'admin123' }, { merge: true });
 
-    // Seed Locations Metadata
+    // 3. Seed Locations Metadata
     const locRef = doc(db, 'metadata', 'locations');
     batch.set(locRef, {
-      "Telangana": {
-        "Warangal": ["Hanamkonda", "Kazipet", "Inavole", "Wardhannapet", "Dharmasagar"],
-        "Hyderabad": ["Ameerpet", "Banjara Hills", "Kukatpally", "Secunderabad", "Mehdipatnam"]
-      }
+      ...LOCATIONS_BY_STATE
     }, { merge: true });
 
     await batch.commit();
@@ -79,7 +74,6 @@ export const AdminService = {
 
 export const NewsService = {
   add: (db: Firestore, post: Omit<NewsPost, 'id' | 'timestamp'>) => {
-    // If status is approved (admin post), go straight to approved collection
     const collectionName = post.status === 'approved' ? 'approved_news_posts' : 'pending_news_posts';
     const newsRef = collection(db, collectionName);
     const newDocRef = doc(newsRef);
@@ -94,7 +88,6 @@ export const NewsService = {
     
     setDocumentNonBlocking(newDocRef, data, { merge: true });
 
-    // If it's a direct approved post, notify users
     if (post.status === 'approved') {
       NotificationService.send(db, {
         title: `బ్రేకింగ్: ${post.title}`,
@@ -177,8 +170,6 @@ export const UserService = {
 
   create: async (db: Firestore, profile: UserProfile) => {
     const userRef = doc(db, 'users', profile.id);
-    
-    // Clean object of any undefined values before sending to Firestore
     const cleanProfile = JSON.parse(JSON.stringify(profile));
     
     await setDoc(userRef, {
@@ -211,7 +202,6 @@ export const UserService = {
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
-    deleteDocumentNonBlocking(doc(db, 'users', userId, 'private', 'likes'));
   }
 };
 
