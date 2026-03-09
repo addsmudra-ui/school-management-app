@@ -1,3 +1,4 @@
+
 export const STATES = ["Telangana", "Andhra Pradesh"];
 
 export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
@@ -33,7 +34,8 @@ export type ReporterRole = 'Reporter' | 'Sr. Reporter' | 'Desk Incharge';
 
 export type UserProfile = {
   id: string;
-  phone: string;
+  phone?: string;
+  email?: string;
   name: string;
   role: 'user' | 'reporter' | 'admin' | 'editor';
   status: 'pending' | 'approved' | 'rejected';

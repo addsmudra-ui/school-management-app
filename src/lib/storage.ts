@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -163,6 +164,18 @@ export const UserService = {
   getByPhone: async (db: Firestore, phone: string): Promise<UserProfile | null> => {
     try {
       const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) return null;
+      const data = querySnapshot.docs[0].data();
+      return { ...data, id: querySnapshot.docs[0].id } as UserProfile;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  getByEmail: async (db: Firestore, email: string): Promise<UserProfile | null> => {
+    try {
+      const q = query(collection(db, 'users'), where('email', '==', email), limit(1));
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) return null;
       const data = querySnapshot.docs[0].data();

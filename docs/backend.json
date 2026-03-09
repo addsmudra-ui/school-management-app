@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -7,6 +8,7 @@
       "properties": {
         "id": { "type": "string", "description": "Firebase Auth UID" },
         "phone": { "type": "string", "description": "User's phone number" },
+        "email": { "type": "string", "format": "email", "description": "User's email address" },
         "name": { "type": "string", "description": "User's full name" },
         "role": { "type": "string", "enum": ["user", "reporter", "admin", "editor"], "description": "Role of the user" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Approval status for reporters" },
@@ -20,7 +22,7 @@
         },
         "photo": { "type": "string", "description": "Base64 encoded profile photo" }
       },
-      "required": ["id", "phone", "role", "name", "status"]
+      "required": ["id", "role", "name", "status"]
     },
     "NewsPost": {
       "title": "NewsPost",

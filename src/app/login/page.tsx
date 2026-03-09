@@ -7,18 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2 } from "lucide-react";
+import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2, Mail, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser, useAuth } from "@/firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
 export default function LoginPage() {
   const firestore = useFirestore();
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const [step, setStep] = useState<'phone' | 'otp' | 'details'>('phone');
+  const [method, setMethod] = useState<'phone' | 'email'>('phone');
+  const [step, setStep] = useState<'auth' | 'otp' | 'details'>('auth');
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor'>("user");
@@ -31,57 +35,70 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   const handleNext = async () => {
-    if (!firestore || isUserLoading) {
+    if (!firestore || !auth || isUserLoading) {
       toast({ variant: "destructive", title: "Wait", description: "Firebase is initializing..." });
       return;
     }
 
     setIsLoading(true);
     try {
-      if (step === 'phone') {
-        if (!phone || phone.length < 10) {
-          toast({ variant: "destructive", title: "Error", description: "Please enter a valid 10-digit phone number." });
-          setIsLoading(false);
-          return;
-        }
-        
-        const existing = await UserService.getByPhone(firestore, phone);
-        if (existing) {
-          // Log existing user info to local storage for the navbar/UI
-          localStorage.setItem('mandalPulse_role', existing.role);
-          localStorage.setItem('mandalPulse_userName', existing.name);
-          localStorage.setItem('mandalPulse_userPhone', existing.phone);
-          localStorage.setItem('mandalPulse_userStatus', existing.status);
-          
-          if (existing.location) {
-            localStorage.setItem('mandalPulse_state', existing.location.state);
-            localStorage.setItem('mandalPulse_district', existing.location.district);
-            localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
-          }
-          if (existing.photo) {
-            localStorage.setItem('mandalPulse_userPhoto', existing.photo);
-          }
-          
-          window.dispatchEvent(new Event('mandalPulse_authChanged'));
-          
-          // If admin/editor, they still need to provide a password for session validation
-          if (existing.role === 'admin' || existing.role === 'editor') {
-            setRole(existing.role);
-            setName(existing.name);
-            setStep('details'); 
-          } else {
-            router.push(existing.role === 'reporter' ? '/reporter' : '/');
+      if (step === 'auth') {
+        if (method === 'phone') {
+          if (!phone || phone.length < 10) {
+            toast({ variant: "destructive", title: "Error", description: "Please enter a valid 10-digit phone number." });
+            setIsLoading(false);
             return;
           }
+          
+          const existing = await UserService.getByPhone(firestore, phone);
+          if (existing) {
+            syncLocalStorage(existing);
+            if (existing.role === 'admin' || existing.role === 'editor') {
+              setRole(existing.role);
+              setName(existing.name);
+              setStep('details'); 
+            } else {
+              router.push(existing.role === 'reporter' ? '/reporter' : '/');
+              return;
+            }
+          } else {
+            setStep('otp');
+          }
         } else {
-          setStep('otp');
+          // Email Login Logic
+          if (!email || !password) {
+            toast({ variant: "destructive", title: "Error", description: "Email and password are required." });
+            setIsLoading(false);
+            return;
+          }
+
+          try {
+            // Try signing in
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const existing = await UserService.getByEmail(firestore, email);
+            if (existing) {
+              syncLocalStorage(existing);
+              const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/';
+              router.push(targetPath);
+            } else {
+              // Auth successful but no Firestore record? Go to details.
+              setStep('details');
+            }
+          } catch (error: any) {
+            if (error.code === 'auth/user-not-found') {
+              // New user signing up with email
+              setStep('details');
+            } else {
+              throw error;
+            }
+          }
         }
       }
       else if (step === 'otp') {
         setStep('details');
       }
       else {
-        // Validation for Admin/Editor
+        // Details Step
         if (role === 'admin' || role === 'editor') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
@@ -91,41 +108,35 @@ export default function LoginPage() {
           }
         }
 
-        if (!user?.uid) {
-          throw new Error("Authentication session expired. Please reload.");
+        let currentUser = user;
+        if (method === 'email' && !user) {
+          // Create Firebase Auth user first if signing up with email
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          currentUser = userCredential.user;
         }
 
-        // Construct profile object carefully to avoid undefined fields
+        if (!currentUser?.uid) {
+          throw new Error("Authentication session failed. Please reload.");
+        }
+
         const newUser: any = {
-          id: user.uid,
-          phone,
+          id: currentUser.uid,
           name,
           role,
           status: role === 'reporter' ? 'pending' : 'approved',
         };
 
-        // Only add location if it's a reader or reporter
+        if (phone) newUser.phone = phone;
+        if (email) newUser.email = email;
+
         if (role !== 'admin' && role !== 'editor' && state && district && mandal) {
           newUser.location = { state, district, mandal };
         }
 
         await UserService.create(firestore, newUser);
-
-        // Sync to local storage
-        localStorage.setItem('mandalPulse_role', role);
-        localStorage.setItem('mandalPulse_userName', name);
-        localStorage.setItem('mandalPulse_userPhone', phone);
-        localStorage.setItem('mandalPulse_userStatus', newUser.status);
+        syncLocalStorage(newUser);
         
-        if (newUser.location) {
-          localStorage.setItem('mandalPulse_state', state);
-          localStorage.setItem('mandalPulse_district', district);
-          localStorage.setItem('mandalPulse_mandal', mandal);
-        }
-
-        window.dispatchEvent(new Event('mandalPulse_authChanged'));
         toast({ title: "Welcome", description: "Profile setup complete." });
-        
         const targetPath = (role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/';
         router.push(targetPath);
       }
@@ -139,6 +150,24 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const syncLocalStorage = (profile: any) => {
+    localStorage.setItem('mandalPulse_role', profile.role);
+    localStorage.setItem('mandalPulse_userName', profile.name);
+    if (profile.phone) localStorage.setItem('mandalPulse_userPhone', profile.phone);
+    localStorage.setItem('mandalPulse_userStatus', profile.status);
+    
+    if (profile.location) {
+      localStorage.setItem('mandalPulse_state', profile.location.state);
+      localStorage.setItem('mandalPulse_district', profile.location.district);
+      localStorage.setItem('mandalPulse_mandal', profile.location.mandal);
+    }
+    if (profile.photo) {
+      localStorage.setItem('mandalPulse_userPhoto', profile.photo);
+    }
+    
+    window.dispatchEvent(new Event('mandalPulse_authChanged'));
   };
 
   const isDetailsValid = () => {
@@ -159,10 +188,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden">
         <CardHeader className="text-center relative bg-primary/5 pb-8">
-          {step !== 'phone' && (
+          {step !== 'auth' && (
             <button 
               className="absolute left-4 top-4 p-2 rounded-full hover:bg-white transition-colors"
-              onClick={() => setStep(step === 'details' ? 'otp' : 'phone')}
+              onClick={() => setStep(step === 'details' ? 'otp' : 'auth')}
               disabled={isLoading}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -175,22 +204,67 @@ export default function LoginPage() {
           <CardDescription>మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-8">
-          {step === 'phone' && (
+          {step === 'auth' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="space-y-2">
-                <Label htmlFor="phone">ఫోన్ నంబర్ (Phone Number)</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-muted-foreground">+91</span>
-                  <Input 
-                    id="phone" 
-                    className="pl-12 h-12 rounded-xl" 
-                    placeholder="10 అంకెల నంబర్" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  />
-                </div>
+              <div className="flex gap-2 p-1 bg-muted rounded-xl mb-4">
+                <Button 
+                  variant={method === 'phone' ? 'default' : 'ghost'} 
+                  className="flex-1 rounded-lg"
+                  onClick={() => setMethod('phone')}
+                >
+                  <Phone className="w-4 h-4 mr-2" /> Phone
+                </Button>
+                <Button 
+                  variant={method === 'email' ? 'default' : 'ghost'} 
+                  className="flex-1 rounded-lg"
+                  onClick={() => setMethod('email')}
+                >
+                  <Mail className="w-4 h-4 mr-2" /> Email
+                </Button>
               </div>
-              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={phone.length < 10 || isLoading}>
+
+              {method === 'phone' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="phone">ఫోన్ నంబర్ (Phone Number)</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-muted-foreground">+91</span>
+                    <Input 
+                      id="phone" 
+                      className="pl-12 h-12 rounded-xl" 
+                      placeholder="10 అంకెల నంబర్" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">ఈమెయిల్ (Email Address)</Label>
+                    <Input 
+                      id="email" 
+                      type="email"
+                      className="h-12 rounded-xl" 
+                      placeholder="example@mail.com" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">పాస్‌వర్డ్ (Password)</Label>
+                    <Input 
+                      id="password" 
+                      type="password"
+                      className="h-12 rounded-xl" 
+                      placeholder="Your Password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
               </Button>
             </div>
