@@ -102,8 +102,14 @@ export default function LoginPage() {
             const existing = await UserService.getByEmail(firestore, email);
             if (existing) {
               syncLocalStorage(existing);
-              const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/';
-              router.push(targetPath);
+              if (existing.role === 'admin' || existing.role === 'editor') {
+                setRole(existing.role);
+                setName(existing.name);
+                setStep('details'); 
+              } else {
+                const targetPath = existing.role === 'reporter' ? '/reporter' : '/';
+                router.push(targetPath);
+              }
             } else {
               setStep('details');
             }
@@ -204,6 +210,8 @@ export default function LoginPage() {
       </div>
     );
   }
+
+  const isAdminOrEditor = role === 'admin' || role === 'editor';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -343,22 +351,27 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <Label>నేను ఒక... (I am a...)</Label>
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
-                    <SelectTrigger className="h-11 rounded-xl">
+                    <SelectTrigger className="h-11 rounded-xl" disabled={isAdminOrEditor}>
                       <div className="flex items-center gap-2">
-                        {(role === 'admin' || role === 'editor') ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
+                        {isAdminOrEditor ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
                         <SelectValue />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">సాధారణ పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">స్థానిక రిపోర్టర్ (Reporter)</SelectItem>
-                      <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
-                      <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
+                      {/* Only show Admin/Editor if they were identified during step one */}
+                      {isAdminOrEditor && (
+                        <>
+                          <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
+                          <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 
-                {(role === 'admin' || role === 'editor') && (
+                {isAdminOrEditor && (
                   <div className="space-y-2 animate-in zoom-in-95 duration-200">
                     <Label className="text-rose-600 font-bold">పాస్‌వర్డ్ (Password)</Label>
                     <Input 
@@ -372,7 +385,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {role !== 'admin' && role !== 'editor' && (
+                {!isAdminOrEditor && (
                   <>
                     <div className="space-y-2">
                       <Label>రాష్ట్రం (State)</Label>
