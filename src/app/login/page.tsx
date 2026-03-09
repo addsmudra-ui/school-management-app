@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { STATES, LOCATIONS_BY_STATE, UserProfile } from "@/lib/mock-data";
+import { STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser } from "@/firebase";
@@ -46,6 +47,7 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
+          // Log existing user info to local storage for the navbar/UI
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -56,9 +58,13 @@ export default function LoginPage() {
             localStorage.setItem('mandalPulse_district', existing.location.district);
             localStorage.setItem('mandalPulse_mandal', existing.location.mandal);
           }
+          if (existing.photo) {
+            localStorage.setItem('mandalPulse_userPhoto', existing.photo);
+          }
           
           window.dispatchEvent(new Event('mandalPulse_authChanged'));
           
+          // If admin/editor, they still need to provide a password for session validation
           if (existing.role === 'admin' || existing.role === 'editor') {
             setRole(existing.role);
             setName(existing.name);
@@ -75,6 +81,7 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
+        // Validation for Admin/Editor
         if (role === 'admin' || role === 'editor') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
@@ -88,23 +95,29 @@ export default function LoginPage() {
           throw new Error("Authentication session expired. Please reload.");
         }
 
-        const newUser: UserProfile = {
+        // Construct profile object carefully to avoid undefined fields
+        const newUser: any = {
           id: user.uid,
           phone,
           name,
           role,
           status: role === 'reporter' ? 'pending' : 'approved',
-          location: (role !== 'admin' && role !== 'editor') ? { state, district, mandal } : undefined
         };
+
+        // Only add location if it's a reader or reporter
+        if (role !== 'admin' && role !== 'editor' && state && district && mandal) {
+          newUser.location = { state, district, mandal };
+        }
 
         await UserService.create(firestore, newUser);
 
+        // Sync to local storage
         localStorage.setItem('mandalPulse_role', role);
         localStorage.setItem('mandalPulse_userName', name);
         localStorage.setItem('mandalPulse_userPhone', phone);
         localStorage.setItem('mandalPulse_userStatus', newUser.status);
         
-        if (role !== 'admin' && role !== 'editor' && state) {
+        if (newUser.location) {
           localStorage.setItem('mandalPulse_state', state);
           localStorage.setItem('mandalPulse_district', district);
           localStorage.setItem('mandalPulse_mandal', mandal);
@@ -112,9 +125,12 @@ export default function LoginPage() {
 
         window.dispatchEvent(new Event('mandalPulse_authChanged'));
         toast({ title: "Welcome", description: "Profile setup complete." });
-        router.push((role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/');
+        
+        const targetPath = (role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/';
+        router.push(targetPath);
       }
     } catch (error: any) {
+      console.error("Login detail error:", error);
       toast({ 
         variant: "destructive", 
         title: "Login Error", 
@@ -128,7 +144,7 @@ export default function LoginPage() {
   const isDetailsValid = () => {
     if (!name) return false;
     if (role === 'admin' || role === 'editor') return password.length >= 4;
-    return state && district && mandal;
+    return !!(state && district && mandal);
   };
 
   if (isUserLoading) {
@@ -226,11 +242,12 @@ export default function LoginPage() {
                     <Label className="text-rose-600 font-bold">పాస్‌వర్డ్ (Password)</Label>
                     <Input 
                       type="password" 
-                      placeholder="Enter Admin Password (Default: admin123)" 
+                      placeholder="Enter Admin Password" 
                       value={password} 
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-11 rounded-xl border-rose-200 focus:ring-rose-500"
                     />
+                    <p className="text-[10px] text-muted-foreground italic">Default password is admin123</p>
                   </div>
                 )}
 

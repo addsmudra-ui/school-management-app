@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -146,8 +147,12 @@ export const UserService = {
 
   create: async (db: Firestore, profile: UserProfile) => {
     const userRef = doc(db, 'users', profile.id);
+    
+    // Clean object of any undefined values before sending to Firestore
+    const cleanProfile = JSON.parse(JSON.stringify(profile));
+    
     await setDoc(userRef, {
-      ...profile,
+      ...cleanProfile,
       timestamp: serverTimestamp()
     }, { merge: true });
 
@@ -158,7 +163,8 @@ export const UserService = {
       'user': null
     };
 
-    const collectionName = roleCollectionMap[profile.role as keyof typeof roleCollectionMap];
+    const roleKey = profile.role as keyof typeof roleCollectionMap;
+    const collectionName = roleCollectionMap[roleKey];
     if (collectionName) {
       const roleRef = doc(db, collectionName, profile.id);
       await setDoc(roleRef, { active: true, updatedAt: serverTimestamp() }, { merge: true });
