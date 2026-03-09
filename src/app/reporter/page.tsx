@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2
 import Image from "next/image";
 import Link from "next/link";
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, doc } from "firebase/firestore";
+import { collection, query, where, doc } from "firebase/firestore";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
 import { cn } from "@/lib/utils";
@@ -45,28 +45,44 @@ export default function ReporterPage() {
   const userDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
   const { data: userProfile } = useDoc(userDocRef);
 
-  // Real-time pending news list (includes rejected)
+  // Real-time news lists (without orderBy to avoid Index Required errors)
   const pendingNewsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'pending_news_posts'),
-      where('author_id', '==', user.uid),
-      orderBy('timestamp', 'desc')
+      where('author_id', '==', user.uid)
     );
   }, [firestore, user]);
 
-  // Real-time approved news list
   const approvedNewsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'approved_news_posts'),
-      where('author_id', '==', user.uid),
-      orderBy('timestamp', 'desc')
+      where('author_id', '==', user.uid)
     );
   }, [firestore, user]);
 
-  const { data: pendingNews } = useCollection(pendingNewsQuery);
-  const { data: approvedNews } = useCollection(approvedNewsQuery);
+  const { data: rawPendingNews } = useCollection(pendingNewsQuery);
+  const { data: rawApprovedNews } = useCollection(approvedNewsQuery);
+
+  // Client-side sorting for portfolio
+  const pendingNews = useMemo(() => {
+    if (!rawPendingNews) return [];
+    return [...rawPendingNews].sort((a, b) => {
+      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
+      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [rawPendingNews]);
+
+  const approvedNews = useMemo(() => {
+    if (!rawApprovedNews) return [];
+    return [...rawApprovedNews].sort((a, b) => {
+      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
+      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [rawApprovedNews]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -298,15 +314,14 @@ export default function ReporterPage() {
           </TabsContent>
 
           <TabsContent value="portfolio" className="space-y-8">
-            {/* Stats Overview */}
             <div className="grid grid-cols-2 gap-4">
               <Card className="border-none shadow-md bg-white rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">పరిశీలనలో (Reviewing)</p>
-                <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews?.filter(p => p.status === 'pending').length || 0}</h3>
+                <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews.filter(p => p.status === 'pending').length}</h3>
               </Card>
               <Card className="border-none shadow-md bg-white rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ప్రచురించబడినవి (Live)</p>
-                <h3 className="text-3xl font-bold text-emerald-500 mt-1">{approvedNews?.length || 0}</h3>
+                <h3 className="text-3xl font-bold text-emerald-500 mt-1">{approvedNews.length}</h3>
               </Card>
             </div>
 
@@ -315,8 +330,7 @@ export default function ReporterPage() {
                 <h2 className="text-xl font-bold font-headline">నా వార్తా ప్రస్థానం (My Submissions)</h2>
               </div>
 
-              {/* Active/Pending Submissions */}
-              {pendingNews && pendingNews.length > 0 && (
+              {pendingNews.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2 px-2">
                     <Clock className="w-3.5 h-3.5" />
@@ -328,8 +342,7 @@ export default function ReporterPage() {
                 </div>
               )}
 
-              {/* Published History */}
-              {approvedNews && approvedNews.length > 0 && (
+              {approvedNews.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold uppercase text-emerald-600 tracking-widest flex items-center gap-2 px-2">
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -341,7 +354,7 @@ export default function ReporterPage() {
                 </div>
               )}
 
-              {(!pendingNews || pendingNews.length === 0) && (!approvedNews || approvedNews.length === 0) && (
+              {pendingNews.length === 0 && approvedNews.length === 0 && (
                 <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-muted">
                   <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                     <FileText className="w-10 h-10 text-muted-foreground/20" />
