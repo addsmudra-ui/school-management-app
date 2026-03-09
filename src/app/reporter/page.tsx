@@ -53,7 +53,7 @@ export default function ReporterPage() {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
-  const { data: userProfile } = useDoc(userDocRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
 
   // Real-time news lists
   const pendingNewsQuery = useMemoFirebase(() => {
@@ -150,7 +150,16 @@ export default function ReporterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userProfile?.status !== 'approved') return;
+    
+    if (!userProfile) {
+      toast({ title: "Error", description: "Profile not loaded.", variant: "destructive" });
+      return;
+    }
+
+    if (userProfile.status !== 'approved') {
+      toast({ title: "Permission Denied", description: "మీ అకౌంట్ ఇంకా ఆమోదించబడలేదు.", variant: "destructive" });
+      return;
+    }
 
     if (!title || !content || !state || !district || !mandal || !imagePreview) {
       toast({ title: "Error", description: "అన్ని ఫీల్డ్‌లు తప్పనిసరి.", variant: "destructive" });
@@ -181,6 +190,17 @@ export default function ReporterPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isProfileLoading) {
+    return (
+      <main className="min-h-screen bg-background pt-20">
+        <Navbar />
+        <div className="flex justify-center items-center h-[60vh]">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        </div>
+      </main>
+    );
+  }
 
   if (userProfile?.status === 'pending') {
     return (
@@ -218,134 +238,139 @@ export default function ReporterPage() {
             </TabsList>
 
             <TabsContent value="submit" className="animate-in fade-in duration-500">
-              <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-                <CardHeader className="bg-primary/5 border-b border-primary/10">
-                  <CardTitle className="text-xl font-bold font-headline">కొత్త వార్తను సమర్పించండి</CardTitle>
-                  <CardDescription>మీ మండలం మరియు జిల్లా వార్తలను ఇక్కడ నమోదు చేయండి.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6 p-4 md:p-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">రాష్ట్రం</Label>
-                      <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
-                        <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
-                        <SelectContent>
-                          {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా</Label>
-                      <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
-                        <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
-                        <SelectContent>
-                          {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం</Label>
-                      <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                        <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="మండలం" /></SelectTrigger>
-                        <SelectContent>
-                          {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">వార్త వివరాలు (Content)</Label>
-                      <div className="relative">
-                        <Textarea 
-                          className="min-h-[200px] rounded-2xl p-4 text-base leading-relaxed border-muted focus:ring-primary" 
-                          value={content} 
-                          onChange={(e) => setContent(e.target.value)} 
-                          placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
-                        />
-                        <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          className="absolute bottom-4 right-4 gap-2 rounded-full bg-accent/10 text-accent hover:bg-accent/20"
-                          onClick={handleAiSummarize}
-                          disabled={isGeneratingAI || !content}
-                        >
-                          {isGeneratingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                          AI సారాంశం
-                        </Button>
+              <form onSubmit={handleSubmit}>
+                <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
+                  <CardHeader className="bg-primary/5 border-b border-primary/10">
+                    <CardTitle className="text-xl font-bold font-headline">కొత్త వార్తను సమర్పించండి</CardTitle>
+                    <CardDescription>మీ మండలం మరియు జిల్లా వార్తలను ఇక్కడ నమోదు చేయండి.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6 p-4 md:p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">రాష్ట్రం</Label>
+                        <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
+                          <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
+                          <SelectContent>
+                            {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా</Label>
+                        <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
+                          <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
+                          <SelectContent>
+                            {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం</Label>
+                        <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+                          <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="మండలం" /></SelectTrigger>
+                          <SelectContent>
+                            {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">ముఖ్యాంశం (Headline)</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          value={title} 
-                          onChange={(e) => setTitle(e.target.value)} 
-                          placeholder="వార్త ముఖ్యాంశం..." 
-                          className="h-12 rounded-xl font-bold text-lg"
-                        />
-                        <Button 
-                          variant="outline" 
-                          className="h-12 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5"
-                          onClick={handleAiHeadlines}
-                          disabled={isGeneratingAI || !content}
-                        >
-                          {isGeneratingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                          AI
-                        </Button>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">వార్త వివరాలు (Content)</Label>
+                        <div className="relative">
+                          <Textarea 
+                            className="min-h-[200px] rounded-2xl p-4 text-base leading-relaxed border-muted focus:ring-primary" 
+                            value={content} 
+                            onChange={(e) => setContent(e.target.value)} 
+                            placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
+                          />
+                          <Button 
+                            type="button"
+                            variant="secondary" 
+                            size="sm" 
+                            className="absolute bottom-4 right-4 gap-2 rounded-full bg-accent/10 text-accent hover:bg-accent/20"
+                            onClick={handleAiSummarize}
+                            disabled={isGeneratingAI || !content}
+                          >
+                            {isGeneratingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                            AI సారాంశం
+                          </Button>
+                        </div>
                       </div>
-                      {aiHeadlines.length > 0 && (
-                        <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
-                          <p className="text-[10px] font-bold uppercase text-primary mb-2">AI సూచించిన ముఖ్యాంశాలు:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {aiHeadlines.map((h, i) => (
-                              <Badge 
-                                key={i} 
-                                variant="secondary" 
-                                className="cursor-pointer hover:bg-primary hover:text-white transition-colors py-1.5 px-3 rounded-lg"
-                                onClick={() => setTitle(h)}
-                              >
-                                {h}
-                              </Badge>
-                            ))}
+
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">ముఖ్యాంశం (Headline)</Label>
+                        <div className="flex gap-2">
+                          <Input 
+                            value={title} 
+                            onChange={(e) => setTitle(e.target.value)} 
+                            placeholder="వార్త ముఖ్యాంశం..." 
+                            className="h-12 rounded-xl font-bold text-lg"
+                          />
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            className="h-12 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5"
+                            onClick={handleAiHeadlines}
+                            disabled={isGeneratingAI || !content}
+                          >
+                            {isGeneratingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            AI
+                          </Button>
+                        </div>
+                        {aiHeadlines.length > 0 && (
+                          <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
+                            <p className="text-[10px] font-bold uppercase text-primary mb-2">AI సూచించిన ముఖ్యాంశాలు:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {aiHeadlines.map((h, i) => (
+                                <Badge 
+                                  key={i} 
+                                  variant="secondary" 
+                                  className="cursor-pointer hover:bg-primary hover:text-white transition-colors py-1.5 px-3 rounded-lg"
+                                  onClick={() => setTitle(h)}
+                                >
+                                  {h}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">చిత్రం (Image)</Label>
+                      {!imagePreview ? (
+                        <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors border-muted group">
+                          <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                          <p className="text-sm font-bold">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
+                          <p className="text-xs text-muted-foreground mt-1">JPG/JPEG మాత్రమే (Max 1MB)</p>
+                        </div>
+                      ) : (
+                        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg group">
+                          <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                          <Button 
+                            type="button"
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-4 right-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
+                            onClick={() => setImagePreview(null)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
                       )}
+                      <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">చిత్రం (Image)</Label>
-                    {!imagePreview ? (
-                      <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors border-muted group">
-                        <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <p className="text-sm font-bold">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
-                        <p className="text-xs text-muted-foreground mt-1">JPG/JPEG మాత్రమే (Max 1MB)</p>
-                      </div>
-                    ) : (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg group">
-                        <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
-                          className="absolute top-4 right-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
-                          onClick={() => setImagePreview(null)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                    <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
-                  </div>
-
-                  <Button className="w-full h-14 text-xl font-bold shadow-lg shadow-primary/20 rounded-2xl" onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
-                    సమర్పించు
-                  </Button>
-                </CardContent>
-              </Card>
+                    <Button type="submit" className="w-full h-14 text-xl font-bold shadow-lg shadow-primary/20 rounded-2xl" disabled={isSubmitting}>
+                      {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
+                      సమర్పించు
+                    </Button>
+                  </CardContent>
+                </Card>
+              </form>
             </TabsContent>
 
             <TabsContent value="portfolio" className="space-y-8">
