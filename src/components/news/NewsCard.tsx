@@ -129,26 +129,103 @@ export function NewsCard({ news }: NewsCardProps) {
 
       {/* Content Section */}
       <div className="p-6 flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-white to-slate-50/50 touch-pan-y">
-        <div className="space-y-4 pb-24 md:pb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px] border border-primary/5">
+        <div className="space-y-4 pb-12 md:pb-6">
+          
+          {/* Author Header with Integrated Interaction Buttons */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0 border border-primary/5">
                 {news.author_name[0]}
               </div>
-              <span className="max-w-[120px] truncate">{news.author_name}</span>
-              {news.author_role && (
-                <span className="ml-1 px-1.5 py-0.5 bg-primary/5 border border-primary/10 rounded text-primary font-bold text-[8px]">
-                  {news.author_role}
-                </span>
-              )}
-            </div>
-            {news.author_stars && (
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: news.author_stars }).map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                ))}
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold truncate text-slate-900">{news.author_name}</span>
+                  {news.author_stars && (
+                    <div className="flex items-center">
+                      {Array.from({ length: news.author_stars }).map((_, i) => (
+                        <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {news.author_role && (
+                  <span className="text-[9px] font-black text-primary/70 uppercase tracking-tighter leading-none">
+                    {news.author_role}
+                  </span>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Interaction Buttons beside name */}
+            <div className="flex items-center gap-3 shrink-0 bg-slate-50/80 px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">
+              <button onClick={toggleLike} className="flex items-center gap-1 group">
+                <Heart className={cn("w-4 h-4 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
+                <span className="text-[10px] font-bold text-slate-600">{news.likes || 0}</span>
+              </button>
+              
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button className="flex items-center gap-1 group">
+                    <MessageCircle className="w-4 h-4 text-slate-400 group-hover:text-primary" />
+                    <span className="text-[10px] font-bold text-slate-600">{news.commentsCount || 0}</span>
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[85dvh] rounded-t-[3rem] p-0 z-[100] border-none shadow-2xl">
+                  <SheetHeader className="p-6 border-b bg-white/50 backdrop-blur-md sticky top-0 z-10">
+                    <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
+                    <SheetTitle className="text-2xl font-bold flex items-center gap-2">
+                      <MessageCircle className="w-6 h-6 text-primary" />
+                      కామెంట్స్ ({news.commentsCount || 0})
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col h-full bg-white">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-40">
+                      {comments && comments.length > 0 ? (
+                        comments.map((comment: any) => (
+                          <div key={comment.id} className="bg-slate-50 p-5 rounded-3xl border border-slate-100 animate-in slide-in-from-bottom-2">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-bold text-sm text-primary flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">
+                                  {comment.userName[0]}
+                                </div>
+                                {comment.userName}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground font-medium bg-slate-200/50 px-2 py-0.5 rounded-full">
+                                {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
+                              </span>
+                            </div>
+                            <p className="text-sm md:text-base text-slate-700 leading-relaxed font-medium">{comment.text}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/50">
+                          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                            <MessageCircle className="w-10 h-10 opacity-20" />
+                          </div>
+                          <p className="font-bold text-lg">ఇంకా కామెంట్స్ ఏవీ లేవు.</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="fixed bottom-0 left-0 right-0 p-4 pb-10 bg-white/80 backdrop-blur-xl border-t flex gap-3 items-center shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+                      <Input 
+                        placeholder="కామెంట్ జోడించండి..." 
+                        value={newComment}
+                        className="rounded-full h-14 bg-slate-100 border-none focus-visible:ring-primary/20 text-base px-6"
+                        onChange={(e) => setNewComment(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                      />
+                      <Button size="icon" className="rounded-full h-14 w-14 shadow-xl shadow-primary/20" onClick={handleAddComment}>
+                        <Send className="w-6 h-6" />
+                      </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <button onClick={handleShare} className="group">
+                <Share2 className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+              </button>
+            </div>
           </div>
           
           <h2 className="text-2xl md:text-3xl font-bold font-headline leading-tight text-foreground tracking-tight">
@@ -172,103 +249,6 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
           </button>
         </div>
-      </div>
-
-      {/* Floating Action Bar (Right side on mobile, Bottom bar on desktop) */}
-      <div className="absolute right-4 bottom-[20%] flex flex-col gap-6 z-30 md:static md:flex-row md:justify-between md:py-5 md:px-8 md:bg-white/95 md:backdrop-blur-md md:border-t md:border-slate-100">
-        <div className="flex flex-col items-center gap-6 md:flex-row md:gap-10">
-          {/* Like Button */}
-          <button
-            onClick={toggleLike}
-            className="flex flex-col items-center gap-1 group"
-          >
-            <div className={cn(
-              "w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-xl backdrop-blur-md md:shadow-none md:w-auto md:h-auto border border-white/20",
-              isLiked ? "bg-rose-500/20" : "bg-black/30 md:bg-transparent"
-            )}>
-              <Heart 
-                className={cn(
-                  "w-8 h-8 transition-all duration-300", 
-                  isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-white md:text-muted-foreground group-hover:scale-110"
-                )} 
-              />
-            </div>
-            <span className="text-[11px] font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] md:text-muted-foreground md:text-sm md:drop-shadow-none">{news.likes || 0}</span>
-          </button>
-          
-          {/* Comment Button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="flex flex-col items-center gap-1 group">
-                <div className="w-14 h-14 rounded-full bg-black/30 flex items-center justify-center shadow-xl backdrop-blur-md transition-all group-hover:scale-110 border border-white/20 md:shadow-none md:bg-transparent md:w-auto md:h-auto">
-                  <MessageCircle className="w-8 h-8 text-white md:text-muted-foreground" />
-                </div>
-                <span className="text-[11px] font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] md:text-muted-foreground md:text-sm md:drop-shadow-none">{news.commentsCount || 0}</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85dvh] rounded-t-[3rem] p-0 z-[100] border-none shadow-2xl">
-              <SheetHeader className="p-6 border-b bg-white/50 backdrop-blur-md sticky top-0 z-10">
-                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4" />
-                <SheetTitle className="text-2xl font-bold flex items-center gap-2">
-                  <MessageCircle className="w-6 h-6 text-primary" />
-                  కామెంట్స్ ({news.commentsCount || 0})
-                </SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col h-full bg-white">
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-40">
-                  {comments && comments.length > 0 ? (
-                    comments.map((comment: any) => (
-                      <div key={comment.id} className="bg-slate-50 p-5 rounded-3xl border border-slate-100 animate-in slide-in-from-bottom-2">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-bold text-sm text-primary flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">
-                              {comment.userName[0]}
-                            </div>
-                            {comment.userName}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-medium bg-slate-200/50 px-2 py-0.5 rounded-full">
-                            {comment.timestamp?.toDate ? comment.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
-                          </span>
-                        </div>
-                        <p className="text-sm md:text-base text-slate-700 leading-relaxed font-medium">{comment.text}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground/50">
-                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                        <MessageCircle className="w-10 h-10 opacity-20" />
-                      </div>
-                      <p className="font-bold text-lg">ఇంకా కామెంట్స్ ఏవీ లేవు.</p>
-                    </div>
-                  )}
-                </div>
-                <div className="fixed bottom-0 left-0 right-0 p-4 pb-10 bg-white/80 backdrop-blur-xl border-t flex gap-3 items-center shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-                  <Input 
-                    placeholder="కామెంట్ జోడించండి..." 
-                    value={newComment}
-                    className="rounded-full h-14 bg-slate-100 border-none focus-visible:ring-primary/20 text-base px-6"
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                  />
-                  <Button size="icon" className="rounded-full h-14 w-14 shadow-xl shadow-primary/20" onClick={handleAddComment}>
-                    <Send className="w-6 h-6" />
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-        
-        {/* Share Button */}
-        <button 
-          onClick={handleShare}
-          className="flex flex-col items-center gap-1 group"
-        >
-          <div className="w-14 h-14 rounded-full bg-black/30 flex items-center justify-center shadow-xl backdrop-blur-md transition-all group-hover:scale-110 border border-white/20 md:shadow-none md:bg-transparent md:w-auto md:h-auto">
-            <Share2 className="w-8 h-8 text-white md:text-muted-foreground" />
-          </div>
-          <span className="text-[11px] font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] uppercase tracking-tighter md:text-muted-foreground md:text-sm md:drop-shadow-none">Share</span>
-        </button>
       </div>
     </div>
   );
