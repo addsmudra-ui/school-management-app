@@ -3,13 +3,13 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database, Activity } from "lucide-react";
 import { 
   ChartContainer, 
   ChartTooltip, 
   ChartTooltipContent 
 } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
@@ -39,7 +39,7 @@ export default function AdminDashboard() {
 
   const approvedQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'approved_news_posts'), orderBy('timestamp', 'desc'), limit(5));
+    return query(collection(firestore, 'approved_news_posts'), orderBy('timestamp', 'desc'), limit(10));
   }, [firestore]);
 
   const usersQuery = useMemoFirebase(() => {
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
           </Button>
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-muted h-11">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-xs font-bold text-muted-foreground uppercase">సిస్టమ్ ఆన్‌లైన్</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">సిస్టమ్ ఆన్‌లైన్</span>
           </div>
         </div>
       </div>
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
           icon={Newspaper} 
           color="text-primary" 
           bgColor="bg-primary/10"
-          desc="Recently live"
+          desc="Recently live posts"
         />
         <StatsCard 
           title="పెండింగ్ రివ్యూలు" 
@@ -127,53 +127,94 @@ export default function AdminDashboard() {
         <StatsCard 
           title="మొత్తం వినియోగదారులు" 
           value={users?.length || 0} 
-          icon={Users} 
+          icon={Activity} 
           color="text-rose-500" 
           bgColor="bg-rose-500/10"
-          desc="Platform wide"
+          desc="Platform wide reach"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-none shadow-xl rounded-2xl overflow-hidden">
-          <CardHeader className="bg-white pb-2">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              వార్తల ట్రెండ్ (Weekly Posts)
-            </CardTitle>
+        <Card className="lg:col-span-2 border-none shadow-xl rounded-2xl overflow-hidden bg-white">
+          <CardHeader className="bg-white pb-2 border-b border-slate-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  వార్తల ట్రెండ్ (Weekly Posts)
+                </CardTitle>
+                <CardDescription>వారపు వార్తా ప్రచురణల విశ్లేషణ</CardDescription>
+              </div>
+              <Badge variant="secondary" className="bg-primary/5 text-primary font-bold">LIVE</Badge>
+            </div>
           </CardHeader>
-          <CardContent className="p-6 h-[300px]">
+          <CardContent className="p-6 h-[350px]">
             <ChartContainer config={{ posts: { label: "Posts", color: "hsl(var(--primary))" } }}>
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="posts" fill="var(--color-posts)" radius={[4, 4, 0, 0]} />
-              </BarChart>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    fontSize={12}
+                    tickMargin={8}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    fontSize={12}
+                    tickMargin={8}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar 
+                    dataKey="posts" 
+                    fill="var(--color-posts)" 
+                    radius={[6, 6, 0, 0]} 
+                    barSize={40}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl rounded-2xl">
-          <CardHeader>
+        <Card className="border-none shadow-xl rounded-2xl bg-white overflow-hidden">
+          <CardHeader className="border-b border-slate-50">
             <CardTitle className="text-lg font-bold">ఇటీవలి ఆమోదాలు</CardTitle>
-            <CardDescription>చివరిగా ఆమోదించబడిన వార్తలు.</CardDescription>
+            <CardDescription>చివరిగా లైవ్ చేసిన 10 వార్తలు</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {recentApprovals && recentApprovals.length > 0 ? (
-              recentApprovals.map((post) => (
-                <div key={post.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/30 transition-colors">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-50">
+              {recentApprovals && recentApprovals.length > 0 ? (
+                recentApprovals.map((post) => (
+                  <div key={post.id} className="flex items-center gap-4 p-4 hover:bg-slate-50/80 transition-colors">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold truncate text-slate-900">{post.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{post.author_name}</span>
+                        <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                        <span className="text-[10px] text-primary font-bold uppercase tracking-tight">{post.location.mandal}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold truncate">{post.title}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase">{post.author_name} • {post.location.mandal}</p>
-                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-24 text-center space-y-3 opacity-40">
+                  <Database className="w-12 h-12 text-slate-300" />
+                  <p className="text-sm italic">ఇంకా ఆమోదాలు ఏవీ లేవు.</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-center py-8 text-muted-foreground italic">ఇంకా ఆమోదాలు ఏవీ లేవు.</p>
+              )}
+            </div>
+            {recentApprovals && recentApprovals.length > 0 && (
+              <div className="p-4 bg-slate-50/50 border-t border-slate-50">
+                <Button variant="ghost" className="w-full text-xs font-bold text-primary gap-2 h-8">
+                  View All Approvals
+                  <TrendingUp className="w-3 h-3" />
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -184,18 +225,20 @@ export default function AdminDashboard() {
 
 function StatsCard({ title, value, icon: Icon, color, bgColor, desc }: any) {
   return (
-    <Card className="border-none shadow-xl rounded-2xl overflow-hidden group hover:shadow-2xl transition-all duration-300">
+    <Card className="border-none shadow-xl rounded-2xl overflow-hidden group hover:shadow-2xl transition-all duration-300 bg-white">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className={cn("p-3 rounded-xl", bgColor)}>
+          <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110 duration-300", bgColor)}>
             <Icon className={cn("w-6 h-6", color)} />
           </div>
-          <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-none">Active</Badge>
+          <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-none font-bold text-[10px]">REAL-TIME</Badge>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground font-medium">{title}</p>
-          <h3 className="text-3xl font-bold mt-1">{value}</h3>
-          <p className="text-[10px] text-muted-foreground mt-2 font-semibold uppercase tracking-wider">{desc}</p>
+          <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">{title}</p>
+          <div className="flex items-baseline gap-2 mt-1">
+            <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2 font-medium italic">{desc}</p>
         </div>
       </CardContent>
     </Card>
