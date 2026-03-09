@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock } from "lucide-react";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock, CheckCircle2, AlertCircle, Wand2 } from "lucide-react";
 import Image from "next/image";
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, doc } from "firebase/firestore";
+import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
+import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
 
 export default function ReporterPage() {
   const firestore = useFirestore();
@@ -25,7 +27,6 @@ export default function ReporterPage() {
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("submit");
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [state, setState] = useState("");
@@ -33,6 +34,8 @@ export default function ReporterPage() {
   const [mandal, setMandal] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,8 +43,8 @@ export default function ReporterPage() {
   const userDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
   const { data: userProfile } = useDoc(userDocRef);
 
-  // Real-time news list
-  const myNewsQuery = useMemoFirebase(() => {
+  // Real-time pending news list
+  const pendingNewsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'pending_news_posts'),
@@ -50,7 +53,18 @@ export default function ReporterPage() {
     );
   }, [firestore, user]);
 
-  const { data: myNews } = useCollection(myNewsQuery);
+  // Real-time approved news list
+  const approvedNewsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'approved_news_posts'),
+      where('author_id', '==', user.uid),
+      orderBy('timestamp', 'desc')
+    );
+  }, [firestore, user]);
+
+  const { data: pendingNews } = useCollection(pendingNewsQuery);
+  const { data: approvedNews } = useCollection(approvedNewsQuery);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +72,37 @@ export default function ReporterPage() {
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
+  };
+
+  const handleAiHeadlines = async () => {
+    if (!content) {
+      toast({ title: "ముందుగా వార్త రాయండి", description: "హెడ్‌లైన్స్ కోసం వార్త వివరాలు అవసరం.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingAI(true);
+    try {
+      const result = await generateHeadlines({ articleContent: content });
+      setAiHeadlines(result.headlines);
+      toast({ title: "AI హెడ్‌లైన్స్ సిద్ధం!" });
+    } catch (error) {
+      toast({ title: "AI Error", description: "హెడ్‌లైన్స్ జనరేట్ చేయడం సాధ్యపడలేదు.", variant: "destructive" });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const handleAiSummarize = async () => {
+    if (!content) return;
+    setIsGeneratingAI(true);
+    try {
+      const result = await summarizeArticleForReporter({ detailedArticle: content });
+      setContent(result.summary);
+      toast({ title: "వార్త క్లుప్తీకరించబడింది (Summarized)" });
+    } catch (error) {
+      toast({ title: "AI Error", description: "సారాంశం జనరేట్ చేయడం సాధ్యపడలేదు.", variant: "destructive" });
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,14 +128,11 @@ export default function ReporterPage() {
         engagement: { likes: 0, comments: 0, commentList: [] }
       };
 
-      if (editingId) {
-        // Handle edit logic if needed
-      } else {
-        NewsService.add(firestore, postData);
-      }
+      NewsService.add(firestore!, postData);
 
-      toast({ title: "వార్తలు సమర్పించబడ్డాయి" });
+      toast({ title: "వార్తలు సమర్పించబడ్డాయి", description: "అడ్మిన్ ఆమోదం కోసం పంపబడింది." });
       setTitle(""); setContent(""); setState(""); setDistrict(""); setMandal(""); setImagePreview(null);
+      setAiHeadlines([]);
       setActiveTab("portfolio");
     } finally {
       setIsSubmitting(false);
@@ -101,87 +143,202 @@ export default function ReporterPage() {
     return (
       <main className="min-h-screen bg-background pt-20">
         <Navbar />
-        <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-6">
-          <Clock className="w-16 h-16 text-amber-600 mx-auto animate-pulse" />
-          <h1 className="text-2xl font-bold">ప్రొఫైల్ ఆమోదం కోసం వేచి ఉంది</h1>
-          <p className="text-muted-foreground">మీ రిపోర్టర్ ప్రొఫైల్ ప్రస్తుతం అడ్మిన్ పరిశీలనలో ఉంది.</p>
+        <div className="max-w-xl mx-auto px-4 py-12 text-center space-y-6 animate-in fade-in duration-700">
+          <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-12 h-12 text-amber-600 animate-pulse" />
+          </div>
+          <h1 className="text-3xl font-bold font-headline">ప్రొఫైల్ ఆమోదం కోసం వేచి ఉంది</h1>
+          <p className="text-muted-foreground text-lg">
+            మీ రిపోర్టర్ ప్రొఫైల్ ప్రస్తుతం అడ్మిన్ పరిశీలనలో ఉంది. ఆమోదం పొందిన తర్వాత మీరు వార్తలను సమర్పించవచ్చు.
+          </p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background pt-20 pb-24 md:pb-8">
+    <main className="min-h-screen bg-slate-50/50 pt-20 pb-24 md:pb-8">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="submit"><FileText className="w-4 h-4 mr-2" /> వార్తను పంపండి</TabsTrigger>
-            <TabsTrigger value="portfolio"><Briefcase className="w-4 h-4 mr-2" /> నా పోర్ట్‌ఫోలియో</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-white p-1 rounded-2xl shadow-sm border border-muted">
+            <TabsTrigger value="submit" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
+              <FileText className="w-4 h-4 mr-2" /> వార్తను పంపండి
+            </TabsTrigger>
+            <TabsTrigger value="portfolio" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
+              <Briefcase className="w-4 h-4 mr-2" /> నా పోర్ట్‌ఫోలియో
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="submit" className="animate-in fade-in duration-500">
-            <Card>
-              <CardHeader><CardTitle>వార్తను సమర్పించండి</CardTitle></CardHeader>
-              <CardContent className="space-y-6">
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
+              <CardHeader className="bg-primary/5 border-b border-primary/10">
+                <CardTitle className="text-xl font-bold font-headline">కొత్త వార్తను సమర్పించండి</CardTitle>
+                <CardDescription>మీ మండలం మరియు జిల్లా వార్తలను ఇక్కడ నమోదు చేయండి.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 p-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Select onValueChange={setState} value={state}><SelectTrigger><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger><SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
-                  <Select onValueChange={setDistrict} value={district} disabled={!state}><SelectTrigger><SelectValue placeholder="జిల్లా" /></SelectTrigger><SelectContent>{state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select>
-                  <Select onValueChange={setMandal} value={mandal} disabled={!district}><SelectTrigger><SelectValue placeholder="మండలం" /></SelectTrigger><SelectContent>{district && LOCATIONS_BY_STATE[state][district].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">రాష్ట్రం</Label>
+                    <Select onValueChange={setState} value={state}>
+                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
+                      <SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా</Label>
+                    <Select onValueChange={setDistrict} value={district} disabled={!state}>
+                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
+                      <SelectContent>{state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం</Label>
+                    <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="మండలం" /></SelectTrigger>
+                      <SelectContent>{district && LOCATIONS_BY_STATE[state][district].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ముఖ్యాంశం" />
-                <Textarea className="min-h-[150px]" value={content} onChange={(e) => setContent(e.target.value)} placeholder="వివరంగా రాయండి..." />
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">వార్త వివరాలు (Content)</Label>
+                    <div className="relative">
+                      <Textarea 
+                        className="min-h-[200px] rounded-2xl p-4 text-base leading-relaxed border-muted focus:ring-primary" 
+                        value={content} 
+                        onChange={(e) => setContent(e.target.value)} 
+                        placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
+                      />
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="absolute bottom-4 right-4 gap-2 rounded-full bg-accent/10 text-accent hover:bg-accent/20"
+                        onClick={handleAiSummarize}
+                        disabled={isGeneratingAI || !content}
+                      >
+                        {isGeneratingAI ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                        AI సారాంశం (Summarize)
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">ముఖ్యాంశం (Headline)</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={title} 
+                        onChange={(e) => setTitle(e.target.value)} 
+                        placeholder="వార్త ముఖ్యాంశం..." 
+                        className="h-12 rounded-xl font-bold text-lg"
+                      />
+                      <Button 
+                        variant="outline" 
+                        className="h-12 rounded-xl gap-2 border-primary/20 text-primary hover:bg-primary/5"
+                        onClick={handleAiHeadlines}
+                        disabled={isGeneratingAI || !content}
+                      >
+                        {isGeneratingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        AI
+                      </Button>
+                    </div>
+                    {aiHeadlines.length > 0 && (
+                      <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
+                        <p className="text-[10px] font-bold uppercase text-primary mb-2">AI సూచించిన ముఖ్యాంశాలు:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {aiHeadlines.map((h, i) => (
+                            <Badge 
+                              key={i} 
+                              variant="secondary" 
+                              className="cursor-pointer hover:bg-primary hover:text-white transition-colors py-1.5 px-3 rounded-lg"
+                              onClick={() => setTitle(h)}
+                            >
+                              {h}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>చిత్రం</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">చిత్రం (Image)</Label>
                   {!imagePreview ? (
-                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-lg p-10 text-center cursor-pointer hover:bg-muted/50">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm">JPG/JPEG మాత్రమే (Max 1MB)</p>
+                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors border-muted group">
+                      <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <p className="text-sm font-bold">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
+                      <p className="text-xs text-muted-foreground mt-1">JPG/JPEG మాత్రమే (Max 1MB)</p>
                     </div>
                   ) : (
-                    <div className="relative aspect-video rounded-lg overflow-hidden group">
+                    <div className="relative aspect-video rounded-2xl overflow-hidden shadow-lg group">
                       <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                      <Button variant="destructive" size="icon" className="absolute top-2 right-2 rounded-full" onClick={() => setImagePreview(null)}><X className="w-4 h-4" /></Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-4 right-4 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
+                        onClick={() => setImagePreview(null)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
                   <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
                 </div>
-                <Button className="w-full h-12 text-lg" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-4 w-4" />}
-                  సమర్పించు
+
+                <Button className="w-full h-14 text-xl font-bold shadow-lg shadow-primary/20 rounded-2xl" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2 h-5 w-5" />}
+                  సమర్పించు (Submit News)
                 </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="portfolio">
-            <div className="grid gap-4">
-              {myNews && myNews.length > 0 ? (
-                myNews.map((post) => (
-                  <Card key={post.id} className="overflow-hidden">
-                    <div className="flex flex-col sm:flex-row">
-                      <div className="relative w-full sm:w-48 h-32">
-                        <Image src={post.image_url} alt={post.title} fill className="object-cover" />
-                      </div>
-                      <div className="p-4 flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-mono text-muted-foreground uppercase">CODE: {post.unique_code}</span>
-                            <Badge variant={post.status === 'rejected' ? 'destructive' : 'secondary'}>{post.status}</Badge>
-                          </div>
-                          <h3 className="font-bold text-lg line-clamp-1">{post.title}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {post.location.mandal}, {post.location.district} • {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString() : "Pending"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
-                  <FileText className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+            <div className="grid gap-6">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold font-headline">నా వార్తా ప్రస్థానం (My Submissions)</h2>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="rounded-full bg-white">In Review: {pendingNews?.length || 0}</Badge>
+                  <Badge variant="outline" className="rounded-full bg-white">Published: {approvedNews?.length || 0}</Badge>
+                </div>
+              </div>
+
+              {/* Active/Pending Submissions */}
+              {pendingNews && pendingNews.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase text-muted-foreground tracking-widest flex items-center gap-2">
+                    <Clock className="w-3 h-3" />
+                    ప్రస్తుత స్థితి (Under Review)
+                  </h3>
+                  {pendingNews.map((post) => (
+                    <PortfolioCard key={post.id} post={post as any} />
+                  ))}
+                </div>
+              )}
+
+              {/* Published History */}
+              {approvedNews && approvedNews.length > 0 && (
+                <div className="space-y-4 mt-4">
+                  <h3 className="text-xs font-bold uppercase text-emerald-600 tracking-widest flex items-center gap-2">
+                    <CheckCircle2 className="w-3 h-3" />
+                    ప్రచురించబడినవి (Published)
+                  </h3>
+                  {approvedNews.map((post) => (
+                    <PortfolioCard key={post.id} post={post as any} isPublished />
+                  ))}
+                </div>
+              )}
+
+              {(!pendingNews || pendingNews.length === 0) && (!approvedNews || approvedNews.length === 0) && (
+                <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-muted">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText className="w-10 h-10 text-muted-foreground/20" />
+                  </div>
+                  <h3 className="text-lg font-bold">వార్తలు ఏవీ లేవు</h3>
                   <p className="text-muted-foreground">మీరు ఇంకా ఎటువంటి వార్తలను సమర్పించలేదు.</p>
+                  <Button variant="link" className="mt-2" onClick={() => setActiveTab("submit")}>మొదటి వార్త రాయండి</Button>
                 </div>
               )}
             </div>
@@ -189,5 +346,58 @@ export default function ReporterPage() {
         </Tabs>
       </div>
     </main>
+  );
+}
+
+function PortfolioCard({ post, isPublished }: { post: NewsPost, isPublished?: boolean }) {
+  return (
+    <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all rounded-2xl bg-white group">
+      <div className="flex flex-col sm:flex-row">
+        <div className="relative w-full sm:w-56 h-36">
+          <Image src={post.image_url} alt={post.title} fill className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent sm:hidden" />
+          <div className="absolute bottom-3 left-3 sm:hidden">
+            <Badge className={cn(
+              "rounded-full",
+              post.status === 'approved' ? "bg-emerald-500" : 
+              post.status === 'rejected' ? "bg-rose-500" : "bg-amber-500"
+            )}>
+              {post.status}
+            </Badge>
+          </div>
+        </div>
+        <div className="p-5 flex-1 flex flex-col justify-between min-w-0">
+          <div>
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-[10px] font-mono font-bold text-primary/60 uppercase tracking-tighter">
+                CODE: {post.unique_code}
+              </span>
+              <div className="hidden sm:flex items-center gap-2">
+                <Badge variant="secondary" className={cn(
+                  "font-bold text-[10px] uppercase",
+                  post.status === 'approved' ? "bg-emerald-50 text-emerald-700" : 
+                  post.status === 'rejected' ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"
+                )}>
+                  {post.status === 'approved' ? <CheckCircle2 className="w-3 h-3 mr-1" /> : 
+                   post.status === 'rejected' ? <AlertCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+                  {post.status}
+                </Badge>
+              </div>
+            </div>
+            <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">{post.title}</h3>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{post.content}</p>
+          </div>
+          <div className="mt-4 flex items-center justify-between border-t pt-3">
+            <p className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+              <Star className="w-3 h-3 text-amber-400" />
+              {post.location.mandal}, {post.location.district}
+            </p>
+            <span className="text-[10px] text-muted-foreground">
+              {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString('te-IN') : "Pending"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
