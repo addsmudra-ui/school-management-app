@@ -1,8 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Development mode rules: UNRESTRICTED ACCESS
-    // This allows the app to function without any permission errors while you prototype.
     match /{document=**} {
       allow read, write: if true;
     }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -20,7 +19,7 @@ import {
   getDoc,
   writeBatch
 } from 'firebase/firestore';
-import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { updateDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { NewsPost, UserProfile, Comment, MOCK_NEWS } from './mock-data';
 
 export type SentNotification = {
@@ -32,7 +31,7 @@ export type SentNotification = {
 };
 
 export const AdminService = {
-  getPassword: async (db: Firestore): Promise<string | null> => {
+  getPassword: async (db: Firestore): Promise<string> => {
     try {
       const docRef = doc(db, 'config', 'admin');
       const snapshot = await getDoc(docRef);
@@ -54,7 +53,7 @@ export const AdminService = {
       const docRef = doc(db, 'approved_news_posts', news.id);
       batch.set(docRef, {
         ...news,
-        timestamp: serverTimestamp(), // Use server time for correct sorting
+        timestamp: serverTimestamp(),
       });
     });
     await batch.commit();
@@ -82,11 +81,9 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
-    // 1. Delete from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
-    // 2. Add to approved
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -94,7 +91,6 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // 3. Send Notification
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
@@ -105,12 +101,6 @@ export const NewsService = {
   reject: (db: Firestore, postId: string) => {
     const postRef = doc(db, 'pending_news_posts', postId);
     updateDocumentNonBlocking(postRef, { status: 'rejected' });
-  },
-
-  delete: (db: Firestore, postId: string, isApproved: boolean) => {
-    const path = isApproved ? 'approved_news_posts' : 'pending_news_posts';
-    const postRef = doc(db, path, postId);
-    deleteDocumentNonBlocking(postRef);
   },
 
   toggleLike: (db: Firestore, postId: string, userId: string, isCurrentlyLiked: boolean) => {
@@ -150,7 +140,6 @@ export const UserService = {
       const data = querySnapshot.docs[0].data();
       return { ...data, id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
-      console.error("Error fetching user by phone:", e);
       return null;
     }
   },
@@ -162,7 +151,6 @@ export const UserService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // Role markers for security rules
     const roleCollectionMap = {
       'admin': 'roles_admins',
       'reporter': 'roles_reporters',

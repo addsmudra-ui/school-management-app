@@ -46,7 +46,6 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
-          // Store basic profile data
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -76,7 +75,6 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
-        // Verification step for restricted roles
         if (role === 'admin' || role === 'editor') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
@@ -117,7 +115,6 @@ export default function LoginPage() {
         router.push((role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/');
       }
     } catch (error: any) {
-      console.error("Login process failed:", error);
       toast({ 
         variant: "destructive", 
         title: "Login Error", 
@@ -130,7 +127,7 @@ export default function LoginPage() {
 
   const isDetailsValid = () => {
     if (!name) return false;
-    if (role === 'admin' || role === 'editor') return password.length > 0;
+    if (role === 'admin' || role === 'editor') return password.length >= 4;
     return state && district && mandal;
   };
 
@@ -229,7 +226,7 @@ export default function LoginPage() {
                     <Label className="text-rose-600 font-bold">పాస్‌వర్డ్ (Password)</Label>
                     <Input 
                       type="password" 
-                      placeholder="Enter Password" 
+                      placeholder="Enter Admin Password (Default: admin123)" 
                       value={password} 
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-11 rounded-xl border-rose-200 focus:ring-rose-500"

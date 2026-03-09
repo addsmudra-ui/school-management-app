@@ -59,13 +59,15 @@ export function AdminSidebar() {
   const handleLogout = () => {
     localStorage.removeItem('mandalPulse_role');
     localStorage.removeItem('mandalPulse_userName');
+    localStorage.removeItem('mandalPulse_userPhone');
+    localStorage.removeItem('mandalPulse_userStatus');
     window.location.href = '/login';
   };
 
   const handleChangePassword = () => {
     if (!firestore) return;
     if (newPass.length < 4) {
-      toast({ variant: "destructive", title: "Error", description: "Password must be at least 4 chars." });
+      toast({ variant: "destructive", title: "Error", description: "Password must be at least 4 characters." });
       return;
     }
     AdminService.setPassword(firestore, newPass);
