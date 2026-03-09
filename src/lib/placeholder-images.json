@@ -23,6 +23,42 @@
       "description": "Urban infrastructure progress",
       "imageUrl": "https://picsum.photos/seed/urban/800/600",
       "imageHint": "road construction"
+    },
+    {
+      "id": "news-5",
+      "description": "Hyderabad tech corridor update",
+      "imageUrl": "https://picsum.photos/seed/hyderabad/800/600",
+      "imageHint": "modern buildings"
+    },
+    {
+      "id": "news-6",
+      "description": "Karimnagar granite industry",
+      "imageUrl": "https://picsum.photos/seed/karimnagar/800/600",
+      "imageHint": "industrial work"
+    },
+    {
+      "id": "news-7",
+      "description": "Vizag beach front development",
+      "imageUrl": "https://picsum.photos/seed/vizag/800/600",
+      "imageHint": "coastal city"
+    },
+    {
+      "id": "news-8",
+      "description": "Vijayawada transit hub",
+      "imageUrl": "https://picsum.photos/seed/vijayawada/800/600",
+      "imageHint": "transportation hub"
+    },
+    {
+      "id": "news-9",
+      "description": "Guntur spice market",
+      "imageUrl": "https://picsum.photos/seed/guntur/800/600",
+      "imageHint": "busy market"
+    },
+    {
+      "id": "news-10",
+      "description": "Nizamabad dam water levels",
+      "imageUrl": "https://picsum.photos/seed/nizamabad/800/600",
+      "imageHint": "water reservoir"
     }
   ]
 }

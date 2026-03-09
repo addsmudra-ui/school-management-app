@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Open rules for development to resolve all "Missing or insufficient permissions" errors.
+    // Open rules for development to allow unrestricted access during prototyping.
     // This allows any user (authenticated or not) to read and write to any collection.
     match /{document=**} {
       allow read, write: if true;
