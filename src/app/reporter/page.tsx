@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useMemo } from "react";
@@ -14,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight } from "lucide-react";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
@@ -42,30 +41,33 @@ export default function ReporterPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Real-time user profile for status
-  const userDocRef = useMemoFirebase(() => user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
   const { data: userProfile } = useDoc(userDocRef);
 
-  // Real-time news lists (without orderBy to avoid Index Required errors)
+  // Real-time news lists (client-side sorting to avoid index issues)
   const pendingNewsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(
       collection(firestore, 'pending_news_posts'),
       where('author_id', '==', user.uid)
     );
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const approvedNewsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user?.uid) return null;
     return query(
       collection(firestore, 'approved_news_posts'),
       where('author_id', '==', user.uid)
     );
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
 
   const { data: rawPendingNews } = useCollection(pendingNewsQuery);
   const { data: rawApprovedNews } = useCollection(approvedNewsQuery);
 
-  // Client-side sorting for portfolio
+  // Client-side sorting for portfolio displays
   const pendingNews = useMemo(() => {
     if (!rawPendingNews) return [];
     return [...rawPendingNews].sort((a, b) => {
@@ -157,7 +159,7 @@ export default function ReporterPage() {
     }
   };
 
-  if (userProfile?.status === 'pending' || !userProfile) {
+  if (userProfile?.status === 'pending') {
     return (
       <main className="min-h-screen bg-background pt-20">
         <Navbar />
@@ -317,7 +319,7 @@ export default function ReporterPage() {
             <div className="grid grid-cols-2 gap-4">
               <Card className="border-none shadow-md bg-white rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">పరిశీలనలో (Reviewing)</p>
-                <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews.filter(p => p.status === 'pending').length}</h3>
+                <h3 className="text-3xl font-bold text-amber-500 mt-1">{pendingNews.length}</h3>
               </Card>
               <Card className="border-none shadow-md bg-white rounded-2xl p-4">
                 <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">ప్రచురించబడినవి (Live)</p>
