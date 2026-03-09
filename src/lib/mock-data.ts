@@ -1,3 +1,4 @@
+
 export const STATES = ["Telangana", "Andhra Pradesh"];
 
 export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
@@ -69,27 +70,11 @@ export type NewsPost = {
   };
 };
 
-export const MOCK_USERS: UserProfile[] = [
-  {
-    id: "admin-1",
-    name: "Admin Office",
-    phone: "9999999999",
-    role: "admin",
-    status: "approved"
-  },
-  {
-    id: "reporter-1",
-    name: "Suresh Kumar",
-    phone: "9876543210",
-    role: "reporter",
-    status: "approved",
-    location: { state: "Telangana", district: "Warangal", mandal: "Hanamkonda" }
-  }
-];
+export const MOCK_USERS: UserProfile[] = [];
 
 export const MOCK_NEWS: NewsPost[] = [
   {
-    id: "1",
+    id: "demo-1",
     unique_code: "10021",
     title: "హన్మకొండలో భారీ వర్షాలు, జనజీవనం అస్తవ్యస్తం",
     content: "హన్మకొండ నగరంలో గత రాత్రి కురిసిన భారీ వర్షం కారణంగా లోతట్టు ప్రాంతాలు జలమయమయ్యాయి. అధికారులు సహాయక చర్యలు చేపట్టారు.",
@@ -104,7 +89,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 120, comments: 15, commentList: [] }
   },
   {
-    id: "2",
+    id: "demo-2",
     unique_code: "10022",
     title: "బంజారాహిల్స్ లో కొత్త ట్రాఫిక్ నిబంధనలు",
     content: "హైదరాబాద్ బంజారాహిల్స్ ప్రాంతంలో ట్రాఫిక్ సమస్యను తగ్గించడానికి పోలీసులు కొత్త రూల్స్ ప్రవేశపెట్టారు. వాహనదారులు గమనించగలరు.",
@@ -119,7 +104,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 85, comments: 4, commentList: [] }
   },
   {
-    id: "3",
+    id: "demo-3",
     unique_code: "10023",
     title: "తిమ్మాపూర్ రైతులకు శుభవార్త, ఎరువుల పంపిణీ",
     content: "కరీంనగర్ జిల్లా తిమ్మాపూర్ మండలంలో రైతులకు సబ్సిడీపై ఎరువుల పంపిణీ కార్యక్రమం ప్రారంభమైంది. వ్యవసాయ అధికారులు పాల్గొన్నారు.",
@@ -134,7 +119,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 200, comments: 22, commentList: [] }
   },
   {
-    id: "4",
+    id: "demo-4",
     unique_code: "10024",
     title: "ఆర్మూర్ లో కబడ్డీ పోటీలు ప్రారంభం",
     content: "నిజామాబాద్ జిల్లా ఆర్మూర్ మండల కేంద్రంలో రాష్ట్ర స్థాయి కబడ్డీ పోటీలు ఘనంగా ప్రారంభమయ్యాయి. స్థానిక ఎమ్మెల్యే హాజరయ్యారు.",
@@ -149,7 +134,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 45, comments: 2, commentList: [] }
   },
   {
-    id: "5",
+    id: "demo-5",
     unique_code: "10025",
     title: "వైరా చెరువుకు జలకళ, పర్యాటకుల సందడి",
     content: "ఖమ్మం జిల్లా వైరా చెరువు పూర్తి స్థాయిలో నిండటంతో సందర్శకులు క్యూ కడుతున్నారు. పడవ ప్రయాణం అందరినీ ఆకట్టుకుంటోంది.",
@@ -164,7 +149,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 310, comments: 18, commentList: [] }
   },
   {
-    id: "6",
+    id: "demo-6",
     unique_code: "10026",
     title: "జడ్చర్ల ఐటీ పార్కులో కొత్త కంపెనీల రాక",
     content: "మహబూబ్ నగర్ జిల్లా జడ్చర్లలో ఉన్న ఐటీ పార్కుకు మరిన్ని కొత్త పరిశ్రమలు రానున్నాయి. వేలాది మంది యువతకు ఉపాధి లభిస్తుంది.",
@@ -179,7 +164,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 150, comments: 30, commentList: [] }
   },
   {
-    id: "7",
+    id: "demo-7",
     unique_code: "10027",
     title: "గాజువాకలో పర్యావరణ పరిరక్షణ ర్యాలీ",
     content: "విశాఖపట్నం జిల్లా గాజువాకలో పర్యావరణాన్ని కాపాడదాం అనే నినాదంతో విద్యార్థులు భారీ ర్యాలీ నిర్వహించారు. చెట్లు నాటాలని కోరారు.",
@@ -194,7 +179,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 92, comments: 5, commentList: [] }
   },
   {
-    id: "8",
+    id: "demo-8",
     unique_code: "10028",
     title: "పటమట రైతు బజార్లో కూరగాయల ధరలు తగ్గుముఖం",
     content: "విజయవాడ పటమట రైతు బజార్లో ఈరోజు కూరగాయల ధరలు సామాన్యులకు అందుబాటులో ఉన్నాయి. వినియోగదారుల రద్దీ పెరిగింది.",
@@ -209,7 +194,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 115, comments: 8, commentList: [] }
   },
   {
-    id: "9",
+    id: "demo-9",
     unique_code: "10029",
     title: "అమరావతి రోడ్ల వెడల్పు పనుల పరిశీలన",
     content: "గుంటూరు జిల్లా అమరావతిలో జరుగుతున్న రోడ్ల వెడల్పు పనులను అధికారులు ఈరోజు క్షేత్రస్థాయిలో పరిశీలించి వేగవంతం చేయాలని ఆదేశించారు.",
@@ -224,7 +209,7 @@ export const MOCK_NEWS: NewsPost[] = [
     engagement: { likes: 180, comments: 12, commentList: [] }
   },
   {
-    id: "10",
+    id: "demo-10",
     unique_code: "10030",
     title: "గచ్చిబౌలిలో ఐటీ ఉద్యోగుల రక్తదాన శిబిరం",
     content: "హైదరాబాద్ గచ్చిబౌలి ప్రాంతంలో ఐటీ ఉద్యోగులు స్వచ్ఛందంగా రక్తదాన శిబిరం నిర్వహించారు. సుమారు 500 మంది పాల్గొని రక్తాన్ని అందించారు.",

@@ -4,7 +4,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense } from "react";
-import { MapPin, SlidersHorizontal, Loader2 } from "lucide-react";
+import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy, limit } from "firebase/firestore";
@@ -38,7 +38,8 @@ function NewsFeedContent() {
     setSelectedMandal(savedMandal);
   }, []);
 
-  const newsQuery = useMemoFirebase(() => {
+  // Primary Local Query
+  const localNewsQuery = useMemoFirebase(() => {
     if (!firestore || !selectedDistrict) return null;
     
     let q = query(
@@ -55,7 +56,18 @@ function NewsFeedContent() {
     return q;
   }, [firestore, selectedDistrict, selectedMandal]);
 
-  const { data: news, isLoading } = useCollection(newsQuery);
+  // Fallback Global Query
+  const globalNewsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'approved_news_posts'),
+      orderBy('timestamp', 'desc'),
+      limit(20)
+    );
+  }, [firestore]);
+
+  const { data: localNews, isLoading: isLocalLoading } = useCollection(localNewsQuery);
+  const { data: globalNews, isLoading: isGlobalLoading } = useCollection(globalNewsQuery);
 
   const handleLocationUpdate = () => {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
@@ -64,7 +76,7 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  if (isLoading && !news) {
+  if (isLocalLoading && !localNews) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -75,8 +87,12 @@ function NewsFeedContent() {
     );
   }
 
+  const hasLocalNews = localNews && localNews.length > 0;
+  const feedToDisplay = hasLocalNews ? localNews : globalNews;
+
   return (
     <>
+      {/* Mobile Location Header */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -132,8 +148,23 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {news && news.length > 0 ? (
-          news.map((item) => (
+        {/* Fallback Message if viewing Global news because local is empty */}
+        {!hasLocalNews && globalNews && globalNews.length > 0 && (
+          <div className="absolute top-20 left-0 right-0 z-30 px-4 pointer-events-none md:top-24">
+            <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
+              <div className="bg-amber-500 p-2 rounded-lg">
+                <Globe className="w-4 h-4 text-white" />
+              </div>
+              <p className="text-xs font-bold text-amber-800 leading-tight">
+                మీ ప్రాంతంలో వార్తలు లేవు. <br/>
+                <span className="text-[10px] opacity-70">ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను చూస్తున్నారు.</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {feedToDisplay && feedToDisplay.length > 0 ? (
+          feedToDisplay.map((item) => (
             <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
               <NewsCard news={item as any} />
             </section>
@@ -142,10 +173,10 @@ function NewsFeedContent() {
           <div className="flex items-center justify-center h-screen px-6 text-center">
             <div className="max-w-xs">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <MapPin className="w-10 h-10 text-primary/40" />
+                <AlertCircle className="w-10 h-10 text-primary/40" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">వార్తలు ఏవీ లేవు</h3>
-              <p className="text-muted-foreground mb-8 text-sm">ప్రస్తుతానికి ఇక్కడ వార్తలు ఏవీ లేవు. దయచేసి వేరే ప్రాంతాన్ని ఎంచుకోండి.</p>
+              <p className="text-muted-foreground mb-8 text-sm">ప్రస్తుతానికి ఎటువంటి వార్తలు అందుబాటులో లేవు.</p>
               <Button className="w-full" onClick={() => setIsLocationModalOpen(true)}>ప్రాంతాన్ని మార్చండి</Button>
             </div>
           </div>
