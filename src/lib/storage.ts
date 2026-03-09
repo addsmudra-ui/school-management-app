@@ -161,6 +161,19 @@ export const NewsService = {
 };
 
 export const UserService = {
+  getById: async (db: Firestore, uid: string): Promise<UserProfile | null> => {
+    try {
+      const docRef = doc(db, 'users', uid);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        return { ...snapshot.data(), id: snapshot.id } as UserProfile;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  },
+
   getByPhone: async (db: Firestore, phone: string): Promise<UserProfile | null> => {
     try {
       const q = query(collection(db, 'users'), where('phone', '==', phone), limit(1));

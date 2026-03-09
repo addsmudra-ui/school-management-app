@@ -7,19 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2, Mail, Phone } from "lucide-react";
+import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2, Mail, Phone, Chrome } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useAuth } from "@/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 export default function LoginPage() {
   const firestore = useFirestore();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const [method, setMethod] = useState<'phone' | 'email'>('phone');
+  const [method, setMethod] = useState<'phone' | 'email' | 'google'>('phone');
   const [step, setStep] = useState<'auth' | 'otp' | 'details'>('auth');
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -33,6 +33,32 @@ export default function LoginPage() {
   
   const router = useRouter();
   const { toast } = useToast();
+
+  const handleGoogleLogin = async () => {
+    if (!firestore || !auth) return;
+    setIsLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const googleUser = result.user;
+      
+      const existing = await UserService.getById(firestore, googleUser.uid);
+      if (existing) {
+        syncLocalStorage(existing);
+        const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/';
+        router.push(targetPath);
+      } else {
+        setName(googleUser.displayName || "");
+        setEmail(googleUser.email || "");
+        setStep('details');
+      }
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleNext = async () => {
     if (!firestore || !auth || isUserLoading) {
@@ -64,8 +90,7 @@ export default function LoginPage() {
           } else {
             setStep('otp');
           }
-        } else {
-          // Email Login Logic
+        } else if (method === 'email') {
           if (!email || !password) {
             toast({ variant: "destructive", title: "Error", description: "Email and password are required." });
             setIsLoading(false);
@@ -73,20 +98,17 @@ export default function LoginPage() {
           }
 
           try {
-            // Try signing in
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            await signInWithEmailAndPassword(auth, email, password);
             const existing = await UserService.getByEmail(firestore, email);
             if (existing) {
               syncLocalStorage(existing);
               const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/';
               router.push(targetPath);
             } else {
-              // Auth successful but no Firestore record? Go to details.
               setStep('details');
             }
           } catch (error: any) {
-            if (error.code === 'auth/user-not-found') {
-              // New user signing up with email
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
               setStep('details');
             } else {
               throw error;
@@ -110,7 +132,6 @@ export default function LoginPage() {
 
         let currentUser = user;
         if (method === 'email' && !user) {
-          // Create Firebase Auth user first if signing up with email
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           currentUser = userCredential.user;
         }
@@ -127,7 +148,7 @@ export default function LoginPage() {
         };
 
         if (phone) newUser.phone = phone;
-        if (email) newUser.email = email;
+        if (email || currentUser.email) newUser.email = email || currentUser.email;
 
         if (role !== 'admin' && role !== 'editor' && state && district && mandal) {
           newUser.location = { state, district, mandal };
@@ -191,7 +212,7 @@ export default function LoginPage() {
           {step !== 'auth' && (
             <button 
               className="absolute left-4 top-4 p-2 rounded-full hover:bg-white transition-colors"
-              onClick={() => setStep(step === 'details' ? 'otp' : 'auth')}
+              onClick={() => setStep('auth')}
               disabled={isLoading}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -209,21 +230,28 @@ export default function LoginPage() {
               <div className="flex gap-2 p-1 bg-muted rounded-xl mb-4">
                 <Button 
                   variant={method === 'phone' ? 'default' : 'ghost'} 
-                  className="flex-1 rounded-lg"
+                  className="flex-1 rounded-lg text-xs"
                   onClick={() => setMethod('phone')}
                 >
-                  <Phone className="w-4 h-4 mr-2" /> Phone
+                  <Phone className="w-3 h-3 mr-1" /> Phone
                 </Button>
                 <Button 
                   variant={method === 'email' ? 'default' : 'ghost'} 
-                  className="flex-1 rounded-lg"
+                  className="flex-1 rounded-lg text-xs"
                   onClick={() => setMethod('email')}
                 >
-                  <Mail className="w-4 h-4 mr-2" /> Email
+                  <Mail className="w-3 h-3 mr-1" /> Email
+                </Button>
+                <Button 
+                  variant={method === 'google' ? 'default' : 'ghost'} 
+                  className="flex-1 rounded-lg text-xs"
+                  onClick={() => setMethod('google')}
+                >
+                  <Chrome className="w-3 h-3 mr-1" /> Google
                 </Button>
               </div>
 
-              {method === 'phone' ? (
+              {method === 'phone' && (
                 <div className="space-y-2">
                   <Label htmlFor="phone">ఫోన్ నంబర్ (Phone Number)</Label>
                   <div className="relative">
@@ -236,8 +264,13 @@ export default function LoginPage() {
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     />
                   </div>
+                  <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20 mt-4" onClick={handleNext} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
+                  </Button>
                 </div>
-              ) : (
+              )}
+
+              {method === 'email' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">ఈమెయిల్ (Email Address)</Label>
@@ -261,12 +294,26 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
+                  <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
+                  </Button>
                 </div>
               )}
-              
-              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}
-              </Button>
+
+              {method === 'google' && (
+                <div className="space-y-4 text-center">
+                  <p className="text-sm text-muted-foreground">Google తో సులభంగా లాగిన్ అవ్వండి.</p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-14 rounded-xl border-muted-foreground/20 hover:bg-muted font-bold gap-3"
+                    onClick={handleGoogleLogin}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <Loader2 className="animate-spin" /> : <Chrome className="w-6 h-6 text-primary" />}
+                    Sign in with Google
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
