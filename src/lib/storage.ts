@@ -35,11 +35,11 @@ export const AdminService = {
       const docRef = doc(db, 'config', 'admin');
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
-        return snapshot.data().password || null;
+        return snapshot.data().password || 'admin123'; // Default fallback for first use
       }
-      return null;
+      return 'admin123';
     } catch (e) {
-      return null;
+      return 'admin123';
     }
   },
   setPassword: (db: Firestore, newPassword: string) => {

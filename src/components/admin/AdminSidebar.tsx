@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -18,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
+import { useFirestore } from "@/firebase";
 import {
   Sidebar,
   SidebarContent,
@@ -51,6 +51,7 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPass, setNewPass] = useState("");
@@ -62,11 +63,12 @@ export function AdminSidebar() {
   };
 
   const handleChangePassword = () => {
+    if (!firestore) return;
     if (newPass.length < 4) {
       toast({ variant: "destructive", title: "Error", description: "Password must be at least 4 chars." });
       return;
     }
-    AdminService.setPassword(newPass);
+    AdminService.setPassword(firestore, newPass);
     setIsPasswordModalOpen(false);
     setNewPass("");
     toast({ title: "Success", description: "Admin password updated successfully." });

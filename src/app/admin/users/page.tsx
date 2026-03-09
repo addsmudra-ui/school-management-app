@@ -99,8 +99,8 @@ export default function AdminUsers() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline tracking-tight">వినియోగదారుల నిర్వహణ</h1>
-          <p className="text-muted-foreground mt-1">ప్లాట్‌ఫారమ్ వినియోగదారుల జాబితాను ఇక్కడ చూడవచ్చు.</p>
+          <h1 className="text-3xl font-bold font-headline tracking-tight">రిపోర్టర్ల నిర్వహణ (Staff)</h1>
+          <p className="text-muted-foreground mt-1">ప్లాట్‌ఫారమ్ రిపోర్టర్ల జాబితాను ఇక్కడ చూడవచ్చు.</p>
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -177,7 +177,7 @@ export default function AdminUsers() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input 
-          placeholder="పేరు లేదా నంబర్ ద్వారా వెతకండి..." 
+          placeholder="రిపోర్టర్ పేరు లేదా ఫోన్ నంబర్ ద్వారా వెతకండి..." 
           className="pl-10 h-12 bg-white rounded-xl border-muted shadow-sm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -189,7 +189,7 @@ export default function AdminUsers() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4 pl-6">వినియోగదారు & ఫోన్ (User & Phone)</TableHead>
+                <TableHead className="font-bold py-4 pl-6">రిపోర్టర్ (Name & Phone)</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold text-center">స్థితి (Status)</TableHead>
