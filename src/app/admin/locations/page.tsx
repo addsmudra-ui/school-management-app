@@ -1,18 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Plus, Globe, PlusCircle, LayoutGrid } from "lucide-react";
+import { MapPin, Plus, Globe, PlusCircle, LayoutGrid, Trash2, Edit2, X } from "lucide-react";
 import { LocationService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function AdminLocations() {
   const firestore = useFirestore();
@@ -21,6 +22,11 @@ export default function AdminLocations() {
   const [newDistrict, setNewDistrict] = useState("");
   const [newMandal, setNewMandal] = useState("");
   const [targetDistrict, setTargetDistrict] = useState("");
+  
+  // Edit States
+  const [editingItem, setEditingRaw] = useState<{ type: 'state' | 'district' | 'mandal', state: string, district?: string, oldName: string, newName: string } | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const { toast } = useToast();
 
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
@@ -52,6 +58,34 @@ export default function AdminLocations() {
     toast({ title: "మండలం జోడించబడింది", description: `${newMandal} విజయవంతంగా చేర్చబడింది.` });
   };
 
+  const startRename = (type: 'state' | 'district' | 'mandal', oldName: string, state: string, district?: string) => {
+    setEditingRaw({ type, oldName, newName: oldName, state, district });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleRenameSave = () => {
+    if (!firestore || !editingItem) return;
+    const { type, oldName, newName, state, district } = editingItem;
+    
+    if (type === 'state') LocationService.renameState(firestore, oldName, newName);
+    else if (type === 'district') LocationService.renameDistrict(firestore, state, oldName, newName);
+    else if (type === 'mandal' && district) LocationService.renameMandal(firestore, state, district, oldName, newName);
+    
+    setIsEditDialogOpen(false);
+    toast({ title: "మార్చబడింది", description: "పేరు విజయవంతంగా మార్చబడింది." });
+  };
+
+  const handleDelete = (type: 'state' | 'district' | 'mandal', name: string, state: string, district?: string) => {
+    if (!firestore) return;
+    if (!confirm(`${name}ని తొలగించాలనుకుంటున్నారా?`)) return;
+
+    if (type === 'state') LocationService.removeState(firestore, name);
+    else if (type === 'district') LocationService.removeDistrict(firestore, state, name);
+    else if (type === 'mandal' && district) LocationService.removeMandal(firestore, state, district, name);
+
+    toast({ title: "తొలగించబడింది", description: `${name} విజయవంతంగా తొలగించబడింది.` });
+  };
+
   const currentStateDistricts = (availableLocations[selectedState] as Record<string, string[]>) || {};
 
   return (
@@ -59,21 +93,28 @@ export default function AdminLocations() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight">ప్రాంతాల నిర్వహణ (Locations)</h1>
-          <p className="text-muted-foreground mt-1">కొత్త రాష్ట్రాలు, జిల్లాలు మరియు మండలాలను ఇక్కడ జోడించవచ్చు.</p>
+          <p className="text-muted-foreground mt-1">ప్రాంతాలను జోడించండి, సవరించండి లేదా తొలగించండి.</p>
         </div>
-        <Select value={selectedState} onValueChange={setSelectedState}>
-          <SelectTrigger className="w-[220px] h-12 bg-white shadow-md rounded-xl border-primary/20">
-            <Globe className="w-4 h-4 mr-2 text-primary" />
-            <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={selectedState} onValueChange={setSelectedState}>
+            <SelectTrigger className="w-[220px] h-12 bg-white shadow-md rounded-xl border-primary/20">
+              <Globe className="w-4 h-4 mr-2 text-primary" />
+              <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" className="rounded-xl h-12 w-12" onClick={() => startRename('state', selectedState, selectedState)}>
+            <Edit2 className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="icon" className="rounded-xl h-12 w-12 text-destructive" onClick={() => handleDelete('state', selectedState, selectedState)}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Input Forms */}
         <div className="space-y-6">
           <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
             <CardHeader className="bg-indigo-50/50 border-b border-indigo-100">
@@ -85,16 +126,9 @@ export default function AdminLocations() {
             <CardContent className="p-6 space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-muted-foreground">పేరు (State Name)</Label>
-                <Input 
-                  value={newStateName} 
-                  onChange={(e) => setNewStateName(e.target.value)} 
-                  placeholder="ఉదా: తెలంగాణ"
-                  className="rounded-xl h-11"
-                />
+                <Input value={newStateName} onChange={(e) => setNewStateName(e.target.value)} placeholder="ఉదా: తెలంగాణ" className="rounded-xl h-11" />
               </div>
-              <Button className="w-full bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11" onClick={handleAddState} disabled={!newStateName}>
-                రాష్ట్రం జోడించు
-              </Button>
+              <Button className="w-full bg-indigo-600 hover:bg-indigo-700 rounded-xl h-11" onClick={handleAddState} disabled={!newStateName}>రాష్ట్రం జోడించు</Button>
             </CardContent>
           </Card>
 
@@ -108,16 +142,9 @@ export default function AdminLocations() {
             <CardContent className="p-6 space-y-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా పేరు (District Name)</Label>
-                <Input 
-                  value={newDistrict} 
-                  onChange={(e) => setNewDistrict(e.target.value)} 
-                  placeholder="ఉదా: కొత్తగూడెం"
-                  className="rounded-xl h-11"
-                />
+                <Input value={newDistrict} onChange={(e) => setNewDistrict(e.target.value)} placeholder="ఉదా: కొత్తగూడెం" className="rounded-xl h-11" />
               </div>
-              <Button className="w-full rounded-xl h-11" onClick={handleAddDistrict} disabled={!newDistrict}>
-                జిల్లాను జోడించు
-              </Button>
+              <Button className="w-full rounded-xl h-11" onClick={handleAddDistrict} disabled={!newDistrict}>జిల్లాను జోడించు</Button>
             </CardContent>
           </Card>
 
@@ -140,80 +167,81 @@ export default function AdminLocations() {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం పేరు (Mandal Name)</Label>
-                <Input 
-                  value={newMandal} 
-                  onChange={(e) => setNewMandal(e.target.value)} 
-                  placeholder="ఉదా: కొత్త మండలం"
-                  className="rounded-xl h-11"
-                />
+                <Input value={newMandal} onChange={(e) => setNewMandal(e.target.value)} placeholder="ఉదా: కొత్త మండలం" className="rounded-xl h-11" />
               </div>
-              <Button className="w-full bg-accent hover:bg-accent/90 rounded-xl h-11" onClick={handleAddMandal} disabled={!targetDistrict || !newMandal}>
-                మండలాన్ని జోడించు
-              </Button>
+              <Button className="w-full bg-accent hover:bg-accent/90 rounded-xl h-11" onClick={handleAddMandal} disabled={!targetDistrict || !newMandal}>మండలాన్ని జోడించు</Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Display List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-2xl font-bold flex items-center gap-3">
               <LayoutGrid className="w-6 h-6 text-primary" />
               {selectedState} - జిల్లాలు & మండలాలు
             </h2>
-            <Badge variant="outline" className="bg-white px-3 py-1 font-bold text-primary border-primary/20">
-              {Object.keys(currentStateDistricts).length} జిల్లాలు
-            </Badge>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(currentStateDistricts).length > 0 ? (
-              Object.entries(currentStateDistricts).sort(([a], [b]) => a.localeCompare(b)).map(([district, mandals]: [string, any]) => (
-                <Card key={district} className="border-none shadow-md rounded-3xl overflow-hidden group hover:shadow-xl transition-all bg-white border border-slate-100">
-                  <CardHeader className="bg-primary/5 py-5 px-6 border-b border-primary/10">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-primary" />
-                        </div>
-                        <h3 className="font-bold text-lg text-slate-900">{district}</h3>
+            {Object.entries(currentStateDistricts).sort(([a], [b]) => a.localeCompare(b)).map(([district, mandals]: [string, any]) => (
+              <Card key={district} className="border-none shadow-md rounded-3xl overflow-hidden group hover:shadow-xl transition-all bg-white border border-slate-100">
+                <CardHeader className="bg-primary/5 py-5 px-6 border-b border-primary/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center">
+                        <MapPin className="w-4 h-4 text-primary" />
                       </div>
-                      <Badge variant="secondary" className="bg-white text-xs font-bold text-muted-foreground">
-                        {mandals?.length || 0} Mandals
-                      </Badge>
+                      <h3 className="font-bold text-lg text-slate-900">{district}</h3>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="flex flex-wrap gap-2">
-                      {mandals && mandals.length > 0 ? (
-                        mandals.sort().map((mandal: string) => (
-                          <Badge key={mandal} variant="secondary" className="font-medium bg-slate-50 text-slate-700 border-slate-200 py-1.5 px-3 rounded-lg hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all cursor-default">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startRename('district', district, selectedState)}>
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete('district', district, selectedState)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex flex-wrap gap-2">
+                    {mandals && mandals.length > 0 ? (
+                      mandals.sort().map((mandal: string) => (
+                        <div key={mandal} className="flex items-center gap-1 group/mandal">
+                          <Badge variant="secondary" className="font-medium bg-slate-50 text-slate-700 border-slate-200 py-1.5 px-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-all cursor-pointer" onClick={() => startRename('mandal', mandal, selectedState, district)}>
                             {mandal}
                           </Badge>
-                        ))
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-4 w-full opacity-40">
-                          <p className="text-xs italic text-muted-foreground">మండలాలు లేవు.</p>
+                          <button onClick={() => handleDelete('mandal', mandal, selectedState, district)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover/mandal:opacity-100 transition-opacity">
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="col-span-full py-32 text-center bg-white rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center space-y-4">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
-                  <Globe className="w-8 h-8 text-slate-300" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-slate-500 font-bold">డేటా ఏదీ లేదు</p>
-                  <p className="text-sm text-slate-400 italic">ఈ రాష్ట్రంలో ఇంకా జిల్లాలు ఏవీ చేర్చబడలేదు.</p>
-                </div>
-              </div>
-            )}
+                      ))
+                    ) : (
+                      <p className="text-xs italic text-muted-foreground">మండలాలు లేవు.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader><DialogTitle>సవరించండి (Rename)</DialogTitle></DialogHeader>
+          {editingItem && (
+            <div className="py-4 space-y-4">
+              <Label className="font-bold">కొత్త పేరు</Label>
+              <Input value={editingItem.newName} onChange={(e) => setEditingRaw({ ...editingItem, newName: e.target.value })} className="rounded-xl h-12" />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>రద్దు</Button>
+            <Button onClick={handleRenameSave}>సేవ్ చేయి</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

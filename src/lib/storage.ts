@@ -16,7 +16,8 @@ import {
   arrayRemove,
   Firestore,
   getDoc,
-  writeBatch
+  writeBatch,
+  deleteField
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { NewsPost, UserProfile, Comment, MOCK_NEWS, LOCATIONS_BY_STATE } from './mock-data';
@@ -171,7 +172,7 @@ export const NewsService = {
       id: commentDoc.id,
       timestamp: serverTimestamp()
     };
-    setDocumentNonBlocking(commentDoc, commentData, { merge: true });
+    commentDoc.id && setDocumentNonBlocking(commentDoc, commentData, { merge: true });
     
     const postRef = doc(db, 'approved_news_posts', postId);
     updateDocumentNonBlocking(postRef, { commentsCount: increment(1) });
@@ -268,24 +269,74 @@ export const NotificationService = {
 export const LocationService = {
   addState: (db: Firestore, stateName: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    setDocumentNonBlocking(locRef, {
+    updateDocumentNonBlocking(locRef, {
       [stateName]: {}
-    }, { merge: true });
+    });
+  },
+  renameState: async (db: Firestore, oldName: string, newName: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    const snap = await getDoc(locRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const stateData = data[oldName];
+    delete data[oldName];
+    data[newName] = stateData;
+    setDocumentNonBlocking(locRef, data, { merge: false });
+  },
+  removeState: (db: Firestore, stateName: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    updateDocumentNonBlocking(locRef, {
+      [stateName]: deleteField()
+    });
   },
   addDistrict: (db: Firestore, state: string, district: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    setDocumentNonBlocking(locRef, {
-      [state]: {
-        [district]: []
-      }
-    }, { merge: true });
+    updateDocumentNonBlocking(locRef, {
+      [`${state}.${district}`]: []
+    });
+  },
+  renameDistrict: async (db: Firestore, state: string, oldName: string, newName: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    const snap = await getDoc(locRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!data[state]) return;
+    const districtData = data[state][oldName];
+    delete data[state][oldName];
+    data[state][newName] = districtData;
+    setDocumentNonBlocking(locRef, data, { merge: false });
+  },
+  removeDistrict: (db: Firestore, state: string, district: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    updateDocumentNonBlocking(locRef, {
+      [`${state}.${district}`]: deleteField()
+    });
   },
   addMandal: (db: Firestore, state: string, district: string, mandal: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    setDocumentNonBlocking(locRef, {
-      [state]: {
-        [district]: arrayUnion(mandal)
-      }
-    }, { merge: true });
+    updateDocumentNonBlocking(locRef, {
+      [`${state}.${district}`]: arrayUnion(mandal)
+    });
+  },
+  renameMandal: async (db: Firestore, state: string, district: string, oldName: string, newName: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    const snap = await getDoc(locRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!data[state] || !data[state][district]) return;
+    const mandals: string[] = data[state][district];
+    const index = mandals.indexOf(oldName);
+    if (index > -1) {
+      mandals[index] = newName;
+      updateDocumentNonBlocking(locRef, {
+        [`${state}.${district}`]: mandals
+      });
+    }
+  },
+  removeMandal: (db: Firestore, state: string, district: string, mandal: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    updateDocumentNonBlocking(locRef, {
+      [`${state}.${district}`]: arrayRemove(mandal)
+    });
   }
 };
