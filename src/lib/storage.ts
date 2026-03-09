@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -248,16 +247,26 @@ export const NotificationService = {
 };
 
 export const LocationService = {
-  addMandal: (db: Firestore, state: string, district: string, mandal: string) => {
+  addState: (db: Firestore, stateName: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    updateDocumentNonBlocking(locRef, {
-      [`${state}.${district}`]: arrayUnion(mandal)
-    });
+    setDocumentNonBlocking(locRef, {
+      [stateName]: {}
+    }, { merge: true });
   },
   addDistrict: (db: Firestore, state: string, district: string) => {
     const locRef = doc(db, 'metadata', 'locations');
-    updateDocumentNonBlocking(locRef, {
-      [`${state}.${district}`]: []
-    });
+    setDocumentNonBlocking(locRef, {
+      [state]: {
+        [district]: []
+      }
+    }, { merge: true });
+  },
+  addMandal: (db: Firestore, state: string, district: string, mandal: string) => {
+    const locRef = doc(db, 'metadata', 'locations');
+    setDocumentNonBlocking(locRef, {
+      [state]: {
+        [district]: arrayUnion(mandal)
+      }
+    }, { merge: true });
   }
 };

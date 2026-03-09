@@ -5,8 +5,8 @@ import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense, useMemo } from "react";
 import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, limit } from "firebase/firestore";
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
+import { collection, query, limit, doc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
 import {
   Dialog,
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LOCATIONS, NewsPost } from "@/lib/mock-data";
+import { LOCATIONS as MOCK_LOCATIONS, NewsPost } from "@/lib/mock-data";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
@@ -33,6 +33,11 @@ function NewsFeedContent() {
   const [selectedMandal, setSelectedMandal] = useState<string>("All");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
+
+  // Fetch dynamic locations
+  const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locRef);
+  const dynamicLocations = locationsDoc ? Object.values(locationsDoc).reduce((acc: any, state: any) => ({ ...acc, ...state }), {}) : MOCK_LOCATIONS;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -162,7 +167,7 @@ function NewsFeedContent() {
                     <SelectTrigger className="w-full h-12"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
-                      {Object.keys(LOCATIONS).map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      {Object.keys(dynamicLocations).map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -172,7 +177,7 @@ function NewsFeedContent() {
                     <SelectTrigger className="w-full h-12"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">అన్ని మండలాలు</SelectItem>
-                      {selectedDistrict !== "All" && (LOCATIONS as any)[selectedDistrict].map((m: string) => (
+                      {selectedDistrict !== "All" && dynamicLocations[selectedDistrict]?.map((m: string) => (
                         <SelectItem key={m} value={m}>{m}</SelectItem>
                       ))}
                     </SelectContent>
