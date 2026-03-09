@@ -30,9 +30,6 @@ export type SentNotification = {
 };
 
 export const AdminService = {
-  /**
-   * Fetches the administrative password from Firestore.
-   */
   getPassword: async (db: Firestore): Promise<string | null> => {
     try {
       const docRef = doc(db, 'config', 'admin');
@@ -42,13 +39,9 @@ export const AdminService = {
       }
       return null;
     } catch (e) {
-      console.error("Error fetching admin password:", e);
       return null;
     }
   },
-  /**
-   * Updates the administrative password.
-   */
   setPassword: (db: Firestore, newPassword: string) => {
     const configRef = doc(db, 'config', 'admin');
     setDocumentNonBlocking(configRef, { password: newPassword }, { merge: true });
@@ -76,11 +69,9 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
-    // 1. Remove from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
-    // 2. Add to approved collection
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -88,7 +79,6 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // 3. Log notification history
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
@@ -150,14 +140,12 @@ export const UserService = {
   },
 
   create: async (db: Firestore, profile: UserProfile) => {
-    // 1. Create main user profile
     const userRef = doc(db, 'users', profile.id);
     await setDoc(userRef, {
       ...profile,
       timestamp: serverTimestamp()
     }, { merge: true });
 
-    // 2. Create role marker for security rules 'exists' checks
     const roleCollectionMap = {
       'admin': 'roles_admins',
       'reporter': 'roles_reporters',
@@ -178,15 +166,10 @@ export const UserService = {
   },
 
   delete: (db: Firestore, userId: string) => {
-    // 1. Delete profile
     deleteDocumentNonBlocking(doc(db, 'users', userId));
-
-    // 2. Delete role markers
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
-    
-    // 3. Delete subcollections
     deleteDocumentNonBlocking(doc(db, 'users', userId, 'private', 'likes'));
   }
 };

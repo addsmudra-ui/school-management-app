@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone, Mail } from "lucide-react";
+import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
