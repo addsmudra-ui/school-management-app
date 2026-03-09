@@ -3,11 +3,12 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense, useMemo } from "react";
-import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info } from "lucide-react";
+import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, limit, doc } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,13 @@ function NewsFeedContent() {
   const [selectedMandal, setSelectedMandal] = useState<string>("All");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
+
+  // Real-time branding
+  const brandingRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+  const { data: branding } = useDoc(brandingRef);
 
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
@@ -137,58 +145,61 @@ function NewsFeedContent() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary/10 p-1.5 rounded-lg">
-              <MapPin className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Location</p>
-              <h2 className="text-sm font-bold flex items-center gap-1">
-                {isActuallyGlobal ? "Global Feed" : (selectedMandal === "All" ? "All Mandals" : selectedMandal) + ", " + selectedDistrict}
-              </h2>
-            </div>
-          </div>
-          
-          <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-full gap-1 h-8 border-primary/20 text-primary hover:bg-primary/5">
-                <SlidersHorizontal className="w-3" />
-                మార్చండి
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[92%] max-w-sm rounded-2xl p-6">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-5 py-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">జిల్లా</label>
-                  <Select value={selectedDistrict} onValueChange={(val) => { setSelectedDistrict(val); setSelectedMandal("All"); }}>
-                    <SelectTrigger className="w-full h-12"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
-                      {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">మండలం</label>
-                  <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={selectedDistrict === "All"}>
-                    <SelectTrigger className="w-full h-12"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">అన్ని మండలాలు</SelectItem>
-                      {selectedDistrict !== "All" && dynamicLocations[selectedDistrict]?.map((m: string) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full h-12 text-lg mt-2 shadow-lg shadow-primary/20" onClick={handleLocationUpdate}>వార్తలు చూడండి</Button>
+      <div className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-muted p-3 md:hidden">
+        <div className="max-w-md mx-auto flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="relative w-7 h-7 flex items-center justify-center">
+                {branding?.appLogo ? (
+                  <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+                ) : (
+                  <Newspaper className="w-5 h-5 text-primary" />
+                )}
               </div>
-            </DialogContent>
-          </Dialog>
+              <span className="font-headline font-bold text-sm tracking-tight">{branding?.appName || 'MandalPulse'}</span>
+            </div>
+            
+            <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full gap-1.5 h-8 border-primary/20 text-primary hover:bg-primary/5 px-3">
+                  <MapPin className="w-3 h-3" />
+                  <span className="text-[10px] font-bold">
+                    {isActuallyGlobal ? "Global" : (selectedMandal === "All" ? selectedDistrict : selectedMandal)}
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[92%] max-w-sm rounded-2xl p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-5 py-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">జిల్లా</label>
+                    <Select value={selectedDistrict} onValueChange={(val) => { setSelectedDistrict(val); setSelectedMandal("All"); }}>
+                      <SelectTrigger className="w-full h-12"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
+                        {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">మండలం</label>
+                    <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={selectedDistrict === "All"}>
+                      <SelectTrigger className="w-full h-12"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All">అన్ని మండలాలు</SelectItem>
+                        {selectedDistrict !== "All" && dynamicLocations[selectedDistrict]?.map((m: string) => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button className="w-full h-12 text-lg mt-2 shadow-lg shadow-primary/20" onClick={handleLocationUpdate}>వార్తలు చూడండి</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
