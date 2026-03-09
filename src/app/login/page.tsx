@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -9,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2, Mail, Phone, Chrome } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
+import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useAuth } from "@/firebase";
+import { useFirestore, useUser, useAuth, useDoc, useMemoFirebase } from "@/firebase";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { doc } from "firebase/firestore";
 
 export default function LoginPage() {
   const firestore = useFirestore();
@@ -33,6 +33,13 @@ export default function LoginPage() {
   
   const router = useRouter();
   const { toast } = useToast();
+
+  // Dynamic locations from Firestore
+  const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locRef);
+  
+  const availableLocations = (locationsDoc as any) || MOCK_LOCATIONS;
+  const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
   const handleGoogleLogin = async () => {
     if (!firestore || !auth) return;
@@ -360,7 +367,6 @@ export default function LoginPage() {
                     <SelectContent>
                       <SelectItem value="user">సాధారణ పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">స్థానిక రిపోర్టర్ (Reporter)</SelectItem>
-                      {/* Only show Admin/Editor if they were identified during step one */}
                       {isAdminOrEditor && (
                         <>
                           <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
@@ -394,7 +400,7 @@ export default function LoginPage() {
                           <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
                         </SelectTrigger>
                         <SelectContent>
-                          {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                          {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -407,7 +413,7 @@ export default function LoginPage() {
                             <SelectValue placeholder="జిల్లా" />
                           </SelectTrigger>
                           <SelectContent>
-                            {state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                            {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
@@ -418,7 +424,9 @@ export default function LoginPage() {
                             <SelectValue placeholder="మండలం" />
                           </SelectTrigger>
                           <SelectContent>
-                            {district && LOCATIONS_BY_STATE[state][district].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                            {district && availableLocations[state]?.[district]?.map((m: string) => (
+                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
