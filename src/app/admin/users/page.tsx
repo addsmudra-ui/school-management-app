@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone } from "lucide-react";
+import { Users, UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone, Mail } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
@@ -189,11 +189,11 @@ export default function AdminUsers() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4 pl-6">పేరు & కాంటాక్ట్</TableHead>
+                <TableHead className="font-bold py-4 pl-6">వినియోగదారు (User)</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
-                <TableHead className="font-bold">స్థితి (Status)</TableHead>
-                <TableHead className="font-bold text-right pr-6">చర్యలు</TableHead>
+                <TableHead className="font-bold text-center">స్థితి (Status)</TableHead>
+                <TableHead className="font-bold text-right pr-6">చర్యలు (Actions)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -203,31 +203,36 @@ export default function AdminUsers() {
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
                     <TableCell className="pl-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{user.name}</span>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                          <Phone className="w-2.5 h-2.5" />
-                          {user.phone}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+                          {user.name[0]}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900 leading-tight">{user.name}</span>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Phone className="w-2.5 h-2.5" />
+                            {user.phone}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         {user.role === 'admin' ? <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> : <ShieldCheck className="w-3.5 h-3.5 text-primary" />}
-                        <Badge variant="outline" className="capitalize text-[10px] font-bold">{user.role}</Badge>
+                        <Badge variant="outline" className="capitalize text-[10px] font-bold border-muted-foreground/20">{user.role}</Badge>
                       </div>
                     </TableCell>
                     <TableCell>
                       {user.location ? (
                         <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                           <MapPin className="w-3 h-3 text-primary" />
-                          {user.location.mandal}, {user.location.district}
+                          <span className="truncate max-w-[120px]">{user.location.mandal}, {user.location.district}</span>
                         </div>
                       ) : (
                         <span className="text-xs text-muted-foreground italic">Global</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge 
                         variant="secondary" 
                         className={cn(

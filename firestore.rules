@@ -21,8 +21,8 @@ service cloud.firestore {
 
     // --- COLLECTION RULES ---
 
-    // 1. PUBLIC CONTENT - Anyone can read approved news, notifications, and metadata
-    match /approved_news_posts/{postId} {
+    // 1. PUBLIC CONTENT - Anyone can read approved news and notifications
+    match /approved_news_posts/{id} {
       allow read, get, list: if true;
       allow write: if isStaff();
 
@@ -54,7 +54,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
       
@@ -67,14 +67,17 @@ service cloud.firestore {
     match /roles_admins/{uid} { 
       allow read, get, list: if isSignedIn(); 
       allow write: if isAdmin(); 
+      allow delete: if isAdmin();
     }
     match /roles_reporters/{uid} { 
       allow read, get, list: if isSignedIn(); 
       allow write: if isAdmin() || (isSignedIn() && request.auth.uid == uid); 
+      allow delete: if isAdmin();
     }
     match /roles_editors/{uid} { 
       allow read, get, list: if isSignedIn(); 
       allow write: if isAdmin(); 
+      allow delete: if isAdmin();
     }
 
     // 5. SYSTEM CONFIG

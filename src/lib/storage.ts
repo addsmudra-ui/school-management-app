@@ -42,6 +42,7 @@ export const AdminService = {
       }
       return null;
     } catch (e) {
+      console.error("Error fetching admin password:", e);
       return null;
     }
   },
@@ -143,6 +144,7 @@ export const UserService = {
       const data = querySnapshot.docs[0].data();
       return { ...data, id: querySnapshot.docs[0].id } as UserProfile;
     } catch (e) {
+      console.error("Error fetching user by phone:", e);
       return null;
     }
   },

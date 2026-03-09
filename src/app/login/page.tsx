@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -47,6 +46,7 @@ export default function LoginPage() {
         
         const existing = await UserService.getByPhone(firestore, phone);
         if (existing) {
+          // Store basic profile data
           localStorage.setItem('mandalPulse_role', existing.role);
           localStorage.setItem('mandalPulse_userName', existing.name);
           localStorage.setItem('mandalPulse_userPhone', existing.phone);
@@ -76,10 +76,11 @@ export default function LoginPage() {
         setStep('details');
       }
       else {
+        // Verification step for restricted roles
         if (role === 'admin' || role === 'editor') {
           const correctPassword = await AdminService.getPassword(firestore);
           if (password !== correctPassword) {
-            toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid administrator password." });
+            toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid password." });
             setIsLoading(false);
             return;
           }
@@ -94,7 +95,7 @@ export default function LoginPage() {
           phone,
           name,
           role,
-          status: (role === 'reporter') ? 'pending' : 'approved',
+          status: role === 'reporter' ? 'pending' : 'approved',
           location: (role !== 'admin' && role !== 'editor') ? { state, district, mandal } : undefined
         };
 
@@ -155,7 +156,7 @@ export default function LoginPage() {
             </button>
           )}
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
-            <Newspaper className="w-10 h-10 text-primary" />
+            < Newspaper className="w-10 h-10 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold font-headline">MandalPulse</CardTitle>
           <CardDescription>మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
