@@ -13,11 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, Pencil, Trash2, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, MapPin } from "lucide-react";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, MapPin, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, Newspaper } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
+import { collection, query, where, doc, limit } from "firebase/firestore";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
 import { cn } from "@/lib/utils";
@@ -47,7 +47,7 @@ export default function ReporterPage() {
   }, [firestore, user?.uid]);
   const { data: userProfile } = useDoc(userDocRef);
 
-  // Real-time news lists (client-side sorting to avoid index issues)
+  // Real-time news lists
   const pendingNewsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(
@@ -64,10 +64,16 @@ export default function ReporterPage() {
     );
   }, [firestore, user?.uid]);
 
+  const globalApprovedQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'approved_news_posts'), limit(20));
+  }, [firestore]);
+
   const { data: rawPendingNews } = useCollection(pendingNewsQuery);
   const { data: rawApprovedNews } = useCollection(approvedNewsQuery);
+  const { data: rawGlobalNews, isLoading: isGlobalLoading } = useCollection<NewsPost>(globalApprovedQuery);
 
-  // Client-side sorting for portfolio displays
+  // Client-side sorting
   const pendingNews = useMemo(() => {
     if (!rawPendingNews) return [];
     return [...rawPendingNews].sort((a, b) => {
@@ -85,6 +91,15 @@ export default function ReporterPage() {
       return timeB - timeA;
     });
   }, [rawApprovedNews]);
+
+  const globalNews = useMemo(() => {
+    if (!rawGlobalNews) return [];
+    return [...rawGlobalNews].sort((a, b) => {
+      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
+      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [rawGlobalNews]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,12 +196,15 @@ export default function ReporterPage() {
       <Navbar />
       <div className="max-w-4xl mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-white p-1 rounded-2xl shadow-sm border border-muted">
+          <TabsList className="grid w-full grid-cols-3 bg-white p-1 rounded-2xl shadow-sm border border-muted">
             <TabsTrigger value="submit" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
-              <FileText className="w-4 h-4 mr-2" /> వార్తను పంపండి
+              <Pencil className="w-4 h-4 mr-2 hidden sm:inline" /> వార్త
             </TabsTrigger>
             <TabsTrigger value="portfolio" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
-              <Briefcase className="w-4 h-4 mr-2" /> నా పోర్ట్‌ఫోలియో
+              <Briefcase className="w-4 h-4 mr-2 hidden sm:inline" /> పోర్ట్‌ఫోలియో
+            </TabsTrigger>
+            <TabsTrigger value="feed" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white h-11">
+              <Newspaper className="w-4 h-4 mr-2 hidden sm:inline" /> తాజా వార్తలు
             </TabsTrigger>
           </TabsList>
 
@@ -368,6 +386,30 @@ export default function ReporterPage() {
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="feed" className="space-y-6">
+             <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold font-headline">తాజా వార్తలు (Global Feed)</h2>
+                  <p className="text-sm text-muted-foreground">అన్ని ప్రాంతాల నుండి తాజా అప్‌డేట్‌లు.</p>
+                </div>
+                <Badge variant="outline" className="bg-white">{globalNews.length} Posts</Badge>
+             </div>
+
+             <div className="grid gap-6">
+               {isGlobalLoading ? (
+                 <div className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>
+               ) : globalNews.length > 0 ? (
+                 globalNews.map((post) => (
+                   <PortfolioCard key={post.id} post={post as any} isPublished />
+                 ))
+               ) : (
+                 <div className="text-center py-24 bg-white rounded-3xl border border-muted">
+                   <p className="text-muted-foreground italic">తాజా వార్తలు ఏవీ లేవు.</p>
+                 </div>
+               )}
+             </div>
+          </TabsContent>
         </Tabs>
       </div>
     </main>
@@ -445,5 +487,25 @@ function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean
         </div>
       </div>
     </Card>
+  );
+}
+
+function Pencil(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
   );
 }

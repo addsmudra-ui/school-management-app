@@ -29,7 +29,8 @@ function NewsFeedContent() {
   const searchParams = useSearchParams();
   const targetPostId = searchParams.get('postId');
 
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("Warangal");
+  // Default to "All" (Global) instead of a specific district
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("All");
   const [selectedMandal, setSelectedMandal] = useState<string>("All");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
@@ -39,6 +40,7 @@ function NewsFeedContent() {
     const savedDistrict = localStorage.getItem('mandalPulse_district');
     const savedMandal = localStorage.getItem('mandalPulse_mandal');
     
+    // Only update state if something was previously saved, otherwise stay "All"
     if (savedDistrict) setSelectedDistrict(savedDistrict);
     if (savedMandal) setSelectedMandal(savedMandal);
   }, []);
@@ -59,7 +61,7 @@ function NewsFeedContent() {
     }
   }, [targetPostId]);
 
-  // Simplified query: Fetch all approved news (limited) and filter client-side.
+  // Fetch all approved news (limited) and filter client-side.
   const allApprovedQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'approved_news_posts'), limit(100));
@@ -77,8 +79,10 @@ function NewsFeedContent() {
       return timeB - timeA;
     });
 
-    // 2. Decide what to show (Explicit postId or Local filter)
-    if (forceGlobal) {
+    const isGlobal = selectedDistrict === "All";
+
+    // 2. Decide what to show (Explicit postId or Global filter)
+    if (forceGlobal || isGlobal) {
       return { feedToDisplay: sorted, isFallbackActive: false };
     }
 
@@ -105,6 +109,15 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
+  const handleResetToGlobal = () => {
+    setSelectedDistrict("All");
+    setSelectedMandal("All");
+    localStorage.setItem('mandalPulse_district', "All");
+    localStorage.setItem('mandalPulse_mandal', "All");
+    setForceGlobal(false);
+    window.dispatchEvent(new Event('mandalPulse_locationChanged'));
+  };
+
   if (isLoading && !allNews) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -115,6 +128,8 @@ function NewsFeedContent() {
       </div>
     );
   }
+
+  const isActuallyGlobal = forceGlobal || selectedDistrict === "All";
 
   return (
     <>
@@ -127,7 +142,7 @@ function NewsFeedContent() {
             <div>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">మీ ప్రాంతం</p>
               <h2 className="text-sm font-bold flex items-center gap-1">
-                {forceGlobal ? "అన్ని ప్రాంతాలు (Global)" : (selectedMandal === "All" || !selectedMandal ? "అన్ని మండలాలు" : selectedMandal) + ", " + selectedDistrict}
+                {isActuallyGlobal ? "అన్ని ప్రాంతాలు (Global)" : (selectedMandal === "All" || !selectedMandal ? "అన్ని మండలాలు" : selectedMandal) + ", " + selectedDistrict}
               </h2>
             </div>
           </div>
@@ -149,17 +164,18 @@ function NewsFeedContent() {
                   <Select value={selectedDistrict} onValueChange={(val) => { setSelectedDistrict(val); setSelectedMandal("All"); }}>
                     <SelectTrigger className="w-full h-12"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
                       {Object.keys(LOCATIONS).map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">మండలం</label>
-                  <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={!selectedDistrict}>
+                  <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={selectedDistrict === "All"}>
                     <SelectTrigger className="w-full h-12"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">అన్ని మండలాలు</SelectItem>
-                      {selectedDistrict && (LOCATIONS as any)[selectedDistrict].map((m: string) => (
+                      {selectedDistrict !== "All" && (LOCATIONS as any)[selectedDistrict].map((m: string) => (
                         <SelectItem key={m} value={m}>{m}</SelectItem>
                       ))}
                     </SelectContent>
@@ -173,7 +189,7 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {(isFallbackActive || forceGlobal) && allNews && allNews.length > 0 && (
+        {(isFallbackActive || (forceGlobal && selectedDistrict !== "All")) && allNews && allNews.length > 0 && (
           <div className="absolute top-20 left-0 right-0 z-30 px-4 pointer-events-none md:top-24">
             <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm">
               <div className="bg-amber-500 p-2 rounded-lg shrink-0">
@@ -181,17 +197,15 @@ function NewsFeedContent() {
               </div>
               <div className="flex-1">
                 <p className="text-xs font-bold text-amber-800 leading-tight">
-                  {forceGlobal ? "అన్ని ప్రాంతాల వార్తలు" : "మీ ప్రాంతంలో వార్తలు లేవు."}
+                  {forceGlobal ? "బ్రేకింగ్ వార్త" : "మీ ప్రాంతంలో వార్తలు లేవు."}
                 </p>
                 <p className="text-[10px] text-amber-700 opacity-80 mt-0.5">
                   {forceGlobal ? "మీరు నోటిఫికేషన్ ద్వారా వచ్చిన వార్తను చూస్తున్నారు." : "ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను (Global News) చూస్తున్నారు."}
                 </p>
               </div>
-              {forceGlobal && (
-                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-amber-900 pointer-events-auto hover:bg-amber-100" onClick={handleLocationUpdate}>
-                  తిరిగి వెళ్ళండి
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" className="h-6 text-[10px] text-amber-900 pointer-events-auto hover:bg-amber-100" onClick={handleResetToGlobal}>
+                Global Feed
+              </Button>
             </div>
           </div>
         )}
