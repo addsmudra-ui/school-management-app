@@ -34,10 +34,18 @@ function NewsFeedContent() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
 
-  // Fetch dynamic locations
+  // Fetch dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
-  const dynamicLocations = locationsDoc ? Object.values(locationsDoc).reduce((acc: any, state: any) => ({ ...acc, ...state }), {}) : MOCK_LOCATIONS;
+  
+  // Combine all districts from all states into a single flat map for filtering
+  const dynamicLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    return Object.values(locationsDoc).reduce((acc: any, stateObj: any) => {
+      // stateObj is like { "Warangal": ["..."], "Hyderabad": ["..."] }
+      return { ...acc, ...stateObj };
+    }, {});
+  }, [locationsDoc]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -91,11 +99,10 @@ function NewsFeedContent() {
       return districtMatch && mandalMatch;
     });
 
-    // 2. Identify everything else (Global news excluding what we already found in local)
+    // 2. Identify everything else (Global news)
     const localIds = new Set(local.map(p => p.id));
     const others = sorted.filter(p => !localIds.has(p.id));
 
-    // 3. Combine them: Local first, then Global to continue the feed
     return {
       feedToDisplay: [...local, ...others],
       isFallbackActive: local.length === 0,
@@ -167,7 +174,7 @@ function NewsFeedContent() {
                     <SelectTrigger className="w-full h-12"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
-                      {Object.keys(dynamicLocations).map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

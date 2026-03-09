@@ -26,6 +26,7 @@ export default function AdminLocations() {
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
 
+  // Use Firestore data or fallback to mock data
   const availableLocations = locationsDoc || MOCK_LOCATIONS;
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
@@ -51,7 +52,7 @@ export default function AdminLocations() {
     toast({ title: "మండలం జోడించబడింది", description: `${newMandal} విజయవంతంగా చేర్చబడింది.` });
   };
 
-  const currentStateDistricts = availableLocations[selectedState] || {};
+  const currentStateDistricts = (availableLocations[selectedState] as Record<string, string[]>) || {};
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -152,9 +153,11 @@ export default function AdminLocations() {
 
         {/* List Section */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="ప్రాంతాలను వెతకండి..." className="pl-10 h-12 bg-white rounded-xl shadow-sm border-muted" />
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-muted-foreground" />
+              {selectedState} - జిల్లాలు & మండలాలు
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

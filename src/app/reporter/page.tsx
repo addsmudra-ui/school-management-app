@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
+import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
 import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, MapPin, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, Newspaper } from "lucide-react";
 import Image from "next/image";
@@ -39,6 +39,13 @@ export default function ReporterPage() {
   const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch dynamic locations from Firestore
+  const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locDocRef);
+
+  const availableLocations = locationsDoc || MOCK_LOCATIONS;
+  const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
   // Real-time user profile for status
   const userDocRef = useMemoFirebase(() => {
@@ -218,23 +225,29 @@ export default function ReporterPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-muted-foreground">రాష్ట్రం</Label>
-                    <Select onValueChange={setState} value={state}>
+                    <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
                       <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
-                      <SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-muted-foreground">జిల్లా</Label>
-                    <Select onValueChange={setDistrict} value={district} disabled={!state}>
+                    <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
                       <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
-                      <SelectContent>{state && Object.keys(LOCATIONS_BY_STATE[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase text-muted-foreground">మండలం</Label>
                     <Select onValueChange={setMandal} value={mandal} disabled={!district}>
                       <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="మండలం" /></SelectTrigger>
-                      <SelectContent>{district && LOCATIONS_BY_STATE[state][district].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                      <SelectContent>
+                        {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
