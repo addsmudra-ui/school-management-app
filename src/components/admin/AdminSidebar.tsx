@@ -9,15 +9,18 @@ import {
   Bell, 
   LogOut,
   Newspaper,
-  KeyRound
+  KeyRound,
+  Palette
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import Image from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -46,7 +49,8 @@ const navItems = [
   { name: "Approvals", icon: CheckSquare, href: "/admin/approvals", label: "ఆమోదాలు" },
   { name: "Locations", icon: MapPin, href: "/admin/locations", label: "ప్రాంతాలు" },
   { name: "Users", icon: Users, href: "/admin/users", label: "వినియోగదారులు" },
-  { name: "Notifications", icon: Bell, href: "/admin/notifications", label: "నోటిఫికేషన్లు" },
+  { name: "Notifications", icon: Bell, href: "/admin/notifications", label: "నోటిఫിക്കేషన్లు" },
+  { name: "Branding", icon: Palette, href: "/admin/branding", label: "బ్రాండింగ్" },
 ];
 
 export function AdminSidebar() {
@@ -55,6 +59,13 @@ export function AdminSidebar() {
   const { toast } = useToast();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPass, setNewPass] = useState("");
+
+  const brandingRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+
+  const { data: branding } = useDoc(brandingRef);
 
   const handleLogout = () => {
     localStorage.removeItem('mandalPulse_role');
@@ -81,10 +92,14 @@ export function AdminSidebar() {
       <Sidebar className="border-r border-muted bg-white">
         <SidebarHeader className="p-6">
           <Link href="/" className="flex items-center gap-3 text-primary font-bold">
-            <div className="bg-primary p-2 rounded-xl text-white">
-              <Newspaper className="w-6 h-6" />
+            <div className="bg-primary p-2 rounded-xl text-white relative w-10 h-10 flex items-center justify-center">
+              {branding?.appLogo ? (
+                <Image src={branding.appLogo} alt="Logo" fill className="object-contain p-1" />
+              ) : (
+                <Newspaper className="w-6 h-6" />
+              )}
             </div>
-            <span className="text-xl font-headline tracking-tight">MandalPulse</span>
+            <span className="text-xl font-headline tracking-tight">{branding?.appName || 'MandalPulse'}</span>
           </Link>
         </SidebarHeader>
         

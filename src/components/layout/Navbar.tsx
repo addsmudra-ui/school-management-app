@@ -9,8 +9,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase";
+import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 export function Navbar() {
@@ -24,6 +24,13 @@ export function Navbar() {
   const [location, setLocation] = useState({ mandal: "", district: "" });
   const [hasNewNotif, setHasNewNotif] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  // Real-time branding
+  const brandingRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+  const { data: branding } = useDoc(brandingRef);
 
   const notifQuery = useMemoFirebase(() => {
     if (!firestore || isUserLoading) return null;
@@ -125,8 +132,14 @@ export function Navbar() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted h-16 md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg pb-safe">
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl transition-colors", theme.text)}>
-          <Newspaper className="w-6 h-6" />
-          <span className="hidden sm:inline font-headline tracking-tight">MandalPulse</span>
+          <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden">
+            {branding?.appLogo ? (
+              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+            ) : (
+              <Newspaper className="w-6 h-6" />
+            )}
+          </div>
+          <span className="hidden sm:inline font-headline tracking-tight">{branding?.appName || 'MandalPulse'}</span>
         </Link>
 
         <div className={cn("hidden md:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all", theme.bg, theme.border, theme.text)}>

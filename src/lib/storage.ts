@@ -47,6 +47,25 @@ export const AdminService = {
     const configRef = doc(db, 'config', 'admin');
     setDocumentNonBlocking(configRef, { password: newPassword, updatedAt: serverTimestamp() }, { merge: true });
   },
+  getBranding: async (db: Firestore) => {
+    try {
+      const docRef = doc(db, 'config', 'admin');
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        return {
+          appLogo: snapshot.data().appLogo || null,
+          appName: snapshot.data().appName || 'MandalPulse'
+        };
+      }
+      return { appLogo: null, appName: 'MandalPulse' };
+    } catch (e) {
+      return { appLogo: null, appName: 'MandalPulse' };
+    }
+  },
+  updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string }) => {
+    const configRef = doc(db, 'config', 'admin');
+    setDocumentNonBlocking(configRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  },
   seedDemoNews: async (db: Firestore) => {
     const batch = writeBatch(db);
     
@@ -61,7 +80,7 @@ export const AdminService = {
 
     // 2. Seed Default Admin Config
     const adminRef = doc(db, 'config', 'admin');
-    batch.set(adminRef, { password: 'admin123' }, { merge: true });
+    batch.set(adminRef, { password: 'admin123', appName: 'MandalPulse' }, { merge: true });
 
     // 3. Seed Locations Metadata (Critical for dynamic filters)
     const locRef = doc(db, 'metadata', 'locations');
