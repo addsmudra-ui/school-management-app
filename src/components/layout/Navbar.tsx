@@ -17,7 +17,7 @@ export function Navbar() {
   const firestore = useFirestore();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
-  const [role, setRole] = useState<'user' | 'reporter' | 'admin' | null>(null);
+  const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor' | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [userStatus, setUserStatus] = useState<string>("");
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
@@ -87,43 +87,76 @@ export function Navbar() {
     }
   };
 
-  const canPost = role === 'admin' || (role === 'reporter' && userStatus === 'approved');
+  const canPost = role === 'admin' || role === 'editor' || (role === 'reporter' && userStatus === 'approved');
+
+  // Dynamic color configuration based on user role
+  const getRoleTheme = () => {
+    switch (role) {
+      case 'admin':
+      case 'editor':
+        return {
+          text: "text-rose-600",
+          bg: "bg-rose-50",
+          border: "border-rose-200",
+          icon: "text-rose-500",
+          hover: "hover:text-rose-700"
+        };
+      case 'reporter':
+        return {
+          text: "text-cyan-600",
+          bg: "bg-cyan-50",
+          border: "border-cyan-200",
+          icon: "text-cyan-500",
+          hover: "hover:text-cyan-700"
+        };
+      default:
+        return {
+          text: "text-primary",
+          bg: "bg-primary/5",
+          border: "border-primary/10",
+          icon: "text-primary",
+          hover: "hover:text-primary"
+        };
+    }
+  };
+
+  const theme = getRoleTheme();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted h-16 md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg pb-safe">
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-primary font-bold text-xl">
+        <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl transition-colors", theme.text)}>
           <Newspaper className="w-6 h-6" />
           <span className="hidden sm:inline font-headline tracking-tight">MandalPulse</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-primary/5 border border-primary/10 rounded-full text-xs font-bold text-primary">
-          <MapPin className="w-3.5 h-3.5" />
+        <div className={cn("hidden md:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all", theme.bg, theme.border, theme.text)}>
+          <MapPin className={cn("w-3.5 h-3.5", theme.icon)} />
           <span>{location.mandal}, {location.district}</span>
         </div>
 
         <div className="flex flex-1 justify-around md:justify-end md:gap-8 items-center h-full">
-          <Link href="/" className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+          <Link href="/" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
             <Newspaper className="w-5 h-5" />
             <span className="text-[10px] md:text-sm font-semibold">Home</span>
           </Link>
 
           <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
             <SheetTrigger asChild>
-              <button className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors relative">
+              <button className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors relative", theme.hover)}>
                 <div className="relative">
-                  <Bell className={cn("w-5 h-5", hasNewNotif && "animate-bell")} />
+                  <Bell className={cn("w-5 h-5", hasNewNotif && "animate-bell", hasNewNotif && theme.text)} />
                   {hasNewNotif && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white animate-pulse" />
+                    <span className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white animate-pulse", role === 'admin' ? "bg-rose-500" : "bg-primary")} />
                   )}
                 </div>
                 <span className="text-[10px] md:text-sm font-semibold">Alerts</span>
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[90%] sm:max-w-sm p-0 z-[100]">
-              <SheetHeader className="p-6 border-b bg-primary/5">
+              <SheetHeader className={cn("p-6 border-b", theme.bg)}>
                 <SheetTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-primary" />
+                  <Bell className={cn("w-5 h-5", theme.icon)} />
                   నోటిఫికేషన్లు (Notifications)
                 </SheetTitle>
               </SheetHeader>
@@ -134,12 +167,12 @@ export function Navbar() {
                       key={n.id} 
                       onClick={() => handleNotifClick(n.postId)}
                       className={cn(
-                        "p-4 bg-muted/30 rounded-2xl border border-muted group hover:bg-white hover:shadow-md transition-all",
-                        n.postId && "cursor-pointer"
+                        "p-4 rounded-2xl border transition-all group",
+                        n.postId ? "cursor-pointer bg-white border-muted hover:shadow-md" : "bg-muted/30 border-transparent"
                       )}
                     >
                       <div className="flex justify-between items-start mb-1">
-                        <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-tighter bg-primary/10 text-primary border-none">
+                        <Badge variant="secondary" className={cn("text-[10px] font-bold uppercase tracking-tighter border-none", theme.bg, theme.text)}>
                           {n.target}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground">
@@ -149,7 +182,7 @@ export function Navbar() {
                       <h4 className="font-bold text-sm mb-1">{n.title}</h4>
                       <p className="text-xs text-muted-foreground leading-relaxed">{n.body}</p>
                       {n.postId && (
-                        <div className="mt-2 text-[10px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className={cn("mt-2 text-[10px] font-bold flex items-center gap-1 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity", theme.text)}>
                           View Details <ChevronRight className="w-3 h-3" />
                         </div>
                       )}
@@ -168,26 +201,26 @@ export function Navbar() {
           </Sheet>
 
           {canPost && (
-            <Link href="/reporter" className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/reporter" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
               <PlusCircle className="w-5 h-5" />
               <span className="text-[10px] md:text-sm font-semibold">Post</span>
             </Link>
           )}
 
-          {role === 'admin' && (
-            <Link href="/admin" className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+          {(role === 'admin' || role === 'editor') && (
+            <Link href="/admin" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
               <LayoutDashboard className="w-5 h-5" />
               <span className="text-[10px] md:text-sm font-semibold">Moderate</span>
             </Link>
           )}
 
-          <Link href={userName ? "/profile" : "/login"} className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+          <Link href={userName ? "/profile" : "/login"} className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
             {userPhoto ? (
-              <div className="relative w-6 h-6 rounded-full overflow-hidden border border-primary/20">
+              <div className={cn("relative w-6 h-6 rounded-full overflow-hidden border", theme.border)}>
                 <Image src={userPhoto} alt={userName} fill className="object-cover" />
               </div>
             ) : (
-              <User className="w-5 h-5 text-primary" />
+              <User className={cn("w-5 h-5", theme.icon)} />
             )}
             <span className="text-[10px] md:text-sm font-semibold truncate max-w-[60px] md:max-w-none">
               {userName || "Profile"}
