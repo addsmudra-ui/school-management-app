@@ -34,9 +34,9 @@ export function Navbar() {
 
   const updateLocationState = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
+    const savedDistrict = localStorage.getItem('mandalPulse_district') || "All";
     const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
-    setLocation({ district: savedDistrict, mandal: savedMandal === "All" ? "అన్ని మండలాలు" : savedMandal });
+    setLocation({ district: savedDistrict, mandal: savedMandal });
   }, []);
 
   const updateAuthState = useCallback(() => {
@@ -89,7 +89,6 @@ export function Navbar() {
 
   const canPost = role === 'admin' || role === 'editor' || (role === 'reporter' && userStatus === 'approved');
 
-  // Dynamic color configuration based on user role
   const getRoleTheme = () => {
     switch (role) {
       case 'admin':
@@ -132,7 +131,11 @@ export function Navbar() {
 
         <div className={cn("hidden md:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all", theme.bg, theme.border, theme.text)}>
           <MapPin className={cn("w-3.5 h-3.5", theme.icon)} />
-          <span>{location.mandal}, {location.district}</span>
+          <span>
+            {location.district === "All" 
+              ? "Location: Global" 
+              : `Location: ${location.mandal === "All" ? "All Mandals" : location.mandal}, ${location.district}`}
+          </span>
         </div>
 
         <div className="flex flex-1 justify-around md:justify-end md:gap-8 items-center h-full">

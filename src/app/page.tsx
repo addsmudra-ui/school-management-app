@@ -34,26 +34,23 @@ function NewsFeedContent() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
 
-  // Fetch dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
   
-  // Combine all districts from all states into a single flat map for filtering
   const dynamicLocations = useMemo(() => {
     if (!locationsDoc) return MOCK_LOCATIONS;
     return Object.values(locationsDoc).reduce((acc: any, stateObj: any) => {
-      // stateObj is like { "Warangal": ["..."], "Hyderabad": ["..."] }
       return { ...acc, ...stateObj };
     }, {});
   }, [locationsDoc]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedDistrict = localStorage.getItem('mandalPulse_district');
-    const savedMandal = localStorage.getItem('mandalPulse_mandal');
+    const savedDistrict = localStorage.getItem('mandalPulse_district') || "All";
+    const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
     
-    if (savedDistrict) setSelectedDistrict(savedDistrict);
-    if (savedMandal) setSelectedMandal(savedMandal);
+    setSelectedDistrict(savedDistrict);
+    setSelectedMandal(savedMandal);
   }, []);
 
   useEffect(() => {
@@ -92,14 +89,12 @@ function NewsFeedContent() {
       return { feedToDisplay: sorted, isFallbackActive: false, localCount: sorted.length };
     }
 
-    // 1. Filter for local news
     const local = sorted.filter(post => {
       const districtMatch = post.location.district === selectedDistrict;
       const mandalMatch = selectedMandal === "All" || post.location.mandal === selectedMandal;
       return districtMatch && mandalMatch;
     });
 
-    // 2. Identify everything else (Global news)
     const localIds = new Set(local.map(p => p.id));
     const others = sorted.filter(p => !localIds.has(p.id));
 
@@ -149,9 +144,9 @@ function NewsFeedContent() {
               <MapPin className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">మీ ప్రాంతం</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Location</p>
               <h2 className="text-sm font-bold flex items-center gap-1">
-                {isActuallyGlobal ? "అన్ని ప్రాంతాలు (Global)" : (selectedMandal === "All" || !selectedMandal ? "అన్ని మండలాలు" : selectedMandal) + ", " + selectedDistrict}
+                {isActuallyGlobal ? "Global Feed" : (selectedMandal === "All" ? "All Mandals" : selectedMandal) + ", " + selectedDistrict}
               </h2>
             </div>
           </div>
