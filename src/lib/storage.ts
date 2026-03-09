@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -16,10 +17,11 @@ import {
   arrayUnion,
   arrayRemove,
   Firestore,
-  getDoc
+  getDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, addDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { NewsPost, UserProfile, Comment } from './mock-data';
+import { NewsPost, UserProfile, Comment, MOCK_NEWS } from './mock-data';
 
 export type SentNotification = {
   id: string;
@@ -45,6 +47,17 @@ export const AdminService = {
   setPassword: (db: Firestore, newPassword: string) => {
     const configRef = doc(db, 'config', 'admin');
     setDocumentNonBlocking(configRef, { password: newPassword }, { merge: true });
+  },
+  seedDemoNews: async (db: Firestore) => {
+    const batch = writeBatch(db);
+    MOCK_NEWS.forEach((news) => {
+      const docRef = doc(db, 'approved_news_posts', news.id);
+      batch.set(docRef, {
+        ...news,
+        timestamp: serverTimestamp(), // Use server time for correct sorting
+      });
+    });
+    await batch.commit();
   }
 };
 

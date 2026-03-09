@@ -1,8 +1,10 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database } from "lucide-react";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -12,6 +14,9 @@ import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
+import { AdminService } from "@/lib/storage";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const chartData = [
   { name: "Mon", posts: 4 },
@@ -25,6 +30,8 @@ const chartData = [
 
 export default function AdminDashboard() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const pendingQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -48,6 +55,26 @@ export default function AdminDashboard() {
   const pendingCount = pendingNews?.filter(n => n.status === 'pending').length || 0;
   const reportersCount = users?.filter(u => u.role === 'reporter').length || 0;
 
+  const handleSeedData = async () => {
+    if (!firestore) return;
+    setIsSeeding(true);
+    try {
+      await AdminService.seedDemoNews(firestore);
+      toast({
+        title: "డేటా సిద్ధం చేయబడింది",
+        description: "10 డెమో వార్తలు విజయవంతంగా చేర్చబడ్డాయి."
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to seed data."
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -55,9 +82,21 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold font-headline tracking-tight">నిర్వాహక డాష్‌బోర్డ్</h1>
           <p className="text-muted-foreground mt-1">MandalPulse ప్లాట్‌ఫారమ్ గణాంకాలను ఇక్కడ చూడవచ్చు.</p>
         </div>
-        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-muted">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          <span className="text-xs font-bold text-muted-foreground uppercase">సిస్టమ్ ఆన్‌లైన్</span>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5"
+            onClick={handleSeedData}
+            disabled={isSeeding}
+          >
+            <Database className={cn("w-4 h-4 mr-2", isSeeding && "animate-spin")} />
+            {isSeeding ? "Seeding..." : "Seed Demo News"}
+          </Button>
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-muted">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-xs font-bold text-muted-foreground uppercase">సిస్టమ్ ఆన్‌లైన్</span>
+          </div>
         </div>
       </div>
 

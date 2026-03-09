@@ -1,12 +1,13 @@
+
 'use client';
 
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useMemo } from "react";
 import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, query, limit } from "firebase/firestore";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LOCATIONS } from "@/lib/mock-data";
+import { LOCATIONS, NewsPost } from "@/lib/mock-data";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
@@ -34,50 +35,43 @@ function NewsFeedContent() {
     const savedDistrict = localStorage.getItem('mandalPulse_district');
     const savedMandal = localStorage.getItem('mandalPulse_mandal');
     
-    // Default values if not set
-    if (savedDistrict) {
-      setSelectedDistrict(savedDistrict);
-    } else {
-      localStorage.setItem('mandalPulse_district', "Warangal");
-    }
-    
-    if (savedMandal) {
-      setSelectedMandal(savedMandal);
-    } else {
-      localStorage.setItem('mandalPulse_mandal', "All");
-    }
+    if (savedDistrict) setSelectedDistrict(savedDistrict);
+    if (savedMandal) setSelectedMandal(savedMandal);
   }, []);
 
-  // Primary Local Query
-  const localNewsQuery = useMemoFirebase(() => {
-    if (!firestore || !selectedDistrict) return null;
-    
-    let q = query(
-      collection(firestore, 'approved_news_posts'),
-      where('location.district', '==', selectedDistrict),
-      orderBy('timestamp', 'desc'),
-      limit(20)
-    );
-
-    if (selectedMandal && selectedMandal !== "All") {
-      q = query(q, where('location.mandal', '==', selectedMandal));
-    }
-
-    return q;
-  }, [firestore, selectedDistrict, selectedMandal]);
-
-  // Fallback Global Query
-  const globalNewsQuery = useMemoFirebase(() => {
+  // Simplified query: Fetch all approved news (limited) and filter client-side.
+  // This avoids "Missing Index" errors in Firestore for combined where/orderBy queries.
+  const allApprovedQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(
-      collection(firestore, 'approved_news_posts'),
-      orderBy('timestamp', 'desc'),
-      limit(20)
-    );
+    return query(collection(firestore, 'approved_news_posts'), limit(100));
   }, [firestore]);
 
-  const { data: localNews, isLoading: isLocalLoading } = useCollection(localNewsQuery);
-  const { data: globalNews, isLoading: isGlobalLoading } = useCollection(globalNewsQuery);
+  const { data: allNews, isLoading } = useCollection<NewsPost>(allApprovedQuery);
+
+  const { feedToDisplay, isFallbackActive } = useMemo(() => {
+    if (!allNews || allNews.length === 0) return { feedToDisplay: [], isFallbackActive: false };
+
+    // 1. Sort by timestamp descending
+    const sorted = [...allNews].sort((a, b) => {
+      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
+      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
+      return timeB - timeA;
+    });
+
+    // 2. Filter for local news
+    const local = sorted.filter(post => {
+      const districtMatch = post.location.district === selectedDistrict;
+      const mandalMatch = selectedMandal === "All" || post.location.mandal === selectedMandal;
+      return districtMatch && mandalMatch;
+    });
+
+    // 3. Decide what to show (Local or Fallback to Global)
+    const hasLocalNews = local.length > 0;
+    return {
+      feedToDisplay: hasLocalNews ? local : sorted,
+      isFallbackActive: !hasLocalNews
+    };
+  }, [allNews, selectedDistrict, selectedMandal]);
 
   const handleLocationUpdate = () => {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
@@ -86,7 +80,7 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  if (isLocalLoading && !localNews) {
+  if (isLoading && !allNews) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -97,14 +91,8 @@ function NewsFeedContent() {
     );
   }
 
-  // LOGIC: If local news is empty or doesn't exist, show global news
-  const hasLocalNews = localNews && localNews.length > 0;
-  const feedToDisplay = hasLocalNews ? localNews : globalNews;
-  const isFallbackActive = !hasLocalNews && globalNews && globalNews.length > 0;
-
   return (
     <>
-      {/* Mobile Location Header */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-muted p-3 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -160,8 +148,7 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {/* Fallback Message Banner */}
-        {isFallbackActive && (
+        {isFallbackActive && allNews && allNews.length > 0 && (
           <div className="absolute top-20 left-0 right-0 z-30 px-4 pointer-events-none md:top-24">
             <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm">
               <div className="bg-amber-500 p-2 rounded-lg shrink-0">
@@ -179,7 +166,7 @@ function NewsFeedContent() {
           </div>
         )}
 
-        {feedToDisplay && feedToDisplay.length > 0 ? (
+        {feedToDisplay.length > 0 ? (
           feedToDisplay.map((item) => (
             <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
               <NewsCard news={item as any} />
@@ -192,7 +179,7 @@ function NewsFeedContent() {
                 <AlertCircle className="w-10 h-10 text-primary/40" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">వార్తలు ఏవీ లేవు</h3>
-              <p className="text-muted-foreground mb-8 text-sm">ప్రస్తుతానికి ఎటువంటి వార్తలు అందుబాటులో లేవు.</p>
+              <p className="text-muted-foreground mb-8 text-sm">ప్రస్తుతానికి ఎటువంటి వార్తలు అందుబాటులో లేవు. అడ్మిన్ ప్యానెల్ నుండి డెమో డేటాను సీడ్ చేయండి.</p>
               <Button className="w-full" onClick={() => setIsLocationModalOpen(true)}>ప్రాంతాన్ని మార్చండి</Button>
             </div>
           </div>
