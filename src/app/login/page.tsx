@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -85,6 +86,16 @@ export default function LoginPage() {
           
           const existing = await UserService.getByPhone(firestore, phone);
           if (existing) {
+            // For persistence in a prototype, we use a shadow email account for the phone number
+            const shadowEmail = `${phone}@mandalpulse.com`;
+            const shadowPass = "password123";
+            try {
+              await signInWithEmailAndPassword(auth, shadowEmail, shadowPass);
+            } catch (authErr) {
+              // Account might not exist in Auth but exists in Firestore
+              await createUserWithEmailAndPassword(auth, shadowEmail, shadowPass);
+            }
+
             syncLocalStorage(existing);
             if (existing.role === 'admin' || existing.role === 'editor') {
               setRole(existing.role);
@@ -147,6 +158,16 @@ export default function LoginPage() {
         if (method === 'email' && !user) {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           currentUser = userCredential.user;
+        } else if (method === 'phone') {
+          const shadowEmail = `${phone}@mandalpulse.com`;
+          const shadowPass = "password123";
+          try {
+            const userCredential = await createUserWithEmailAndPassword(auth, shadowEmail, shadowPass);
+            currentUser = userCredential.user;
+          } catch (e) {
+            const userCredential = await signInWithEmailAndPassword(auth, shadowEmail, shadowPass);
+            currentUser = userCredential.user;
+          }
         }
 
         if (!currentUser?.uid) {

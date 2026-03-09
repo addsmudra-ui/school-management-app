@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef, useState } from "react";
@@ -11,13 +12,14 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import Link from "next/link";
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useAuth } from "@/firebase";
 import { doc, collection } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const auth = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -84,10 +86,15 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    window.dispatchEvent(new Event('mandalPulse_authChanged'));
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      localStorage.clear();
+      window.dispatchEvent(new Event('mandalPulse_authChanged'));
+      window.location.href = '/login';
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   if (isUserLoading || isProfileLoading) {

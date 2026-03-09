@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import Image from "next/image";
 import {
@@ -49,13 +50,14 @@ const navItems = [
   { name: "Approvals", icon: CheckSquare, href: "/admin/approvals", label: "ఆమోదాలు" },
   { name: "Locations", icon: MapPin, href: "/admin/locations", label: "ప్రాంతాలు" },
   { name: "Users", icon: Users, href: "/admin/users", label: "వినియోగదారులు" },
-  { name: "Notifications", icon: Bell, href: "/admin/notifications", label: "నోటిఫിക്കేషన్లు" },
+  { name: "Notifications", icon: Bell, href: "/admin/notifications", label: "నోటిఫికేషన్లు" },
   { name: "Branding", icon: Palette, href: "/admin/branding", label: "బ్రాండింగ్" },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const firestore = useFirestore();
+  const auth = useAuth();
   const { toast } = useToast();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPass, setNewPass] = useState("");
@@ -67,12 +69,18 @@ export function AdminSidebar() {
 
   const { data: branding } = useDoc(brandingRef);
 
-  const handleLogout = () => {
-    localStorage.removeItem('mandalPulse_role');
-    localStorage.removeItem('mandalPulse_userName');
-    localStorage.removeItem('mandalPulse_userPhone');
-    localStorage.removeItem('mandalPulse_userStatus');
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      localStorage.removeItem('mandalPulse_role');
+      localStorage.removeItem('mandalPulse_userName');
+      localStorage.removeItem('mandalPulse_userPhone');
+      localStorage.removeItem('mandalPulse_userStatus');
+      localStorage.removeItem('mandalPulse_userPhoto');
+      window.location.href = '/login';
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   const handleChangePassword = () => {
