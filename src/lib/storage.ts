@@ -35,7 +35,7 @@ export const AdminService = {
       const docRef = doc(db, 'config', 'admin');
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
-        return snapshot.data().password || 'admin123'; // Default fallback for first use
+        return snapshot.data().password || 'admin123'; 
       }
       return 'admin123';
     } catch (e) {
@@ -69,9 +69,11 @@ export const NewsService = {
   },
 
   approve: (db: Firestore, postId: string, postData: NewsPost) => {
+    // 1. Delete from pending
     const pendingRef = doc(db, 'pending_news_posts', postId);
     deleteDocumentNonBlocking(pendingRef);
 
+    // 2. Add to approved
     const approvedRef = doc(db, 'approved_news_posts', postId);
     setDocumentNonBlocking(approvedRef, {
       ...postData,
@@ -79,6 +81,7 @@ export const NewsService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
+    // 3. Send Notification
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
@@ -146,6 +149,7 @@ export const UserService = {
       timestamp: serverTimestamp()
     }, { merge: true });
 
+    // Role markers for security rules
     const roleCollectionMap = {
       'admin': 'roles_admins',
       'reporter': 'roles_reporters',

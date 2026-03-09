@@ -33,8 +33,19 @@ function NewsFeedContent() {
     if (typeof window === 'undefined') return;
     const savedDistrict = localStorage.getItem('mandalPulse_district');
     const savedMandal = localStorage.getItem('mandalPulse_mandal');
-    if (savedDistrict) setSelectedDistrict(savedDistrict);
-    if (savedMandal) setSelectedMandal(savedMandal);
+    
+    // Default values if not set
+    if (savedDistrict) {
+      setSelectedDistrict(savedDistrict);
+    } else {
+      localStorage.setItem('mandalPulse_district', "Warangal");
+    }
+    
+    if (savedMandal) {
+      setSelectedMandal(savedMandal);
+    } else {
+      localStorage.setItem('mandalPulse_mandal', "All");
+    }
   }, []);
 
   // Primary Local Query
@@ -86,8 +97,10 @@ function NewsFeedContent() {
     );
   }
 
+  // LOGIC: If local news is empty or doesn't exist, show global news
   const hasLocalNews = localNews && localNews.length > 0;
   const feedToDisplay = hasLocalNews ? localNews : globalNews;
+  const isFallbackActive = !hasLocalNews && globalNews && globalNews.length > 0;
 
   return (
     <>
@@ -147,17 +160,21 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {/* Fallback Message if viewing Global news because local is empty */}
-        {!hasLocalNews && globalNews && globalNews.length > 0 && (
+        {/* Fallback Message Banner */}
+        {isFallbackActive && (
           <div className="absolute top-20 left-0 right-0 z-30 px-4 pointer-events-none md:top-24">
-            <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm flex items-center gap-3 animate-in slide-in-from-top-4 duration-500">
-              <div className="bg-amber-500 p-2 rounded-lg">
+            <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm">
+              <div className="bg-amber-500 p-2 rounded-lg shrink-0">
                 <Globe className="w-4 h-4 text-white" />
               </div>
-              <p className="text-xs font-bold text-amber-800 leading-tight">
-                మీ ప్రాంతంలో వార్తలు లేవు. <br/>
-                <span className="text-[10px] opacity-70">ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను చూస్తున్నారు.</span>
-              </p>
+              <div>
+                <p className="text-xs font-bold text-amber-800 leading-tight">
+                  మీ ప్రాంతంలో వార్తలు లేవు.
+                </p>
+                <p className="text-[10px] text-amber-700 opacity-80 mt-0.5">
+                  ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను (Global News) చూస్తున్నారు.
+                </p>
+              </div>
             </div>
           </div>
         )}
