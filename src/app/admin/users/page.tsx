@@ -154,7 +154,7 @@ export default function AdminUsers() {
                 </div>
                 <div className="space-y-2">
                   <Label>మండలం</Label>
-                  <Select onValueChange={setNewMandal} value={newMandal} disabled={!newDistrict}>
+                  <Select onValueChange={setMandal} value={newMandal} disabled={!newDistrict}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="మండలం" /></SelectTrigger>
                     <SelectContent>
                       {newDistrict && LOCATIONS_BY_STATE[newState][newDistrict].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -190,6 +190,7 @@ export default function AdminUsers() {
             <TableHeader className="bg-muted/30">
               <TableRow>
                 <TableHead className="font-bold py-4 pl-6">వినియోగదారు (User)</TableHead>
+                <TableHead className="font-bold">సంప్రదించండి (Contact)</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold text-center">స్థితి (Status)</TableHead>
@@ -198,7 +199,7 @@ export default function AdminUsers() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
               ) : filtered.length > 0 ? (
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
@@ -207,13 +208,13 @@ export default function AdminUsers() {
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
                           {user.name[0]}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-900 leading-tight">{user.name}</span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Phone className="w-2.5 h-2.5" />
-                            {user.phone}
-                          </span>
-                        </div>
+                        <span className="font-bold text-slate-900 leading-tight">{user.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                        <Phone className="w-3 h-3 text-primary" />
+                        {user.phone}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -267,7 +268,7 @@ export default function AdminUsers() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic">
+                  <TableCell colSpan={6} className="h-48 text-center text-muted-foreground italic">
                     వినియోగదారులు ఎవరూ లేరు.
                   </TableCell>
                 </TableRow>
