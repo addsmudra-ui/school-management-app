@@ -60,8 +60,8 @@ export default function AdminDashboard() {
     try {
       await AdminService.seedDemoNews(firestore);
       toast({
-        title: "డేటా సిద్ధం చేయబడింది",
-        description: "10 డెమో వార్తలు విజయవంతంగా చేర్చబడ్డాయి."
+        title: "సిస్టమ్ సిద్ధం చేయబడింది",
+        description: "డెమో వార్తలు మరియు ప్రాంతాల డేటా (Locations) విజయవంతంగా చేర్చబడ్డాయి."
       });
     } catch (e) {
       toast({
@@ -85,14 +85,14 @@ export default function AdminDashboard() {
           <Button 
             variant="outline" 
             size="sm" 
-            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5"
+            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-11 px-6 shadow-sm"
             onClick={handleSeedData}
             disabled={isSeeding}
           >
             <Database className={cn("w-4 h-4 mr-2", isSeeding && "animate-spin")} />
-            {isSeeding ? "Seeding..." : "Seed Demo News"}
+            {isSeeding ? "Seeding..." : "Seed App Data"}
           </Button>
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-muted">
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-muted h-11">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             <span className="text-xs font-bold text-muted-foreground uppercase">సిస్టమ్ ఆన్‌లైన్</span>
           </div>

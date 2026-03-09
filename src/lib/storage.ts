@@ -63,7 +63,7 @@ export const AdminService = {
     const adminRef = doc(db, 'config', 'admin');
     batch.set(adminRef, { password: 'admin123' }, { merge: true });
 
-    // 3. Seed Locations Metadata
+    // 3. Seed Locations Metadata (Critical for dynamic filters)
     const locRef = doc(db, 'metadata', 'locations');
     batch.set(locRef, {
       ...LOCATIONS_BY_STATE
