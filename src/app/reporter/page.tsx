@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, MapPin, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, Newspaper } from "lucide-react";
+import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, MapPin, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, Newspaper, Edit2, Save } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
@@ -22,6 +22,7 @@ import { collection, query, where, doc, limit } from "firebase/firestore";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function ReporterPage() {
   const firestore = useFirestore();
@@ -39,7 +40,12 @@ export default function ReporterPage() {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
   
+  // Edit State
+  const [editingPost, setEditingPost] = useState<any>(null);
+  const [isEditModalOpen, setIsEditOpen] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch dynamic locations from Firestore
   const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
@@ -109,11 +115,14 @@ export default function ReporterPage() {
     });
   }, [rawGlobalNews]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, target: 'submit' | 'edit') => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.onloadend = () => {
+      if (target === 'submit') setImagePreview(reader.result as string);
+      else setEditingPost({ ...editingPost, image_url: reader.result as string });
+    };
     reader.readAsDataURL(file);
   };
 
@@ -186,6 +195,25 @@ export default function ReporterPage() {
       setTitle(""); setContent(""); setState(""); setDistrict(""); setMandal(""); setImagePreview(null);
       setAiHeadlines([]);
       setActiveTab("portfolio");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenEdit = (post: any) => {
+    setEditingPost({ ...post });
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!firestore || !editingPost) return;
+    setIsSubmitting(true);
+    try {
+      await NewsService.update(firestore, editingPost.id, editingPost);
+      setIsEditOpen(false);
+      toast({ title: "వార్తలు నవీకరించబడ్డాయి", description: "మార్పులు విజయవంతంగా సేవ్ చేయబడ్డాయి." });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Error", description: "Could not save changes." });
     } finally {
       setIsSubmitting(false);
     }
@@ -361,7 +389,7 @@ export default function ReporterPage() {
                           </Button>
                         </div>
                       )}
-                      <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={handleFileChange} />
+                      <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={(e) => handleFileChange(e, 'submit')} />
                     </div>
 
                     <Button type="submit" className="w-full h-14 text-xl font-bold shadow-lg shadow-primary/20 rounded-2xl" disabled={isSubmitting}>
@@ -395,7 +423,7 @@ export default function ReporterPage() {
                       ఎడిటోరియల్ స్టేజ్
                     </h3>
                     {pendingNews.map((post) => (
-                      <PortfolioCard key={post.id} post={post as any} />
+                      <PortfolioCard key={post.id} post={post as any} onEdit={() => handleOpenEdit(post)} />
                     ))}
                   </div>
                 )}
@@ -452,11 +480,120 @@ export default function ReporterPage() {
           <Footer />
         </div>
       </main>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-0">
+          <DialogHeader className="p-6 bg-slate-50 border-b">
+            <DialogTitle className="text-2xl font-bold">వార్తను సవరించండి</DialogTitle>
+          </DialogHeader>
+          
+          {editingPost && (
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>రాష్ట్రం</Label>
+                  <Select 
+                    value={editingPost.location.state} 
+                    onValueChange={(val) => setEditingPost({
+                      ...editingPost, 
+                      location: { ...editingPost.location, state: val, district: "", mandal: "" }
+                    })}
+                  >
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>జిల్లా</Label>
+                  <Select 
+                    value={editingPost.location.district} 
+                    onValueChange={(val) => setEditingPost({
+                      ...editingPost, 
+                      location: { ...editingPost.location, district: val, mandal: "" }
+                    })}
+                    disabled={!editingPost.location.state}
+                  >
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {editingPost.location.state && availableLocations[editingPost.location.state] && 
+                        Object.keys(availableLocations[editingPost.location.state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>మండలం</Label>
+                  <Select 
+                    value={editingPost.location.mandal} 
+                    onValueChange={(val) => setEditingPost({
+                      ...editingPost, 
+                      location: { ...editingPost.location, mandal: val }
+                    })}
+                    disabled={!editingPost.location.district}
+                  >
+                    <SelectTrigger className="rounded-xl h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {editingPost.location.district && availableLocations[editingPost.location.state]?.[editingPost.location.district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>ముఖ్యాంశం (Headline)</Label>
+                <Input 
+                  value={editingPost.title} 
+                  onChange={(e) => setEditingPost({ ...editingPost, title: e.target.value })}
+                  className="rounded-xl h-11 font-bold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>వార్త వివరాలు (Content)</Label>
+                <Textarea 
+                  value={editingPost.content} 
+                  onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })}
+                  className="min-h-[200px] rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>చిత్రం (Image)</Label>
+                <div className="relative aspect-video rounded-2xl overflow-hidden shadow-md group">
+                  <Image src={editingPost.image_url} alt="Edit Preview" fill className="object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button variant="secondary" className="rounded-full" onClick={() => editFileInputRef.current?.click()}>
+                      మార్చండి
+                    </Button>
+                  </div>
+                </div>
+                <input 
+                  type="file" 
+                  ref={editFileInputRef} 
+                  className="hidden" 
+                  accept=".jpg,.jpeg" 
+                  onChange={(e) => handleFileChange(e, 'edit')} 
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="p-6 bg-slate-50 border-t">
+            <Button variant="outline" className="rounded-xl" onClick={() => setIsEditOpen(false)}>రద్దు</Button>
+            <Button className="rounded-xl px-8" onClick={handleSaveEdit} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4" />}
+              సేవ్ చేయండి
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean }) {
+function PortfolioCard({ post, isPublished, onEdit }: { post: any, isPublished?: boolean, onEdit?: () => void }) {
   const statusConfig = {
     pending: { color: "bg-amber-50 text-amber-700", icon: Clock, label: "పరిశీలనలో" },
     approved: { color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2, label: "ప్రచురించబడింది" },
@@ -515,14 +652,27 @@ function PortfolioCard({ post, isPublished }: { post: any, isPublished?: boolean
               </div>
             </div>
 
-            {isPublished && (
-              <Link href={`/?postId=${post.id}`}>
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-bold text-primary hover:bg-primary/5 rounded-full">
-                  View Live
-                  <ChevronRight className="w-3 h-3" />
+            <div className="flex gap-2">
+              {post.status === 'pending' && onEdit && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 gap-1.5 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-full"
+                  onClick={onEdit}
+                >
+                  <Edit2 className="w-3 h-3" />
+                  సవరించండి
                 </Button>
-              </Link>
-            )}
+              )}
+              {isPublished && (
+                <Link href={`/?postId=${post.id}`}>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs font-bold text-primary hover:bg-primary/5 rounded-full">
+                    View Live
+                    <ChevronRight className="w-3 h-3" />
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
