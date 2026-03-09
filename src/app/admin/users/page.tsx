@@ -189,9 +189,8 @@ export default function AdminUsers() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4 pl-6">పేరు (Name)</TableHead>
+                <TableHead className="font-bold py-4 pl-6">వినియోగదారు (User)</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
-                <TableHead className="font-bold">ఫోన్ (Contact)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold text-center">స్థితి (Status)</TableHead>
                 <TableHead className="font-bold text-right pr-6">చర్యలు (Actions)</TableHead>
@@ -199,7 +198,7 @@ export default function AdminUsers() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">వినియోగదారులను లోడ్ చేస్తోంది...</TableCell></TableRow>
               ) : filtered.length > 0 ? (
                 filtered.map((user) => (
                   <TableRow key={user.id} className="hover:bg-muted/10 transition-colors">
@@ -208,7 +207,13 @@ export default function AdminUsers() {
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
                           {user.name[0]}
                         </div>
-                        <span className="font-bold text-slate-900 truncate">{user.name}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-slate-900 truncate">{user.name}</span>
+                          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <Phone className="w-3 h-3" />
+                            {user.phone}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -216,12 +221,6 @@ export default function AdminUsers() {
                         {user.role === 'admin' ? <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> : <ShieldCheck className="w-3.5 h-3.5 text-primary" />}
                         <Badge variant="outline" className="capitalize text-[10px] font-bold border-muted-foreground/20">{user.role}</Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {user.phone}
-                      </span>
                     </TableCell>
                     <TableCell>
                       {user.location ? (
@@ -268,7 +267,7 @@ export default function AdminUsers() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-48 text-center text-muted-foreground italic">
+                  <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic">
                     వినియోగదారులు ఎవరూ లేరు.
                   </TableCell>
                 </TableRow>
