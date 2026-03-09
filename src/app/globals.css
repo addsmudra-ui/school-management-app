@@ -85,6 +85,7 @@
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  position: relative;
 }
 
 .news-scroll-container::-webkit-scrollbar {
@@ -97,7 +98,7 @@
   height: 100dvh;
   width: 100%;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
@@ -122,4 +123,5 @@
 /* Prevent accidental pull-to-refresh on mobile browsers */
 body, html {
   overscroll-behavior-y: none;
+  height: 100%;
 }
