@@ -26,6 +26,7 @@ export type SentNotification = {
   title: string;
   body: string;
   target: string;
+  postId?: string;
   timestamp: any;
 };
 
@@ -77,10 +78,11 @@ export const NewsService = {
     const collectionName = post.status === 'approved' ? 'approved_news_posts' : 'pending_news_posts';
     const newsRef = collection(db, collectionName);
     const newDocRef = doc(newsRef);
+    const postId = newDocRef.id;
     
     const data = {
       ...post,
-      id: newDocRef.id,
+      id: postId,
       timestamp: serverTimestamp(),
       likes: post.engagement?.likes || 0,
       commentsCount: post.engagement?.comments || 0,
@@ -92,11 +94,12 @@ export const NewsService = {
       NotificationService.send(db, {
         title: `బ్రేకింగ్: ${post.title}`,
         body: `${post.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
-        target: post.location.district
+        target: post.location.district,
+        postId: postId
       });
     }
 
-    return newDocRef.id;
+    return postId;
   },
 
   update: (db: Firestore, postId: string, data: Partial<NewsPost>) => {
@@ -118,7 +121,8 @@ export const NewsService = {
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
-      target: postData.location.district
+      target: postData.location.district,
+      postId: postId
     });
   },
 
@@ -206,7 +210,7 @@ export const UserService = {
 };
 
 export const NotificationService = {
-  send: (db: Firestore, notification: { title: string; body: string; target: string }) => {
+  send: (db: Firestore, notification: { title: string; body: string; target: string; postId?: string }) => {
     const notifRef = collection(db, 'notifications');
     const newNotif = doc(notifRef);
     setDocumentNonBlocking(newNotif, {

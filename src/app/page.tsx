@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Navbar } from "@/components/layout/Navbar";
@@ -8,6 +7,7 @@ import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, limit } from "firebase/firestore";
+import { useSearchParams } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -26,9 +26,13 @@ import { LOCATIONS, NewsPost } from "@/lib/mock-data";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
+  const searchParams = useSearchParams();
+  const targetPostId = searchParams.get('postId');
+
   const [selectedDistrict, setSelectedDistrict] = useState<string>("Warangal");
   const [selectedMandal, setSelectedMandal] = useState<string>("All");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [forceGlobal, setForceGlobal] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -39,8 +43,23 @@ function NewsFeedContent() {
     if (savedMandal) setSelectedMandal(savedMandal);
   }, []);
 
+  // Handle postId from notification
+  useEffect(() => {
+    if (targetPostId) {
+      setForceGlobal(true);
+      // Wait a bit for elements to render
+      setTimeout(() => {
+        const element = document.getElementById(`post-${targetPostId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500);
+    } else {
+      setForceGlobal(false);
+    }
+  }, [targetPostId]);
+
   // Simplified query: Fetch all approved news (limited) and filter client-side.
-  // This avoids "Missing Index" errors in Firestore for combined where/orderBy queries.
   const allApprovedQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'approved_news_posts'), limit(100));
@@ -58,25 +77,31 @@ function NewsFeedContent() {
       return timeB - timeA;
     });
 
-    // 2. Filter for local news
+    // 2. Decide what to show (Explicit postId or Local filter)
+    if (forceGlobal) {
+      return { feedToDisplay: sorted, isFallbackActive: false };
+    }
+
+    // 3. Filter for local news
     const local = sorted.filter(post => {
       const districtMatch = post.location.district === selectedDistrict;
       const mandalMatch = selectedMandal === "All" || post.location.mandal === selectedMandal;
       return districtMatch && mandalMatch;
     });
 
-    // 3. Decide what to show (Local or Fallback to Global)
+    // 4. Fallback to Global if no local news
     const hasLocalNews = local.length > 0;
     return {
       feedToDisplay: hasLocalNews ? local : sorted,
       isFallbackActive: !hasLocalNews
     };
-  }, [allNews, selectedDistrict, selectedMandal]);
+  }, [allNews, selectedDistrict, selectedMandal, forceGlobal]);
 
   const handleLocationUpdate = () => {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
     localStorage.setItem('mandalPulse_mandal', selectedMandal);
     setIsLocationModalOpen(false);
+    setForceGlobal(false);
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
@@ -102,7 +127,7 @@ function NewsFeedContent() {
             <div>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">మీ ప్రాంతం</p>
               <h2 className="text-sm font-bold flex items-center gap-1">
-                {selectedMandal === "All" || !selectedMandal ? "అన్ని మండలాలు" : selectedMandal}, {selectedDistrict}
+                {forceGlobal ? "అన్ని ప్రాంతాలు (Global)" : (selectedMandal === "All" || !selectedMandal ? "అన్ని మండలాలు" : selectedMandal) + ", " + selectedDistrict}
               </h2>
             </div>
           </div>
@@ -148,20 +173,25 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {isFallbackActive && allNews && allNews.length > 0 && (
+        {(isFallbackActive || forceGlobal) && allNews && allNews.length > 0 && (
           <div className="absolute top-20 left-0 right-0 z-30 px-4 pointer-events-none md:top-24">
             <div className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-sm">
               <div className="bg-amber-500 p-2 rounded-lg shrink-0">
                 <Globe className="w-4 h-4 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-xs font-bold text-amber-800 leading-tight">
-                  మీ ప్రాంతంలో వార్తలు లేవు.
+                  {forceGlobal ? "అన్ని ప్రాంతాల వార్తలు" : "మీ ప్రాంతంలో వార్తలు లేవు."}
                 </p>
                 <p className="text-[10px] text-amber-700 opacity-80 mt-0.5">
-                  ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను (Global News) చూస్తున్నారు.
+                  {forceGlobal ? "మీరు నోటిఫికేషన్ ద్వారా వచ్చిన వార్తను చూస్తున్నారు." : "ప్రస్తుతం అన్ని ప్రాంతాల వార్తలను (Global News) చూస్తున్నారు."}
                 </p>
               </div>
+              {forceGlobal && (
+                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-amber-900 pointer-events-auto hover:bg-amber-100" onClick={handleLocationUpdate}>
+                  తిరిగి వెళ్ళండి
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -179,7 +209,7 @@ function NewsFeedContent() {
                 <AlertCircle className="w-10 h-10 text-primary/40" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">వార్తలు ఏవీ లేవు</h3>
-              <p className="text-muted-foreground mb-8 text-sm">ప్రస్తుతానికి ఎటువంటి వార్తలు అందుబాటులో లేవు. అడ్మిన్ ప్యానెల్ నుండి డెమో డేటాను సీడ్ చేయండి.</p>
+              <p className="text-muted-foreground mb-8 text-sm">ప్రస్తుతానికి ఎటువంటి వార్తలు అందుబాటులో లేవు.</p>
               <Button className="w-full" onClick={() => setIsLocationModalOpen(true)}>ప్రాంతాన్ని మార్చండి</Button>
             </div>
           </div>

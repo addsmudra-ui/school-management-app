@@ -1,9 +1,8 @@
-
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { Newspaper, User, PlusCircle, LayoutDashboard, LogOut, MapPin, Bell } from "lucide-react";
+import { Newspaper, User, PlusCircle, LayoutDashboard, LogOut, MapPin, Bell, ChevronRight } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -12,9 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 export function Navbar() {
   const firestore = useFirestore();
+  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -22,6 +23,7 @@ export function Navbar() {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [location, setLocation] = useState({ mandal: "", district: "" });
   const [hasNewNotif, setHasNewNotif] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const notifQuery = useMemoFirebase(() => {
     if (!firestore || isUserLoading) return null;
@@ -78,6 +80,13 @@ export function Navbar() {
     }
   };
 
+  const handleNotifClick = (postId?: string) => {
+    setIsNotifOpen(false);
+    if (postId) {
+      router.push(`/?postId=${postId}`);
+    }
+  };
+
   const canPost = role === 'admin' || (role === 'reporter' && userStatus === 'approved');
 
   return (
@@ -99,7 +108,7 @@ export function Navbar() {
             <span className="text-[10px] md:text-sm font-semibold">Home</span>
           </Link>
 
-          <Sheet onOpenChange={(open) => open && markAsRead()}>
+          <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
             <SheetTrigger asChild>
               <button className="flex flex-col md:flex-row items-center gap-1 text-muted-foreground hover:text-primary transition-colors relative">
                 <div className="relative">
@@ -121,7 +130,14 @@ export function Navbar() {
               <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4 pb-32">
                 {notifications && notifications.length > 0 ? (
                   notifications.map((n) => (
-                    <div key={n.id} className="p-4 bg-muted/30 rounded-2xl border border-muted group hover:bg-white hover:shadow-md transition-all">
+                    <div 
+                      key={n.id} 
+                      onClick={() => handleNotifClick(n.postId)}
+                      className={cn(
+                        "p-4 bg-muted/30 rounded-2xl border border-muted group hover:bg-white hover:shadow-md transition-all",
+                        n.postId && "cursor-pointer"
+                      )}
+                    >
                       <div className="flex justify-between items-start mb-1">
                         <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-tighter bg-primary/10 text-primary border-none">
                           {n.target}
@@ -132,6 +148,11 @@ export function Navbar() {
                       </div>
                       <h4 className="font-bold text-sm mb-1">{n.title}</h4>
                       <p className="text-xs text-muted-foreground leading-relaxed">{n.body}</p>
+                      {n.postId && (
+                        <div className="mt-2 text-[10px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                          View Details <ChevronRight className="w-3 h-3" />
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
