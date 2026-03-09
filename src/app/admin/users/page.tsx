@@ -189,7 +189,7 @@ export default function AdminUsers() {
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead className="font-bold py-4 pl-6">వినియోగదారు (User)</TableHead>
+                <TableHead className="font-bold py-4 pl-6">వినియోగదారు & ఫోన్ (User & Phone)</TableHead>
                 <TableHead className="font-bold">పాత్ర (Role)</TableHead>
                 <TableHead className="font-bold">ప్రాంతం (Location)</TableHead>
                 <TableHead className="font-bold text-center">స్థితి (Status)</TableHead>
