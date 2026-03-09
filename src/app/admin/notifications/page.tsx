@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bell, Send, History, Target, Trash2, Smartphone } from "lucide-react";
-import { NotificationService, SentNotification, LocationService } from "@/lib/storage";
+import { NotificationService, SentNotification } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,11 @@ export default function AdminNotifications() {
   // Real-time locations for target audience
   const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locDocRef);
-  const districts = locationsDoc ? Object.keys(locationsDoc["Telangana"] || {}) : [];
+  
+  // Extract all unique districts from all states in the locations metadata
+  const districts = locationsDoc 
+    ? Array.from(new Set(Object.values(locationsDoc).flatMap(stateObj => Object.keys(stateObj as object))))
+    : [];
 
   const handleSend = () => {
     if (!firestore || !title || !body) return;
@@ -48,7 +52,9 @@ export default function AdminNotifications() {
       setIsSending(false);
       toast({
         title: "నోటిఫికేషన్ పంపబడింది",
-        description: "వినియోగదారులందరికీ అలర్ట్ విజయవంతంగా చేరింది."
+        description: target === "All Users" 
+          ? "వినియోగదారులందరికీ అలర్ట్ విజయవంతంగా చేరింది."
+          : `${target} జిల్లా వినియోగదారులకు అలర్ట్ పంపబడింది.`
       });
     }, 500);
   };
@@ -82,7 +88,7 @@ export default function AdminNotifications() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All Users">వినియోగదారులందరికీ (All Users)</SelectItem>
-                  {districts.map(d => (
+                  {districts.sort().map(d => (
                     <SelectItem key={d} value={d}>{d} జిల్లా</SelectItem>
                   ))}
                 </SelectContent>
