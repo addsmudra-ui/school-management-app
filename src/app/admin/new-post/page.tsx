@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from "react";
@@ -9,11 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, Send, Upload, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { STATES, LOCATIONS_BY_STATE, NewsPost } from "@/lib/mock-data";
+import { STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
+import { useFirestore, useUser } from "@/firebase";
 import Image from "next/image";
 
 export default function AdminNewPost() {
+  const firestore = useFirestore();
+  const { user } = useUser();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [state, setState] = useState("");
@@ -35,6 +39,8 @@ export default function AdminNewPost() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firestore || !user) return;
+
     if (!title || !content || !state || !district || !mandal || !imagePreview) {
       toast({ title: "Error", description: "All fields are required.", variant: "destructive" });
       return;
@@ -42,24 +48,20 @@ export default function AdminNewPost() {
 
     setIsSubmitting(true);
     
-    setTimeout(() => {
-      const newPost: NewsPost = {
-        id: Date.now().toString(),
+    try {
+      NewsService.add(firestore, {
         unique_code: Math.floor(10000 + Math.random() * 90000).toString(),
         title,
         content,
         image_url: imagePreview,
         location: { state, district, mandal },
         status: 'approved',
-        author_id: "ADMIN",
-        author_name: "Admin Office",
+        author_id: user.uid,
+        author_name: user.displayName || "Admin Office",
         author_role: "Desk Incharge",
-        timestamp: new Date().toISOString(),
         engagement: { likes: 0, comments: 0, commentList: [] }
-      };
+      });
 
-      NewsService.add(newPost);
-      setIsSubmitting(false);
       toast({ title: "వార్త ప్రచురించబడింది", description: "వార్త విజయవంతంగా లైవ్ చేయబడింది." });
       
       // Reset
@@ -69,7 +71,12 @@ export default function AdminNewPost() {
       setDistrict("");
       setMandal("");
       setImagePreview(null);
-    }, 1000);
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Could not publish news.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

@@ -50,6 +50,8 @@ export const AdminService = {
   },
   seedDemoNews: async (db: Firestore) => {
     const batch = writeBatch(db);
+    
+    // Seed News
     MOCK_NEWS.forEach((news) => {
       const docRef = doc(db, 'approved_news_posts', news.id);
       batch.set(docRef, {
@@ -57,22 +59,50 @@ export const AdminService = {
         timestamp: serverTimestamp(),
       });
     });
+
+    // Seed Default Admin Password
+    const adminRef = doc(db, 'config', 'admin');
+    batch.set(adminRef, { password: 'admin123' }, { merge: true });
+
+    // Seed Locations Metadata
+    const locRef = doc(db, 'metadata', 'locations');
+    batch.set(locRef, {
+      "Telangana": {
+        "Warangal": ["Hanamkonda", "Kazipet", "Inavole", "Wardhannapet", "Dharmasagar"],
+        "Hyderabad": ["Ameerpet", "Banjara Hills", "Kukatpally", "Secunderabad", "Mehdipatnam"]
+      }
+    }, { merge: true });
+
     await batch.commit();
   }
 };
 
 export const NewsService = {
   add: (db: Firestore, post: Omit<NewsPost, 'id' | 'timestamp'>) => {
-    const newsRef = collection(db, 'pending_news_posts');
+    // If status is approved (admin post), go straight to approved collection
+    const collectionName = post.status === 'approved' ? 'approved_news_posts' : 'pending_news_posts';
+    const newsRef = collection(db, collectionName);
     const newDocRef = doc(newsRef);
+    
     const data = {
       ...post,
       id: newDocRef.id,
       timestamp: serverTimestamp(),
-      likes: 0,
-      commentsCount: 0,
+      likes: post.engagement?.likes || 0,
+      commentsCount: post.engagement?.comments || 0,
     };
+    
     setDocumentNonBlocking(newDocRef, data, { merge: true });
+
+    // If it's a direct approved post, notify users
+    if (post.status === 'approved') {
+      NotificationService.send(db, {
+        title: `బ్రేకింగ్: ${post.title}`,
+        body: `${post.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
+        target: post.location.district
+      });
+    }
+
     return newDocRef.id;
   },
 
