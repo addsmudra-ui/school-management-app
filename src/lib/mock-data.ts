@@ -1,4 +1,3 @@
-
 export const STATES = ["Telangana", "Andhra Pradesh"];
 
 export const LOCATIONS_BY_STATE: Record<string, Record<string, string[]>> = {
