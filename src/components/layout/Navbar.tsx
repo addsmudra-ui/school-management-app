@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -23,9 +24,9 @@ export function Navbar() {
   const [hasNewNotif, setHasNewNotif] = useState(false);
 
   const notifQuery = useMemoFirebase(() => {
-    if (!firestore || isUserLoading || !user?.uid) return null;
+    if (!firestore || isUserLoading) return null;
     return query(collection(firestore, 'notifications'), orderBy('timestamp', 'desc'), limit(20));
-  }, [firestore, user?.uid, isUserLoading]);
+  }, [firestore, isUserLoading]);
 
   const { data: notifications } = useCollection<SentNotification>(notifQuery);
 
@@ -42,7 +43,7 @@ export function Navbar() {
     const savedName = localStorage.getItem('mandalPulse_userName');
     const savedStatus = localStorage.getItem('mandalPulse_userStatus');
     const savedPhoto = localStorage.getItem('mandalPulse_userPhoto');
-    setRole(savedRole || 'user');
+    setRole(savedRole || null);
     setUserName(savedName || "");
     setUserStatus(savedStatus || "");
     setUserPhoto(savedPhoto || null);
@@ -69,23 +70,6 @@ export function Navbar() {
       }
     }
   }, [notifications]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('mandalPulse_role');
-    localStorage.removeItem('mandalPulse_userName');
-    localStorage.removeItem('mandalPulse_userPhone');
-    localStorage.removeItem('mandalPulse_userStatus');
-    localStorage.removeItem('mandalPulse_state');
-    localStorage.removeItem('mandalPulse_district');
-    localStorage.removeItem('mandalPulse_mandal');
-    localStorage.removeItem('mandalPulse_userPhoto');
-    localStorage.removeItem('mandalPulse_lastSeenNotif');
-    setRole(null);
-    setUserName("");
-    setUserPhoto(null);
-    window.dispatchEvent(new Event('mandalPulse_authChanged'));
-    window.location.href = '/login';
-  };
 
   const markAsRead = () => {
     if (notifications && notifications.length > 0) {
@@ -185,7 +169,7 @@ export function Navbar() {
               <User className="w-5 h-5 text-primary" />
             )}
             <span className="text-[10px] md:text-sm font-semibold truncate max-w-[60px] md:max-w-none">
-              {userName || "Login"}
+              {userName || "Profile"}
             </span>
           </Link>
         </div>

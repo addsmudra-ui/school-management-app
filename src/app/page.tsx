@@ -26,16 +26,16 @@ import { LOCATIONS } from "@/lib/mock-data";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
-  const [selectedMandal, setSelectedMandal] = useState<string>("");
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("Warangal");
+  const [selectedMandal, setSelectedMandal] = useState<string>("All");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedDistrict = localStorage.getItem('mandalPulse_district') || "Warangal";
-    const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
-    setSelectedDistrict(savedDistrict);
-    setSelectedMandal(savedMandal);
+    const savedDistrict = localStorage.getItem('mandalPulse_district');
+    const savedMandal = localStorage.getItem('mandalPulse_mandal');
+    if (savedDistrict) setSelectedDistrict(savedDistrict);
+    if (savedMandal) setSelectedMandal(savedMandal);
   }, []);
 
   // Primary Local Query
