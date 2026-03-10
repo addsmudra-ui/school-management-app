@@ -202,6 +202,14 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
+        {/* Animated Background Icons */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-10">
+          <Newspaper className="absolute top-[15%] left-[10%] w-32 h-32 text-primary animate-float" />
+          <Newspaper className="absolute top-[40%] right-[15%] w-24 h-24 text-primary animate-float-reverse" />
+          <Newspaper className="absolute bottom-[20%] left-[20%] w-40 h-40 text-primary animate-float-slow" />
+          <Newspaper className="absolute top-[70%] right-[25%] w-20 h-20 text-primary animate-float" />
+        </div>
+
         {allNews && allNews.length > 0 && (
           <div className="absolute top-[5.5rem] left-0 right-0 z-30 px-4 pointer-events-none md:top-[6rem]">
             {isFallbackActive ? (

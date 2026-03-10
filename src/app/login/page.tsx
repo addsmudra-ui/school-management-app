@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -86,13 +85,11 @@ export default function LoginPage() {
           
           const existing = await UserService.getByPhone(firestore, phone);
           if (existing) {
-            // For persistence in a prototype, we use a shadow email account for the phone number
             const shadowEmail = `${phone}@mandalpulse.com`;
             const shadowPass = "password123";
             try {
               await signInWithEmailAndPassword(auth, shadowEmail, shadowPass);
             } catch (authErr) {
-              // Account might not exist in Auth but exists in Firestore
               await createUserWithEmailAndPassword(auth, shadowEmail, shadowPass);
             }
 
@@ -242,8 +239,15 @@ export default function LoginPage() {
   const isAdminOrEditor = role === 'admin' || role === 'editor';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Animated Background Icons */}
+      <div className="absolute inset-0 pointer-events-none opacity-5">
+        <Newspaper className="absolute top-[10%] left-[5%] w-32 h-32 text-primary animate-float" />
+        <Newspaper className="absolute bottom-[10%] right-[5%] w-40 h-40 text-primary animate-float-reverse" />
+        <Newspaper className="absolute top-[50%] right-[15%] w-24 h-24 text-primary animate-float-slow" />
+      </div>
+
+      <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden z-10 bg-white/95 backdrop-blur-sm">
         <CardHeader className="text-center relative bg-primary/5 pb-8">
           {step !== 'auth' && (
             <button 
@@ -446,7 +450,7 @@ export default function LoginPage() {
                           </SelectTrigger>
                           <SelectContent>
                             {district && availableLocations[state]?.[district]?.map((m: string) => (
-                              <SelectItem key={m} value={m}>{m}</SelectItem>
+                              <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
