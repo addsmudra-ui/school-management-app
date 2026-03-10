@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database, Activity } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database, Activity, ToggleLeft, ToggleRight } from "lucide-react";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 import { AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -31,6 +31,13 @@ export default function AdminDashboard() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSeeding, setIsSeeding] = useState(false);
+
+  // Real-time config for system status
+  const configRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+  const { data: config } = useDoc(configRef);
 
   const pendingQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -74,6 +81,19 @@ export default function AdminDashboard() {
     }
   };
 
+  const toggleStatus = () => {
+    if (!firestore) return;
+    const current = config?.systemStatus || 'online';
+    const next = current === 'online' ? 'maintenance' : 'online';
+    AdminService.updateSystemStatus(firestore, next);
+    toast({ 
+      title: "Zone Status Changed", 
+      description: `App is now ${next.toUpperCase()}.` 
+    });
+  };
+
+  const systemStatus = config?.systemStatus || 'online';
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -92,10 +112,20 @@ export default function AdminDashboard() {
             <Database className={cn("w-4 h-4 mr-2", isSeeding && "animate-spin")} />
             {isSeeding ? "Seeding..." : "Seed App Data"}
           </Button>
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-sm border border-muted h-11">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">సిస్టమ్ ఆన్‌లైన్</span>
-          </div>
+          
+          <button 
+            onClick={toggleStatus}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-2xl shadow-sm border transition-all h-11",
+              systemStatus === 'online' ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"
+            )}
+          >
+            <div className={cn("w-2.5 h-2.5 rounded-full", systemStatus === 'online' ? "bg-emerald-500 animate-pulse" : "bg-rose-500")} />
+            <span className="text-xs font-bold uppercase tracking-widest">
+              సిస్టమ్ {systemStatus === 'online' ? 'ఆన్‌లైన్' : 'మెయింటెనెన్స్'}
+            </span>
+            {systemStatus === 'online' ? <ToggleRight className="w-5 h-5 ml-1" /> : <ToggleLeft className="w-5 h-5 ml-1" />}
+          </button>
         </div>
       </div>
 
@@ -208,14 +238,6 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
-            {recentApprovals && recentApprovals.length > 0 && (
-              <div className="p-4 bg-slate-50/50 border-t border-slate-50">
-                <Button variant="ghost" className="w-full text-xs font-bold text-primary gap-2 h-8">
-                  View All Approvals
-                  <TrendingUp className="w-3 h-3" />
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

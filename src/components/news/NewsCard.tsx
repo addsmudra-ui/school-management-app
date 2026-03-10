@@ -131,43 +131,43 @@ export function NewsCard({ news }: NewsCardProps) {
       <div className="p-6 flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-white to-slate-50/50 touch-pan-y">
         <div className="space-y-4 pb-12 md:pb-6">
           
-          {/* Author Header with Integrated Interaction Buttons */}
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0 border border-primary/5">
+          {/* Enhanced Reporter Header with Interactions */}
+          <div className="flex items-center justify-between gap-2 mb-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm">
                 {news.author_name[0]}
               </div>
               <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold truncate text-slate-900">{news.author_name}</span>
+                <span className="text-base font-black truncate text-slate-900 leading-none mb-1">{news.author_name}</span>
+                <div className="flex items-center gap-2">
+                  {news.author_role && (
+                    <span className="text-[9px] font-black text-primary uppercase tracking-wider">
+                      {news.author_role}
+                    </span>
+                  )}
                   {news.author_stars && (
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-0.5">
                       {Array.from({ length: news.author_stars }).map((_, i) => (
                         <Star key={i} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                       ))}
                     </div>
                   )}
                 </div>
-                {news.author_role && (
-                  <span className="text-[9px] font-black text-primary/70 uppercase tracking-tighter leading-none">
-                    {news.author_role}
-                  </span>
-                )}
               </div>
             </div>
 
-            {/* Interaction Buttons beside name */}
-            <div className="flex items-center gap-3 shrink-0 bg-slate-50/80 px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">
-              <button onClick={toggleLike} className="flex items-center gap-1 group">
-                <Heart className={cn("w-4 h-4 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
-                <span className="text-[10px] font-bold text-slate-600">{news.likes || 0}</span>
+            {/* Interactions beside the big name */}
+            <div className="flex items-center gap-4 shrink-0 pr-2">
+              <button onClick={toggleLike} className="flex flex-col items-center gap-0.5 group">
+                <Heart className={cn("w-5 h-5 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
+                <span className="text-[10px] font-black text-slate-700">{news.likes || 0}</span>
               </button>
               
               <Sheet>
                 <SheetTrigger asChild>
-                  <button className="flex items-center gap-1 group">
-                    <MessageCircle className="w-4 h-4 text-slate-400 group-hover:text-primary" />
-                    <span className="text-[10px] font-bold text-slate-600">{news.commentsCount || 0}</span>
+                  <button className="flex flex-col items-center gap-0.5 group">
+                    <MessageCircle className="w-5 h-5 text-slate-400 group-hover:text-primary" />
+                    <span className="text-[10px] font-black text-slate-700">{news.commentsCount || 0}</span>
                   </button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="h-[85dvh] rounded-t-[3rem] p-0 z-[100] border-none shadow-2xl">
@@ -222,8 +222,9 @@ export function NewsCard({ news }: NewsCardProps) {
                 </SheetContent>
               </Sheet>
 
-              <button onClick={handleShare} className="group">
-                <Share2 className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+              <button onClick={handleShare} className="group flex flex-col items-center gap-0.5">
+                <Share2 className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                <span className="text-[10px] font-black text-slate-700">Share</span>
               </button>
             </div>
           </div>
@@ -238,7 +239,6 @@ export function NewsCard({ news }: NewsCardProps) {
             {news.content}
           </p>
 
-          {/* Flip Button / Scroll Hint for Mobile */}
           <button 
             onClick={scrollToNext}
             className="flex flex-col items-center justify-center py-8 opacity-50 hover:opacity-100 transition-opacity md:hidden w-full group"

@@ -3,7 +3,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense, useMemo } from "react";
-import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info, Newspaper } from "lucide-react";
+import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info, Newspaper, Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, limit, doc } from "firebase/firestore";
@@ -35,7 +35,7 @@ function NewsFeedContent() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
 
-  // Real-time branding
+  // Real-time branding and system status
   const brandingRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return doc(firestore, 'config', 'admin');
@@ -136,6 +136,23 @@ function NewsFeedContent() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-primary animate-spin" />
           <p className="text-primary font-medium">వార్తలు లోడ్ అవుతున్నాయి...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle Maintenance Mode
+  if (branding?.systemStatus === 'maintenance') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
+        <div className="max-w-md space-y-6">
+          <div className="w-24 h-24 bg-amber-100 rounded-3xl flex items-center justify-center mx-auto shadow-xl">
+            <Construction className="w-12 h-12 text-amber-600" />
+          </div>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">Zone Under Maintenance</h1>
+          <p className="text-slate-600 font-medium">
+            MandalPulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.
+          </p>
         </div>
       </div>
     );
