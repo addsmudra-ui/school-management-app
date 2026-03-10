@@ -243,7 +243,7 @@ export function NewsCard({ news }: NewsCardProps) {
             onClick={scrollToNext}
             className="flex flex-col items-center justify-center py-8 opacity-50 hover:opacity-100 transition-opacity md:hidden w-full group"
           >
-            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2 group-active:scale-95 transition-transform">తదుపరి వార్త (Next)</p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2 group-active:scale-95 transition-transform">మరిన్ని వార్తలు చదవండి</p>
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center animate-bounce">
               <ChevronDown className="w-6 h-6 text-primary" />
             </div>

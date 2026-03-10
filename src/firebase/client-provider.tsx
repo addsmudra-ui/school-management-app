@@ -23,7 +23,12 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         signInAnonymously(auth).catch((error) => {
-          console.error("Failed to sign in anonymously:", error);
+          // Gracefully handle cases where anonymous auth is restricted or disabled in the console.
+          if (error.code === 'auth/admin-restricted-operation' || error.code === 'auth/operation-not-allowed') {
+            console.warn("Anonymous authentication is not enabled or is restricted in the Firebase Console. Some features may require explicit sign-in.");
+          } else {
+            console.error("Failed to sign in anonymously:", error);
+          }
         });
       }
     });
