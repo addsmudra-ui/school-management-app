@@ -167,7 +167,7 @@ function NewsFeedContent() {
           <div className="flex items-center gap-2">
             <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center">
               {branding?.appLogo ? (
-                <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+                <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-50" />
               ) : (
                 <Newspaper className="w-6 h-6 text-primary" />
               )}

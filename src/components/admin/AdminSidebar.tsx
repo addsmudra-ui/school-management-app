@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -102,7 +101,7 @@ export function AdminSidebar() {
           <Link href="/" className="flex items-center gap-3 text-primary font-bold">
             <div className="bg-primary p-2 rounded-xl text-white relative w-10 h-10 flex items-center justify-center">
               {branding?.appLogo ? (
-                <Image src={branding.appLogo} alt="Logo" fill className="object-contain p-1" />
+                <Image src={branding.appLogo} alt="Logo" fill className="object-contain p-1 opacity-50" />
               ) : (
                 <Newspaper className="w-6 h-6" />
               )}
