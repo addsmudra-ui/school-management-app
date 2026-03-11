@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,9 +32,17 @@ export default function AdminLocations() {
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
 
-  // Use Firestore data or fallback to mock data
-  const availableLocations = (locationsDoc as any) || MOCK_LOCATIONS;
-  const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
+  // Sanitize available locations to omit 'id'
+  const availableLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    const { id, ...statesOnly } = locationsDoc as any;
+    return statesOnly;
+  }, [locationsDoc]);
+
+  const availableStates = useMemo(() => {
+    const states = Object.keys(availableLocations);
+    return states.length > 0 ? states : MOCK_STATES;
+  }, [availableLocations]);
 
   const handleAddState = () => {
     if (!firestore || !newStateName) return;

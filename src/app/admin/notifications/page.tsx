@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +35,12 @@ export default function AdminNotifications() {
   const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locDocRef);
   
-  // Extract all unique districts from all states in the locations metadata
-  const districts = locationsDoc 
-    ? Array.from(new Set(Object.values(locationsDoc).flatMap(stateObj => Object.keys(stateObj as object))))
-    : [];
+  // Extract all unique districts from all states in the locations metadata, omitting 'id'
+  const districts = useMemo(() => {
+    if (!locationsDoc) return [];
+    const { id, ...statesOnly } = locationsDoc as any;
+    return Array.from(new Set(Object.values(statesOnly).flatMap(stateObj => Object.keys(stateObj as object))));
+  }, [locationsDoc]);
 
   const handleSend = () => {
     if (!firestore || !title || !body) return;

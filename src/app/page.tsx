@@ -47,7 +47,9 @@ function NewsFeedContent() {
   
   const dynamicLocations = useMemo(() => {
     if (!locationsDoc) return MOCK_LOCATIONS;
-    return Object.values(locationsDoc).reduce((acc: any, stateObj: any) => {
+    // Omit the 'id' field added by useDoc to prevent it from being treated as a state
+    const { id, ...statesOnly } = locationsDoc as any;
+    return Object.values(statesOnly).reduce((acc: any, stateObj: any) => {
       return { ...acc, ...stateObj };
     }, {});
   }, [locationsDoc]);
