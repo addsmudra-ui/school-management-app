@@ -4,7 +4,7 @@
     "User": {
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the MandalPulse app.",
+      "description": "Represents a user of the News Pulse app.",
       "properties": {
         "id": { "type": "string", "description": "Firebase Auth UID" },
         "phone": { "type": "string", "description": "User's phone number" },

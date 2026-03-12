@@ -1,3 +1,4 @@
+
 /**
  * Utility to add a watermark to an image string (base64).
  * Positions the watermark in the bottom-left corner with transparency.
