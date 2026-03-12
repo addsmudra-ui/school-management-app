@@ -47,7 +47,6 @@ function NewsFeedContent() {
   
   const dynamicLocations = useMemo(() => {
     if (!locationsDoc) return MOCK_LOCATIONS;
-    // CRITICAL: Omit 'id' to prevent characters of "locations" being treated as regions
     const { id, ...statesOnly } = locationsDoc as any;
     return Object.values(statesOnly).reduce((acc: any, stateObj: any) => {
       if (typeof stateObj !== 'object' || stateObj === null) return acc;
@@ -144,18 +143,24 @@ function NewsFeedContent() {
     );
   }
 
-  // Handle Maintenance Mode
   if (branding?.systemStatus === 'maintenance') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6 text-center">
-        <div className="max-w-md space-y-6">
-          <div className="w-24 h-24 bg-amber-100 rounded-3xl flex items-center justify-center mx-auto shadow-xl">
-            <Construction className="w-12 h-12 text-amber-600" />
+        <div className="max-w-md space-y-8 animate-in zoom-in-95 duration-500">
+          <div className="w-32 h-32 bg-amber-100 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl relative overflow-hidden">
+             <div className="absolute inset-0 bg-amber-200/20 animate-pulse" />
+             <Construction className="w-16 h-16 text-amber-600 relative z-10" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Zone Under Maintenance</h1>
-          <p className="text-slate-600 font-medium">
-            MandalPulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది. దయచేసి కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.
-          </p>
+          <div className="space-y-3">
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 font-headline">Zone Maintenance</h1>
+            <p className="text-slate-600 font-bold text-lg leading-relaxed">
+              MandalPulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.
+            </p>
+          </div>
+          <div className="pt-8 opacity-20 flex justify-center gap-4">
+             <Newspaper className="w-8 h-8 text-primary animate-float" />
+             <Newspaper className="w-8 h-8 text-primary animate-float-reverse" />
+          </div>
         </div>
       </div>
     );

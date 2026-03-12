@@ -97,7 +97,6 @@ export function NewsCard({ news }: NewsCardProps) {
   const scrollToNext = () => {
     const container = document.querySelector('.news-scroll-container');
     if (container) {
-      // Logic to snap to the next section specifically
       container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
     }
   };
@@ -133,16 +132,16 @@ export function NewsCard({ news }: NewsCardProps) {
         <div className="space-y-4 pb-12 md:pb-6">
           
           {/* Enhanced Reporter Header with Interactions */}
-          <div className="flex items-center justify-between gap-2 mb-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
+          <div className="flex items-center justify-between gap-4 mb-2 bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-black text-lg shrink-0 shadow-md">
                 {news.author_name ? news.author_name[0] : 'R'}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-base font-black truncate text-slate-900 leading-none mb-1">{news.author_name || "Reporter"}</span>
+                <span className="text-xl font-black truncate text-slate-900 leading-none mb-1">{news.author_name || "Reporter"}</span>
                 <div className="flex items-center gap-2">
                   {news.author_role && (
-                    <span className="text-[9px] font-black text-primary uppercase tracking-wider">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-wider">
                       {news.author_role}
                     </span>
                   )}
@@ -157,17 +156,17 @@ export function NewsCard({ news }: NewsCardProps) {
               </div>
             </div>
 
-            {/* Interactions beside the big name */}
-            <div className="flex items-center gap-4 shrink-0 pr-2">
+            {/* Interactions beside the name */}
+            <div className="flex items-center gap-4 shrink-0 pr-1">
               <button onClick={toggleLike} className="flex flex-col items-center gap-0.5 group">
-                <Heart className={cn("w-5 h-5 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
+                <Heart className={cn("w-6 h-6 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
                 <span className="text-[10px] font-black text-slate-700">{news.likes || 0}</span>
               </button>
               
               <Sheet>
                 <SheetTrigger asChild>
                   <button className="flex flex-col items-center gap-0.5 group">
-                    <MessageCircle className="w-5 h-5 text-slate-400 group-hover:text-primary" />
+                    <MessageCircle className="w-6 h-6 text-slate-400 group-hover:text-primary" />
                     <span className="text-[10px] font-black text-slate-700">{news.commentsCount || 0}</span>
                   </button>
                 </SheetTrigger>
@@ -224,7 +223,7 @@ export function NewsCard({ news }: NewsCardProps) {
               </Sheet>
 
               <button onClick={handleShare} className="group flex flex-col items-center gap-0.5">
-                <Share2 className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                <Share2 className="w-6 h-6 text-slate-400 group-hover:text-primary transition-colors" />
                 <span className="text-[10px] font-black text-slate-700">Share</span>
               </button>
             </div>

@@ -1,10 +1,11 @@
 
-import type { MetadataRoute } from 'next'
+export const dynamic = 'force-static'; // Add this line at the top
+
+import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MandalPulse - మీ ప్రాంతీయ వార్తలు',
-    short_name: 'MandalPulse',
+    name: 'MandalPulse',
     description: 'మీ మండలం మరియు జిల్లా స్థాయి వార్తల కోసం మీ నమ్మకమైన మూలం.',
     start_url: '/',
     display: 'standalone',
