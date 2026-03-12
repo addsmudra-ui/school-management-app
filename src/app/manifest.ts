@@ -1,11 +1,10 @@
-
-export const dynamic = 'force-static'; // Add this line at the top
+export const dynamic = 'force-static';
 
 import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MandalPulse',
+    name: 'News Pulse',
     description: 'మీ మండలం మరియు జిల్లా స్థాయి వార్తల కోసం మీ నమ్మకమైన మూలం.',
     start_url: '/',
     display: 'standalone',

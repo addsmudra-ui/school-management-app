@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.mandalpulse.app',
-  appName: 'MandalPulse',
+  appId: 'com.newspulse.app',
+  appName: 'News Pulse',
   webDir: 'out',
   server: {
     androidScheme: 'https'

@@ -59,13 +59,13 @@ export const AdminService = {
       if (snapshot.exists()) {
         return {
           appLogo: snapshot.data().appLogo || null,
-          appName: snapshot.data().appName || 'MandalPulse',
+          appName: snapshot.data().appName || 'News Pulse',
           systemStatus: snapshot.data().systemStatus || 'online'
         };
       }
-      return { appLogo: null, appName: 'MandalPulse', systemStatus: 'online' };
+      return { appLogo: null, appName: 'News Pulse', systemStatus: 'online' };
     } catch (e) {
-      return { appLogo: null, appName: 'MandalPulse', systemStatus: 'online' };
+      return { appLogo: null, appName: 'News Pulse', systemStatus: 'online' };
     }
   },
   updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string }) => {
@@ -86,7 +86,7 @@ export const AdminService = {
 
     // 2. Seed Default Admin Config
     const adminRef = doc(db, 'config', 'admin');
-    batch.set(adminRef, { password: 'admin123', appName: 'MandalPulse', systemStatus: 'online' }, { merge: true });
+    batch.set(adminRef, { password: 'admin123', appName: 'News Pulse', systemStatus: 'online' }, { merge: true });
 
     // 3. Seed Locations Metadata
     const locRef = doc(db, 'metadata', 'locations');

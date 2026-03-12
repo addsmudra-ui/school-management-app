@@ -23,6 +23,7 @@ import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { addWatermark } from "@/lib/watermark";
 
 export default function ReporterPage() {
   const firestore = useFirestore();
@@ -51,8 +52,20 @@ export default function ReporterPage() {
   const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locDocRef);
 
-  const availableLocations = locationsDoc || MOCK_LOCATIONS;
+  const availableLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    const { id, ...statesOnly } = locationsDoc as any;
+    return statesOnly;
+  }, [locationsDoc]);
+
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
+
+  // Real-time branding for watermark
+  const brandingRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+  const { data: branding } = useDoc(brandingRef);
 
   // Real-time user profile for status
   const userDocRef = useMemoFirebase(() => {
@@ -119,9 +132,15 @@ export default function ReporterPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      if (target === 'submit') setImagePreview(reader.result as string);
-      else setEditingPost({ ...editingPost, image_url: reader.result as string });
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      const appName = branding?.appName || "News Pulse";
+      const logo = branding?.appLogo;
+      
+      const watermarked = await addWatermark(base64, appName, logo);
+      
+      if (target === 'submit') setImagePreview(watermarked);
+      else setEditingPost({ ...editingPost, image_url: watermarked });
     };
     reader.readAsDataURL(file);
   };

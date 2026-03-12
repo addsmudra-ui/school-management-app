@@ -14,6 +14,7 @@ import { NewsService } from "@/lib/storage";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import Image from "next/image";
 import { doc } from "firebase/firestore";
+import { addWatermark } from "@/lib/watermark";
 
 export default function AdminNewPost() {
   const firestore = useFirestore();
@@ -29,18 +30,37 @@ export default function AdminNewPost() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Real-time branding for watermark
+  const brandingRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+  const { data: branding } = useDoc(brandingRef);
+
   // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
   
-  const availableLocations = (locationsDoc as any) || MOCK_LOCATIONS;
+  const availableLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    const { id, ...statesOnly } = locationsDoc as any;
+    return statesOnly;
+  }, [locationsDoc]);
+
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      const appName = branding?.appName || "News Pulse";
+      const logo = branding?.appLogo;
+      
+      const watermarked = await addWatermark(base64, appName, logo);
+      setImagePreview(watermarked);
+    };
     reader.readAsDataURL(file);
   };
 

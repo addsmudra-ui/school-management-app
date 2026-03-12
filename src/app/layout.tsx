@@ -4,12 +4,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'MandalPulse - మీ ప్రాంతీయ వార్తలు (Local News)',
+  title: 'News Pulse - మీ ప్రాంతీయ వార్తలు (Local News)',
   description: 'మీ మండలం మరియు జిల్లా స్థాయి వార్తల కోసం మీ నమ్మకమైన మూలం.',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'MandalPulse',
+    title: 'News Pulse',
   },
   formatDetection: {
     telephone: false,
