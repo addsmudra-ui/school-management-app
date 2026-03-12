@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { NewsPost } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown } from "lucide-react";
+import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +24,7 @@ export function NewsCard({ news }: NewsCardProps) {
   const { toast } = useToast();
   
   const [newComment, setNewComment] = useState("");
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   // Real-time comments
   const commentsQuery = useMemoFirebase(() => {
@@ -74,7 +76,7 @@ export function NewsCard({ news }: NewsCardProps) {
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareTitle = news.title;
-    const shareText = `${news.title}\n\nవార్త వివరాల కోసం MandalPulse చూడండి.\n\n`;
+    const shareText = `${news.title}\n\nవార్త వివరాల కోసం News Pulse చూడండి.\n\n`;
     const shareUrl = `${window.location.origin}/?postId=${news.id}`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -104,14 +106,17 @@ export function NewsCard({ news }: NewsCardProps) {
   return (
     <div className="w-full h-full max-w-full md:max-w-xl mx-auto bg-white relative flex flex-col md:h-[95dvh] md:rounded-[2.5rem] md:shadow-2xl overflow-hidden animate-in fade-in duration-500">
       {/* Media Section */}
-      <div className="relative h-[40%] md:h-[45%] w-full overflow-hidden bg-muted flex-shrink-0">
+      <div 
+        className="relative h-[40%] md:h-[45%] w-full overflow-hidden bg-muted flex-shrink-0 cursor-zoom-in group/image"
+        onClick={() => setIsImagePreviewOpen(true)}
+      >
         <Image
           src={news.image_url}
           alt={news.title}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 600px"
-          className="object-cover"
+          className="object-cover transition-transform duration-700 group-hover/image:scale-105"
         />
         {/* Badges */}
         <div className="absolute top-[4.5rem] left-4 flex flex-col gap-2 z-10 md:top-6">
@@ -125,6 +130,13 @@ export function NewsCard({ news }: NewsCardProps) {
           </div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+        
+        {/* Fullscreen Icon Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity pointer-events-none">
+          <div className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/30">
+            <Maximize2 className="w-6 h-6 text-white" />
+          </div>
+        </div>
       </div>
 
       {/* Content Section */}
@@ -250,6 +262,26 @@ export function NewsCard({ news }: NewsCardProps) {
           </button>
         </div>
       </div>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={isImagePreviewOpen} onOpenChange={setIsImagePreviewOpen}>
+        <DialogContent className="max-w-[95vw] w-full h-[80vh] md:h-[90vh] p-0 border-none bg-black/95 flex items-center justify-center rounded-[2.5rem] overflow-hidden z-[110] shadow-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Image Preview</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-full p-4 flex items-center justify-center">
+            <div className="relative w-full h-full">
+              <Image 
+                src={news.image_url} 
+                alt={news.title} 
+                fill 
+                className="object-contain"
+                priority
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
