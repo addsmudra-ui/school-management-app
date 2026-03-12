@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { NewsPost } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -25,6 +25,13 @@ export function NewsCard({ news }: NewsCardProps) {
   
   const [newComment, setNewComment] = useState("");
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+
+  // Real-time branding
+  const brandingRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'config', 'admin');
+  }, [firestore]);
+  const { data: branding } = useDoc(brandingRef);
 
   // Real-time comments
   const commentsQuery = useMemoFirebase(() => {
@@ -265,7 +272,7 @@ export function NewsCard({ news }: NewsCardProps) {
 
       {/* Image Preview Dialog */}
       <Dialog open={isImagePreviewOpen} onOpenChange={setIsImagePreviewOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[80vh] md:h-[90vh] p-0 border-none bg-black/95 flex items-center justify-center rounded-[2.5rem] overflow-hidden z-[110] shadow-2xl">
+        <DialogContent className="max-w-[95vw] w-full h-[80vh] md:h-[90vh] p-0 border-none bg-black/95 flex items-center justify-center rounded-[2.5rem] overflow-hidden z-[110] shadow-2xl group">
           <DialogHeader className="sr-only">
             <DialogTitle>Image Preview</DialogTitle>
           </DialogHeader>
@@ -278,6 +285,23 @@ export function NewsCard({ news }: NewsCardProps) {
                 className="object-contain"
                 priority
               />
+              
+              {/* Branding Overlay Bottom-Left */}
+              <div className="absolute bottom-6 left-6 flex items-center gap-3 opacity-30 select-none pointer-events-none group-hover:opacity-50 transition-opacity">
+                {branding?.appLogo ? (
+                  <div className="relative w-10 h-10">
+                    <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Globe className="w-6 h-6 text-white" />
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-white font-black text-xs tracking-[0.2em] uppercase leading-none">News Pulse</span>
+                  <span className="text-white/80 font-bold text-[10px] tracking-widest lowercase mt-1">newspulse.app</span>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
