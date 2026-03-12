@@ -225,7 +225,7 @@ export default function ProfilePage() {
               />
             </div>
             
-            <div className="mt-16 space-y-6">
+            <div className="mt-24 space-y-6">
               {!isEditing ? (
                 <div className="animate-in fade-in duration-300">
                   <div className="flex justify-between items-start">
