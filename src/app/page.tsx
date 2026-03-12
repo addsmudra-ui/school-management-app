@@ -3,7 +3,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { useEffect, useState, Suspense, useMemo } from "react";
-import { MapPin, SlidersHorizontal, Loader2, Globe, AlertCircle, Info, Newspaper, Construction } from "lucide-react";
+import { MapPin, Loader2, Globe, AlertCircle, Info, Newspaper, Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, limit, doc } from "firebase/firestore";
@@ -47,9 +47,10 @@ function NewsFeedContent() {
   
   const dynamicLocations = useMemo(() => {
     if (!locationsDoc) return MOCK_LOCATIONS;
-    // Omit the 'id' field added by useDoc to prevent it from being treated as a state
+    // CRITICAL: Omit 'id' to prevent characters of "locations" being treated as regions
     const { id, ...statesOnly } = locationsDoc as any;
     return Object.values(statesOnly).reduce((acc: any, stateObj: any) => {
+      if (typeof stateObj !== 'object' || stateObj === null) return acc;
       return { ...acc, ...stateObj };
     }, {});
   }, [locationsDoc]);

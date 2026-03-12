@@ -97,6 +97,7 @@ export function NewsCard({ news }: NewsCardProps) {
   const scrollToNext = () => {
     const container = document.querySelector('.news-scroll-container');
     if (container) {
+      // Logic to snap to the next section specifically
       container.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
     }
   };
@@ -135,10 +136,10 @@ export function NewsCard({ news }: NewsCardProps) {
           <div className="flex items-center justify-between gap-2 mb-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm">
-                {news.author_name[0]}
+                {news.author_name ? news.author_name[0] : 'R'}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-base font-black truncate text-slate-900 leading-none mb-1">{news.author_name}</span>
+                <span className="text-base font-black truncate text-slate-900 leading-none mb-1">{news.author_name || "Reporter"}</span>
                 <div className="flex items-center gap-2">
                   {news.author_role && (
                     <span className="text-[9px] font-black text-primary uppercase tracking-wider">
@@ -186,7 +187,7 @@ export function NewsCard({ news }: NewsCardProps) {
                             <div className="flex justify-between items-center mb-2">
                               <span className="font-bold text-sm text-primary flex items-center gap-2">
                                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">
-                                  {comment.userName[0]}
+                                  {comment.userName ? comment.userName[0] : 'U'}
                                 </div>
                                 {comment.userName}
                               </span>
