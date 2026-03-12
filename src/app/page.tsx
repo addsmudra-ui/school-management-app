@@ -154,7 +154,7 @@ function NewsFeedContent() {
           <div className="space-y-3">
             <h1 className="text-4xl font-black tracking-tight text-slate-900 font-headline">Zone Maintenance</h1>
             <p className="text-slate-600 font-bold text-lg leading-relaxed">
-              MandalPulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.
+              News Pulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.
             </p>
           </div>
           <div className="pt-8 opacity-20 flex justify-center gap-4">
@@ -180,7 +180,7 @@ function NewsFeedContent() {
                 <Newspaper className="w-6 h-6 text-primary" />
               )}
             </div>
-            <span className="font-headline font-black text-lg md:text-xl tracking-tighter text-slate-900">{branding?.appName || 'MandalPulse'}</span>
+            <span className="font-headline font-black text-lg md:text-xl tracking-tighter text-slate-900">{branding?.appName || 'News Pulse'}</span>
           </div>
           
           <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
