@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -38,7 +38,12 @@ export default function LoginPage() {
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
   
-  const availableLocations = (locationsDoc as any) || MOCK_LOCATIONS;
+  const availableLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    const { id, ...statesOnly } = locationsDoc as any;
+    return statesOnly;
+  }, [locationsDoc]);
+
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
   const handleGoogleLogin = async () => {
@@ -85,7 +90,7 @@ export default function LoginPage() {
           
           const existing = await UserService.getByPhone(firestore, phone);
           if (existing) {
-            const shadowEmail = `${phone}@mandalpulse.com`;
+            const shadowEmail = `${phone}@newspulse.app`;
             const shadowPass = "password123";
             try {
               await signInWithEmailAndPassword(auth, shadowEmail, shadowPass);
@@ -156,7 +161,7 @@ export default function LoginPage() {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           currentUser = userCredential.user;
         } else if (method === 'phone') {
-          const shadowEmail = `${phone}@mandalpulse.com`;
+          const shadowEmail = `${phone}@newspulse.app`;
           const shadowPass = "password123";
           try {
             const userCredential = await createUserWithEmailAndPassword(auth, shadowEmail, shadowPass);
@@ -261,7 +266,7 @@ export default function LoginPage() {
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
             < Newspaper className="w-10 h-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold font-headline">MandalPulse</CardTitle>
+          <CardTitle className="text-2xl font-bold font-headline">News Pulse</CardTitle>
           <CardDescription>మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-8">

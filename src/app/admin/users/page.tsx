@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { UserProfile, STATES, LOCATIONS_BY_STATE } from "@/lib/mock-data";
+import { UserProfile, STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { UserService } from "@/lib/storage";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, limit, orderBy } from "firebase/firestore";
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
+import { collection, query, limit, orderBy, doc } from "firebase/firestore";
 
 export default function AdminUsers() {
   const firestore = useFirestore();
@@ -30,6 +30,18 @@ export default function AdminUsers() {
   }, [firestore]);
 
   const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
+
+  // Dynamic locations for add user form
+  const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locRef);
+  
+  const availableLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    const { id, ...statesOnly } = locationsDoc as any;
+    return statesOnly;
+  }, [locationsDoc]);
+
+  const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -91,7 +103,7 @@ export default function AdminUsers() {
 
   const filtered = users?.filter(u => 
     u.name.toLowerCase().includes(search.toLowerCase()) || 
-    u.phone.includes(search) ||
+    u.phone?.includes(search) ||
     u.role.includes(search)
   ) || [];
 
@@ -99,8 +111,8 @@ export default function AdminUsers() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline tracking-tight">రిపోర్టర్ల నిర్వహణ (Staff)</h1>
-          <p className="text-muted-foreground mt-1">ప్లాట్‌ఫారమ్ రిపోర్టర్ల జాబితాను ఇక్కడ చూడవచ్చు.</p>
+          <h1 className="text-3xl font-bold font-headline tracking-tight">సిబ్బంది నిర్వహణ (Staff)</h1>
+          <p className="text-muted-foreground mt-1">ప్లాట్‌ఫారమ్ సిబ్బంది జాబితాను ఇక్కడ చూడవచ్చు.</p>
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -139,7 +151,7 @@ export default function AdminUsers() {
                 <Label>రాష్ట్రం</Label>
                 <Select onValueChange={(v) => { setNewState(v); setNewDistrict(""); setNewMandal(""); }} value={newState}>
                   <SelectTrigger className="rounded-xl"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
-                  <SelectContent>{STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent>{availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -148,7 +160,7 @@ export default function AdminUsers() {
                   <Select onValueChange={(v) => { setNewDistrict(v); setNewMandal(""); }} value={newDistrict} disabled={!newState}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
                     <SelectContent>
-                      {newState && Object.keys(LOCATIONS_BY_STATE[newState]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      {newState && availableLocations[newState] && Object.keys(availableLocations[newState]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -157,7 +169,7 @@ export default function AdminUsers() {
                   <Select onValueChange={setNewMandal} value={newMandal} disabled={!newDistrict}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="మండలం" /></SelectTrigger>
                     <SelectContent>
-                      {newDistrict && LOCATIONS_BY_STATE[newState][newDistrict].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      {newDistrict && availableLocations[newState]?.[newDistrict]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
