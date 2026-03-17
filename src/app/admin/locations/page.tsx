@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -192,7 +193,7 @@ export default function AdminLocations() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(currentStateDistricts).sort(([a], [b]) => a.localeCompare(b)).map(([district, mandals]: [string, any]) => (
-              <Card key={district} className="border-none shadow-md rounded-3xl overflow-hidden group hover:shadow-xl transition-all bg-white border border-slate-100">
+              <Card key={district} className="border-none shadow-md rounded-3xl overflow-hidden group transition-all bg-white border border-slate-100">
                 <CardHeader className="bg-primary/5 py-5 px-6 border-b border-primary/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -201,7 +202,7 @@ export default function AdminLocations() {
                       </div>
                       <h3 className="font-bold text-lg text-slate-900">{district}</h3>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startRename('district', district, selectedState)}>
                         <Edit2 className="w-3 h-3" />
                       </Button>
@@ -219,7 +220,7 @@ export default function AdminLocations() {
                           <Badge variant="secondary" className="font-medium bg-slate-50 text-slate-700 border-slate-200 py-1.5 px-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-all cursor-pointer" onClick={() => startRename('mandal', mandal, selectedState, district)}>
                             {mandal}
                           </Badge>
-                          <button onClick={() => handleDelete('mandal', mandal, selectedState, district)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover/mandal:opacity-100 transition-opacity">
+                          <button onClick={() => handleDelete('mandal', mandal, selectedState, district)} className="text-muted-foreground hover:text-destructive transition-opacity">
                             <X className="w-3 h-3" />
                           </button>
                         </div>

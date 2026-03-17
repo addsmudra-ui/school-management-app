@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -59,6 +60,12 @@ export default function AdminNotifications() {
           : `${target} జిల్లా వినియోగదారులకు అలర్ట్ పంపబడింది.`
       });
     }, 500);
+  };
+
+  const handleDelete = (id: string) => {
+    if (!firestore || !confirm("ఈ నోటిఫికేషన్‌ను చరిత్ర నుండి తొలగించాలనుకుంటున్నారా?")) return;
+    NotificationService.delete(firestore, id);
+    toast({ title: "తొలగించబడింది" });
   };
 
   return (
@@ -164,7 +171,10 @@ export default function AdminNotifications() {
                           {notif.timestamp?.toDate ? format(notif.timestamp.toDate(), 'MMM d, h:mm a') : 'Just now'}
                         </span>
                       </div>
-                      <button className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleDelete(notif.id)}
+                        className="text-muted-foreground hover:text-destructive transition-opacity"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

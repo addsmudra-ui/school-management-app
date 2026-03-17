@@ -314,6 +314,9 @@ export const NotificationService = {
       id: newNotif.id,
       timestamp: serverTimestamp()
     }, { merge: true });
+  },
+  delete: (db: Firestore, id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'notifications', id));
   }
 };
 

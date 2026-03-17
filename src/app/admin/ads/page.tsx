@@ -81,7 +81,7 @@ export default function AdsManagement() {
   };
 
   const handleDeleteAd = (id: string) => {
-    if (!firestore || !confirm("Delete this ad?")) return;
+    if (!firestore || !confirm("ఈ ప్రకటనను శాశ్వతంగా తొలగించాలనుకుంటున్నారా?")) return;
     AdService.delete(firestore, id);
     toast({ title: "Ad Deleted" });
   };
@@ -199,7 +199,7 @@ export default function AdsManagement() {
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 rounded-full h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 rounded-full h-8 w-8 transition-opacity shadow-lg"
                         onClick={() => handleDeleteAd(ad.id)}
                       >
                         <Trash2 className="w-4 h-4" />
