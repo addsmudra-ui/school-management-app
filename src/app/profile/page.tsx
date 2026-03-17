@@ -46,7 +46,7 @@ export default function ProfilePage() {
   const [factCheckResult, setFactCheckResult] = useState<NewsPost | null | 'not_found'>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Real-time Profile Data - Safety check added for user?.uid
+  // Real-time Profile Data
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -199,7 +199,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Loading state
   if (isUserLoading || isProfileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -208,7 +207,6 @@ export default function ProfilePage() {
     );
   }
 
-  // Auth Guard - Build worker will fall into this block safely
   if (!user || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -227,11 +225,10 @@ export default function ProfilePage() {
       <Navbar />
       
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-6">
-        {/* Profile Card */}
         <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
           <div className="h-28 bg-gradient-to-r from-primary/20 to-accent/20 relative" />
           <CardContent className="relative pt-0 px-6 pb-6">
-            <div className="absolute -top-14 left-6">
+            <div className="absolute -top-14 left-1/2 -translate-x-1/2">
               <div 
                 className="relative w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-white text-4xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
@@ -245,22 +242,16 @@ export default function ProfilePage() {
                   {isUploading ? <Loader2 className="w-8 h-8 animate-spin text-white" /> : <Camera className="w-8 h-8 text-white" />}
                 </div>
               </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept="image/*" 
-                onChange={handlePhotoUpload} 
-              />
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             </div>
             
             <div className="mt-24 space-y-6">
               {!isEditing ? (
-                <div className="animate-in fade-in duration-300">
-                  <div className="flex justify-between items-start">
+                <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
+                  <div className="flex flex-col items-center gap-4 w-full">
                     <div>
                       <h1 className="text-3xl font-black tracking-tight text-slate-900">{profile.name}</h1>
-                      <div className="flex flex-col gap-1.5 mt-2">
+                      <div className="flex flex-col items-center gap-1.5 mt-2">
                         <p className="text-muted-foreground text-sm font-bold flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-primary" />
                           {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
@@ -284,12 +275,12 @@ export default function ProfilePage() {
                     </Badge>
                   </div>
 
-                  <div className="flex gap-3 pt-6">
-                    <Button variant="outline" className="flex-1 gap-2 rounded-2xl h-12 font-bold" onClick={() => setIsEditing(true)}>
+                  <div className="flex flex-wrap justify-center gap-3 pt-6 w-full">
+                    <Button variant="outline" className="flex-1 min-w-[140px] gap-2 rounded-2xl h-12 font-bold" onClick={() => setIsEditing(true)}>
                       <Edit2 className="w-4 h-4" />
                       Edit Profile
                     </Button>
-                    <Button variant="outline" className="flex-1 gap-2 rounded-2xl h-12 font-bold text-destructive hover:bg-destructive/5" onClick={handleLogout}>
+                    <Button variant="outline" className="flex-1 min-w-[140px] gap-2 rounded-2xl h-12 font-bold text-destructive hover:bg-destructive/5" onClick={handleLogout}>
                       <LogOut className="w-4 h-4" />
                       Logout
                     </Button>
@@ -371,8 +362,121 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Fact Check, Legal, and Liked News Sections... (Rest of your UI) */}
-        {/* ... */}
+        {/* Fact Check Section */}
+        <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+          <CardHeader className="bg-emerald-50/50 border-b border-emerald-100">
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              Fact Check (వార్త ధృవీకరణ)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <p className="text-xs text-muted-foreground">వార్త యొక్క 5 అంకెల ID ని నమోదు చేసి అది నిజమైనదో కాదో తనిఖీ చేయండి.</p>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="News ID (e.g. 10021)" 
+                value={factCheckId}
+                onChange={(e) => setFactCheckId(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center tracking-widest"
+              />
+              <Button size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={handleFactCheck} disabled={isSearching || factCheckId.length < 5}>
+                {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              </Button>
+            </div>
+
+            {factCheckResult === 'not_found' && (
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 animate-in zoom-in-95">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-rose-900">వార్త కనుగొనబడలేదు!</p>
+                  <p className="text-xs text-rose-800">మీరు నమోదు చేసిన ID తో ఎటువంటి అధికారిక వార్త లేదు. దయచేసి వివరాలను సరిచూసుకోండి.</p>
+                </div>
+              </div>
+            )}
+
+            {factCheckResult && typeof factCheckResult === 'object' && (
+              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-3 animate-in zoom-in-95">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-bold text-emerald-900">Verified (ధృవీకరించబడింది)</p>
+                    <p className="text-[10px] text-emerald-800 uppercase font-black tracking-widest">Official News Pulse Story</p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-emerald-200">
+                  <p className="text-sm font-bold text-emerald-900 truncate">{factCheckResult.title}</p>
+                  <p className="text-[10px] text-emerald-700 mt-1">Published by: {factCheckResult.author_name}</p>
+                </div>
+                <Button size="sm" variant="link" className="text-emerald-700 h-auto p-0 font-bold" asChild>
+                  <Link href={`/?postId=${factCheckResult.id}`}>వార్తను చూడండి <ChevronRight className="w-3 h-3 ml-1" /></Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Legal & Info */}
+        <div className="grid grid-cols-2 gap-4">
+          <Link href="/guidelines" className="group">
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-4 h-full">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <FileText className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-xs font-bold text-slate-900">Guidelines</p>
+              <p className="text-[10px] text-muted-foreground mt-1">నిబంధనలు</p>
+            </Card>
+          </Link>
+          <Link href="/privacy" className="group">
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-4 h-full">
+              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Shield className="w-5 h-5 text-emerald-600" />
+              </div>
+              <p className="text-xs font-bold text-slate-900">Privacy Policy</p>
+              <p className="text-[10px] text-muted-foreground mt-1">గోప్యతా విధానం</p>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Liked News History */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+              మీకు నచ్చిన వార్తలు
+            </h2>
+            <Badge variant="secondary" className="rounded-full">{likedNews.length}</Badge>
+          </div>
+
+          <div className="space-y-3">
+            {likedNews.length > 0 ? (
+              likedNews.map((news) => (
+                <Link key={news.id} href={`/?postId=${news.id}`}>
+                  <Card className="border-none shadow-md rounded-2xl overflow-hidden bg-white hover:shadow-lg transition-all group">
+                    <div className="flex p-3 gap-4">
+                      <div className="relative w-24 h-20 rounded-xl overflow-hidden shrink-0">
+                        <Image src={news.image_url} alt={news.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                      </div>
+                      <div className="flex-1 min-w-0 py-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="text-[8px] h-4 font-bold bg-primary/10 text-primary border-none">{news.location.mandal}</Badge>
+                          <span className="text-[9px] text-muted-foreground">ID: {news.unique_code}</span>
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug">{news.title}</h3>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))
+            ) : (
+              <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-muted">
+                <Heart className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                <p className="text-muted-foreground italic text-sm">ఇంకా వార్తలు ఏవీ లేవు.</p>
+              </div>
+            )}
+          </div>
+        </div>
         
         <Footer />
       </div>
