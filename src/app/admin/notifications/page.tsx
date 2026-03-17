@@ -171,12 +171,14 @@ export default function AdminNotifications() {
                           {notif.timestamp?.toDate ? format(notif.timestamp.toDate(), 'MMM d, h:mm a') : 'Just now'}
                         </span>
                       </div>
-                      <button 
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-full"
                         onClick={() => handleDelete(notif.id)}
-                        className="text-muted-foreground hover:text-destructive transition-opacity"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                     <h3 className="font-bold text-sm mb-1">{notif.title}</h3>
                     <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">

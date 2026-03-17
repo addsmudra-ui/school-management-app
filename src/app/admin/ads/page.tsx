@@ -199,7 +199,7 @@ export default function AdsManagement() {
                       <Button 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 rounded-full h-8 w-8 transition-opacity shadow-lg"
+                        className="absolute top-2 right-2 rounded-full h-8 w-8 shadow-lg z-10"
                         onClick={() => handleDeleteAd(ad.id)}
                       >
                         <Trash2 className="w-4 h-4" />

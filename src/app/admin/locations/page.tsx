@@ -117,7 +117,7 @@ export default function AdminLocations() {
           <Button variant="outline" size="icon" className="rounded-xl h-12 w-12" onClick={() => startRename('state', selectedState, selectedState)}>
             <Edit2 className="w-4 h-4" />
           </Button>
-          <Button variant="outline" size="icon" className="rounded-xl h-12 w-12 text-destructive" onClick={() => handleDelete('state', selectedState, selectedState)}>
+          <Button variant="outline" size="icon" className="rounded-xl h-12 w-12 text-destructive hover:bg-destructive/10" onClick={() => handleDelete('state', selectedState, selectedState)}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
@@ -206,7 +206,7 @@ export default function AdminLocations() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startRename('district', district, selectedState)}>
                         <Edit2 className="w-3 h-3" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete('district', district, selectedState)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/5" onClick={() => handleDelete('district', district, selectedState)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
@@ -220,9 +220,14 @@ export default function AdminLocations() {
                           <Badge variant="secondary" className="font-medium bg-slate-50 text-slate-700 border-slate-200 py-1.5 px-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-all cursor-pointer" onClick={() => startRename('mandal', mandal, selectedState, district)}>
                             {mandal}
                           </Badge>
-                          <button onClick={() => handleDelete('mandal', mandal, selectedState, district)} className="text-muted-foreground hover:text-destructive transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-full p-0"
+                            onClick={() => handleDelete('mandal', mandal, selectedState, district)}
+                          >
                             <X className="w-3 h-3" />
-                          </button>
+                          </Button>
                         </div>
                       ))
                     ) : (
