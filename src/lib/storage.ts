@@ -89,20 +89,18 @@ export const AdminService = {
   seedDemoNews: async (db: Firestore) => {
     const batch = writeBatch(db);
     
-    // 1. Seed News Posts
     MOCK_NEWS.forEach((news) => {
       const docRef = doc(db, 'approved_news_posts', news.id);
       batch.set(docRef, {
         ...news,
+        visibility: 'live',
         timestamp: serverTimestamp(),
       });
     });
 
-    // 2. Seed Default Admin Config
     const adminRef = doc(db, 'config', 'admin');
     batch.set(adminRef, { password: 'admin123', appName: 'News Pulse', systemStatus: 'online' }, { merge: true });
 
-    // 3. Seed Locations Metadata
     const locRef = doc(db, 'metadata', 'locations');
     batch.set(locRef, {
       ...LOCATIONS_BY_STATE
@@ -143,6 +141,7 @@ export const NewsService = {
     const data = {
       ...post,
       id: postId,
+      visibility: post.status === 'approved' ? 'live' : undefined,
       timestamp: serverTimestamp(),
       likes: post.engagement?.likes || 0,
       commentsCount: post.engagement?.comments || 0,
@@ -175,6 +174,7 @@ export const NewsService = {
     setDocumentNonBlocking(approvedRef, {
       ...postData,
       status: 'approved',
+      visibility: 'live',
       timestamp: serverTimestamp()
     }, { merge: true });
 
@@ -186,9 +186,18 @@ export const NewsService = {
     });
   },
 
-  reject: (db: Firestore, postId: string) => {
+  reject: (db: Firestore, postId: string, reason: string) => {
     const postRef = doc(db, 'pending_news_posts', postId);
-    updateDocumentNonBlocking(postRef, { status: 'rejected' });
+    updateDocumentNonBlocking(postRef, { status: 'rejected', rejection_reason: reason });
+  },
+
+  toggleVisibility: (db: Firestore, postId: string, currentVisibility: 'live' | 'hidden') => {
+    const postRef = doc(db, 'approved_news_posts', postId);
+    updateDocumentNonBlocking(postRef, { visibility: currentVisibility === 'live' ? 'hidden' : 'live' });
+  },
+
+  deleteApproved: (db: Firestore, postId: string) => {
+    deleteDocumentNonBlocking(doc(db, 'approved_news_posts', postId));
   },
 
   toggleLike: (db: Firestore, postId: string, userId: string, isCurrentlyLiked: boolean) => {
