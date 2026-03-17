@@ -224,12 +224,13 @@ export default function ProfilePage() {
       <Navbar />
       
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-6">
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
-          <div className="h-24 bg-gradient-to-r from-primary/20 to-accent/20 relative" />
-          <CardContent className="relative pt-0 px-6 pb-6">
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+        <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+          <div className="h-20 bg-slate-50 border-b border-slate-100" />
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center gap-6">
+              {/* Photo Section - Separate, no overlap */}
               <div 
-                className="relative w-20 h-20 rounded-3xl bg-primary flex items-center justify-center text-white text-2xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
+                className="relative w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {profile.photo ? (
@@ -242,119 +243,118 @@ export default function ProfilePage() {
                 </div>
               </div>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-            </div>
-            
-            <div className="mt-20 space-y-6">
-              {!isEditing ? (
-                <div className="animate-in fade-in duration-300 text-center flex flex-col items-center overflow-hidden">
-                  <div className="flex flex-col items-center gap-2 w-full">
-                    <div className="w-full">
-                      <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-tight truncate whitespace-nowrap px-4">{profile.name}</h1>
-                      <div className="flex flex-col items-center gap-1 mt-1">
-                        <p className="text-muted-foreground text-[11px] font-bold flex items-center gap-1.5">
+              
+              {/* Profile Details */}
+              <div className="w-full">
+                {!isEditing ? (
+                  <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
+                    <div className="w-full px-4 mb-6">
+                      <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-tight truncate">{profile.name}</h1>
+                      <div className="flex flex-col items-center gap-1.5 mt-2">
+                        <p className="text-muted-foreground text-xs font-bold flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5 text-primary" />
                           {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
                         </p>
-                        <div className="flex gap-3 mt-1">
+                        <div className="flex gap-4 mt-1">
                           {profile.phone && (
-                            <p className="text-muted-foreground text-[10px] font-medium flex items-center gap-1">
+                            <p className="text-muted-foreground text-[11px] font-medium flex items-center gap-1">
                               <Phone className="w-3 h-3 text-slate-400" />
                               {profile.phone}
                             </p>
                           )}
                           {profile.email && (
-                            <p className="text-muted-foreground text-[10px] font-medium flex items-center gap-1">
+                            <p className="text-muted-foreground text-[11px] font-medium flex items-center gap-1">
                               <Mail className="w-3 h-3 text-slate-400" />
                               {profile.email}
                             </p>
                           )}
                         </div>
                       </div>
+                      <Badge variant="secondary" className="mt-4 bg-primary/5 text-primary border-primary/10 capitalize px-4 py-1 text-[10px] font-black rounded-full uppercase tracking-widest">
+                        {profile.role}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 capitalize px-3 py-0.5 text-[10px] font-bold rounded-full">
-                      {profile.role}
-                    </Badge>
-                  </div>
 
-                  <div className="flex justify-center gap-2.5 pt-6 w-full">
-                    <Button variant="outline" size="sm" className="flex-1 max-w-[140px] gap-1.5 rounded-xl h-10 font-bold text-xs" onClick={() => setIsEditing(true)}>
-                      <Edit2 className="w-3.5 h-3.5" />
-                      Edit Profile
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1 max-w-[140px] gap-1.5 rounded-xl h-10 font-bold text-xs text-destructive hover:bg-destructive/5" onClick={handleLogout}>
-                      <LogOut className="w-3.5 h-3.5" />
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">పూర్తి పేరు (Full Name)</Label>
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-11 rounded-xl bg-slate-50 border-none font-bold" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఫోన్ (Phone)</Label>
-                        <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-11 rounded-xl bg-slate-50 border-none font-bold" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఈమెయిల్ (Email)</Label>
-                        <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-11 rounded-xl bg-slate-50 border-none font-bold" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3 pt-1">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ప్రాంతం (Location)</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <Select value={editState} onValueChange={(val) => { setEditState(val); setEditDistrict(""); setEditMandal(""); }}>
-                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs"><SelectValue placeholder="State" /></SelectTrigger>
-                          <SelectContent>
-                            {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Select value={editDistrict} onValueChange={(val) => { setEditDistrict(val); setEditMandal(""); }} disabled={!editState}>
-                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs"><SelectValue placeholder="District" /></SelectTrigger>
-                          <SelectContent>
-                            {editState && availableLocations[editState] && Object.keys(availableLocations[editState]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}>
-                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs"><SelectValue placeholder="Mandal" /></SelectTrigger>
-                          <SelectContent>
-                            {editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="flex justify-center gap-3 pt-2 w-full max-w-sm">
+                      <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-xl h-11 font-bold text-xs shadow-sm" onClick={() => setIsEditing(true)}>
+                        <Edit2 className="w-3.5 h-3.5 text-primary" />
+                        Edit Profile
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-xl h-11 font-bold text-xs text-destructive hover:bg-destructive/5 shadow-sm" onClick={handleLogout}>
+                        <LogOut className="w-3.5 h-3.5" />
+                        Logout
+                      </Button>
                     </div>
                   </div>
+                ) : (
+                  <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">పూర్తి పేరు (Full Name)</Label>
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-lg" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఫోన్ (Phone)</Label>
+                          <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఈమెయిల్ (Email)</Label>
+                          <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3 pt-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ప్రాంతం (Location)</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <Select value={editState} onValueChange={(val) => { setEditState(val); setEditDistrict(""); setEditMandal(""); }}>
+                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="State" /></SelectTrigger>
+                            <SelectContent>
+                              {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Select value={editDistrict} onValueChange={(val) => { setEditDistrict(val); setEditMandal(""); }} disabled={!editState}>
+                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="District" /></SelectTrigger>
+                            <SelectContent>
+                              {editState && availableLocations[editState] && Object.keys(availableLocations[editState]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}>
+                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="Mandal" /></SelectTrigger>
+                            <SelectContent>
+                              {editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="ghost" size="sm" className="flex-1 rounded-xl h-10 font-bold text-xs" onClick={() => setIsEditing(false)}>
-                      <X className="w-3.5 h-3.5 mr-1.5" />
-                      Cancel
-                    </Button>
-                    <Button size="sm" className="flex-1 gap-1.5 rounded-xl h-10 font-bold text-xs shadow-lg shadow-primary/20" onClick={handleSaveChanges} disabled={isSaving || !editName}>
-                      {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                      Save Changes
-                    </Button>
+                    <div className="flex gap-3 pt-4">
+                      <Button variant="ghost" size="lg" className="flex-1 rounded-xl h-12 font-bold" onClick={() => setIsEditing(false)}>
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button size="lg" className="flex-1 gap-2 rounded-xl h-12 font-bold shadow-xl shadow-primary/20" onClick={handleSaveChanges} disabled={isSaving || !editName}>
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save Changes
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {profile.role === 'reporter' && !isEditing && (
-                <Button className="w-full gap-2 rounded-2xl h-12 font-black text-base bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" asChild>
+                <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" asChild>
                   <Link href="/reporter">
-                    <Newspaper className="w-4 h-4" />
+                    <Newspaper className="w-5 h-5" />
                     వార్తలు పంపండి (Submit News)
                   </Link>
                 </Button>
               )}
               {profile.role === 'admin' && !isEditing && (
-                <Button className="w-full gap-2 rounded-2xl h-12 font-black text-base bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
+                <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
                   <Link href="/admin">
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-5 h-5" />
                     అడ్మిన్ ప్యానెల్ (Admin Panel)
                   </Link>
                 </Button>

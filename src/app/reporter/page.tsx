@@ -193,6 +193,45 @@ export default function ReporterPage() {
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <Navbar />
       <main className="flex-1 pt-20 pb-24 px-4 max-w-4xl mx-auto w-full">
+        {/* Reporter Profile Header Card */}
+        {userProfile && (
+          <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white mb-6 border-b-4 border-cyan-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-5">
+                {/* Photo and Name are clearly separate elements in a row */}
+                <div className="relative w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 text-xl font-bold shadow-sm border-2 border-white overflow-hidden shrink-0">
+                  {userProfile.photo ? (
+                    <Image src={userProfile.photo} alt={userProfile.name} fill className="object-cover" />
+                  ) : (
+                    userProfile.name?.[0] || 'R'
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl font-black text-slate-900 truncate leading-none mb-1.5">{userProfile.name}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="bg-cyan-50 text-cyan-700 border-cyan-100 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-tighter">
+                      {userProfile.role}
+                    </Badge>
+                    {userProfile.author_stars && (
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: userProfile.author_stars }).map((_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" asChild className="rounded-xl h-10 px-4 font-bold text-xs gap-1.5 border-slate-200">
+                  <Link href="/profile">
+                    <Edit2 className="w-3 h-3 text-cyan-600" />
+                    Profile
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid grid-cols-2 bg-white rounded-2xl border p-1 h-12 shadow-sm">
             <TabsTrigger value="submit" className="rounded-xl"><Pencil className="w-4 h-4 mr-2" /> వార్త రాయండి</TabsTrigger>
