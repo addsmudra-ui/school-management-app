@@ -170,60 +170,48 @@ function NewsFeedContent() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-lg border-b border-slate-100 p-3 md:p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8 md:w-10 md:h-10 flex items-center justify-center">
-              {branding?.appLogo ? (
-                <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-50" />
-              ) : (
-                <Newspaper className="w-6 h-6 text-primary" />
-              )}
-            </div>
-            <span className="font-headline font-black text-lg md:text-xl tracking-tighter text-slate-900">{branding?.appName || 'News Pulse'}</span>
-          </div>
-          
-          <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="rounded-full gap-2 h-10 md:h-12 border-primary/20 text-primary hover:bg-primary/5 px-4 font-bold shadow-sm">
-                <MapPin className="w-4 h-4" />
-                <span className="text-xs md:text-sm">
-                  {isActuallyGlobal ? "Global" : (selectedMandal === "All" ? selectedDistrict : selectedMandal)}
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[92%] max-w-sm rounded-[2rem] p-8 border-none shadow-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-black text-center mb-4">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">జిల్లా (District)</label>
-                  <Select value={selectedDistrict} onValueChange={(val) => { setSelectedDistrict(val); setSelectedMandal("All"); }}>
-                    <SelectTrigger className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
-                      {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d} className="font-bold">{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">మండలం (Mandal)</label>
-                  <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={selectedDistrict === "All"}>
-                    <SelectTrigger className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">అన్ని మండలాలు</SelectItem>
-                      {selectedDistrict !== "All" && dynamicLocations[selectedDistrict]?.map((m: string) => (
-                        <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleLocationUpdate}>వార్తలు చూడండి</Button>
+      {/* Floating Location Trigger */}
+      <div className="fixed top-4 right-4 z-50">
+        <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="rounded-full gap-2 h-10 md:h-12 border-primary/20 text-primary hover:bg-primary/5 px-4 font-bold shadow-xl bg-white/80 backdrop-blur-md">
+              <MapPin className="w-4 h-4" />
+              <span className="text-xs md:text-sm">
+                {isActuallyGlobal ? "Global" : (selectedMandal === "All" ? selectedDistrict : selectedMandal)}
+              </span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="w-[92%] max-w-sm rounded-[2rem] p-8 border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black text-center mb-4">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">జిల్లా (District)</label>
+                <Select value={selectedDistrict} onValueChange={(val) => { setSelectedDistrict(val); setSelectedMandal("All"); }}>
+                  <SelectTrigger className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
+                    {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d} className="font-bold">{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">మండలం (Mandal)</label>
+                <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={selectedDistrict === "All"}>
+                  <SelectTrigger className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">అన్ని మండలాలు</SelectItem>
+                    {selectedDistrict !== "All" && dynamicLocations[selectedDistrict]?.map((m: string) => (
+                      <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleLocationUpdate}>వార్తలు చూడండి</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="news-scroll-container">
@@ -236,9 +224,9 @@ function NewsFeedContent() {
         </div>
 
         {allNews && allNews.length > 0 && (
-          <div className="absolute top-[5.5rem] left-0 right-0 z-30 px-4 pointer-events-none md:top-[6rem]">
+          <div className="absolute top-4 left-0 right-0 z-30 px-4 pointer-events-none pr-32">
             {isFallbackActive ? (
-              <div className="max-w-md mx-auto bg-amber-50/90 border border-amber-200 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md">
+              <div className="max-w-md bg-amber-50/90 border border-amber-200 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md">
                 <div className="bg-amber-500 p-2.5 rounded-xl shrink-0">
                   <Globe className="w-4 h-4 text-white" />
                 </div>
@@ -251,7 +239,7 @@ function NewsFeedContent() {
                 </Button>
               </div>
             ) : !isActuallyGlobal && localCount > 0 && (
-              <div className="max-w-md mx-auto bg-emerald-50/80 border border-emerald-200 p-2.5 rounded-2xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
+              <div className="max-w-md bg-emerald-50/80 border border-emerald-200 p-2.5 rounded-2xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
                 <div className="bg-emerald-500 p-2 rounded-lg shrink-0">
                   <Info className="w-4 h-4 text-white" />
                 </div>

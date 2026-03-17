@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { NewsPost } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2, Globe } from "lucide-react";
+import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2, Globe, Newspaper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -125,8 +125,23 @@ export function NewsCard({ news }: NewsCardProps) {
           sizes="(max-width: 768px) 100vw, 600px"
           className="object-cover transition-transform duration-700 group-hover/image:scale-105"
         />
-        {/* Badges */}
-        <div className="absolute top-[4.5rem] left-4 flex flex-col gap-2 z-10 md:top-6">
+        
+        {/* Large Logo Watermark Overlay */}
+        <div className="absolute bottom-4 left-4 z-20 opacity-50 select-none pointer-events-none drop-shadow-2xl">
+          {branding?.appLogo ? (
+            <div className="relative w-24 h-24 md:w-32 md:h-32">
+              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-white/80">
+              <Newspaper className="w-10 h-10" />
+              <span className="font-headline font-black text-xl tracking-tighter">News Pulse</span>
+            </div>
+          )}
+        </div>
+
+        {/* Info Badges Top-Left */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
           <div className="bg-primary/90 text-white px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-lg backdrop-blur-sm">
             <MapPin className="w-3 h-3" />
             {news.location.mandal}, {news.location.district}
@@ -136,7 +151,8 @@ export function NewsCard({ news }: NewsCardProps) {
             ID: {news.unique_code}
           </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10 pointer-events-none" />
         
         {/* Fullscreen Icon Overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity pointer-events-none">
@@ -150,7 +166,7 @@ export function NewsCard({ news }: NewsCardProps) {
       <div className="p-6 flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-white to-slate-50/50 touch-pan-y">
         <div className="space-y-4 pb-12 md:pb-6">
           
-          {/* Enhanced Reporter Header with Interactions - SMALL SIZE */}
+          {/* Reporter Header */}
           <div className="flex items-center justify-between gap-3 mb-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-base shrink-0 shadow-md">
@@ -175,7 +191,7 @@ export function NewsCard({ news }: NewsCardProps) {
               </div>
             </div>
 
-            {/* Interactions beside the name */}
+            {/* Interactions */}
             <div className="flex items-center gap-3.5 shrink-0 pr-1">
               <button onClick={toggleLike} className="flex flex-col items-center gap-0.5 group">
                 <Heart className={cn("w-5 h-5 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
@@ -289,7 +305,7 @@ export function NewsCard({ news }: NewsCardProps) {
               {/* Branding Overlay Bottom-Left */}
               <div className="absolute bottom-6 left-6 flex items-center gap-3 opacity-30 select-none pointer-events-none group-hover:opacity-50 transition-opacity">
                 {branding?.appLogo ? (
-                  <div className="relative w-10 h-10">
+                  <div className="relative w-16 h-16 md:w-24 md:h-24">
                     <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
                   </div>
                 ) : (
