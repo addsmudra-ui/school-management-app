@@ -1,9 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { Newspaper, User, PlusCircle, LayoutDashboard, LogOut, MapPin, Bell, ChevronRight } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { format } from "date-fns";
@@ -12,10 +13,12 @@ import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 export function Navbar() {
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor' | null>(null);
   const [userName, setUserName] = useState<string>("");
@@ -24,6 +27,8 @@ export function Navbar() {
   const [location, setLocation] = useState({ mandal: "", district: "" });
   const [hasNewNotif, setHasNewNotif] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  
+  const lastToastedId = useRef<string | null>(null);
 
   // Real-time branding
   const brandingRef = useMemoFirebase(() => {
@@ -71,14 +76,34 @@ export function Navbar() {
     };
   }, [updateLocationState, updateAuthState]);
 
+  // Real-time toast notification logic
   useEffect(() => {
     if (notifications && notifications.length > 0) {
+      const latest = notifications[0];
       const lastSeen = localStorage.getItem('mandalPulse_lastSeenNotif');
-      if (notifications[0].id !== lastSeen) {
-        setHasNewNotif(true);
+      
+      // If this is a new notification we haven't processed in this session
+      if (lastToastedId.current !== latest.id) {
+        if (latest.id !== lastSeen) {
+          setHasNewNotif(true);
+          
+          // Toast for real-time alerts if it's very recent (within 2 mins)
+          // This prevents "old" news history from triggering toasts when the app first loads
+          if (latest.timestamp?.toDate) {
+            const now = new Date().getTime();
+            const notifTime = latest.timestamp.toDate().getTime();
+            if (now - notifTime < 120000) { // 2 minute threshold
+              toast({
+                title: "బ్రేకింగ్ న్యూస్! (Breaking)",
+                description: latest.title,
+              });
+            }
+          }
+        }
+        lastToastedId.current = latest.id;
       }
     }
-  }, [notifications]);
+  }, [notifications, toast]);
 
   const markAsRead = () => {
     if (notifications && notifications.length > 0) {
@@ -139,7 +164,7 @@ export function Navbar() {
               <Newspaper className="w-6 h-6" />
             )}
           </div>
-          <span className="hidden sm:inline font-headline tracking-tight">{branding?.appName || 'MandalPulse'}</span>
+          <span className="hidden sm:inline font-headline tracking-tight">{branding?.appName || 'News Pulse'}</span>
         </Link>
 
         <div className={cn("hidden md:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all", theme.bg, theme.border, theme.text)}>

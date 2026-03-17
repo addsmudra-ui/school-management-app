@@ -1,14 +1,15 @@
+
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText, Edit2, Save, X, Phone, Mail } from "lucide-react";
+import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText, Edit2, Save, X, Phone, Mail, Search, CheckCircle2, AlertTriangle } from "lucide-react";
 import { NewsPost, STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +17,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useAuth } from "@/firebase";
 import { doc, collection } from "firebase/firestore";
-import { UserService } from "@/lib/storage";
+import { UserService, NewsService } from "@/lib/storage";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export default function ProfilePage() {
@@ -38,12 +39,17 @@ export default function ProfilePage() {
   const [editDistrict, setEditDistrict] = useState("");
   const [editMandal, setEditMandal] = useState("");
 
+  // Fact Check State
+  const [factCheckId, setFactCheckId] = useState("");
+  const [factCheckResult, setFactCheckResult] = useState<NewsPost | null | 'not_found'>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
   // Real-time Profile Data
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
-  const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
+  const { data: profile, isLoading: isProfileLoading } = useDoc(user.uid ? profileRef : null);
 
   // Dynamic locations from Firestore for the edit form
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
@@ -74,7 +80,7 @@ export default function ProfilePage() {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid, 'private', 'likes');
   }, [firestore, user?.uid]);
-  const { data: likesDoc } = useDoc(likesRef);
+  const { data: likesDoc } = useDoc(user?.uid ? likesRef : null);
   const likedPostIds = likesDoc?.postIds || [];
 
   // Real-time Approved News
@@ -158,6 +164,25 @@ export default function ProfilePage() {
       toast({ variant: "destructive", title: "Update Failed", description: "Could not save changes." });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFactCheck = async () => {
+    if (!factCheckId || !firestore) return;
+    setIsSearching(true);
+    setFactCheckResult(null);
+    
+    try {
+      const result = await NewsService.getByCode(firestore, factCheckId);
+      if (result) {
+        setFactCheckResult(result);
+      } else {
+        setFactCheckResult('not_found');
+      }
+    } catch (e) {
+      toast({ variant: "destructive", title: "Search Error" });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -339,6 +364,82 @@ export default function ProfilePage() {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Fact Check Section */}
+        <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
+          <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-6">
+            <CardTitle className="text-lg font-black flex items-center gap-2 text-emerald-800">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              వార్త నిజనిర్ధారణ (Fact Check)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              మీరు చదివిన వార్త నిజమో కాదో ఇక్కడ తనిఖీ చేయండి. వార్త ఐడి (News ID) ని నమోదు చేయండి.
+            </p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input 
+                  placeholder="వార్త ఐడి (ఉదా: 10021)" 
+                  className="pl-10 h-14 rounded-2xl bg-slate-50 border-none font-bold text-lg"
+                  value={factCheckId}
+                  onChange={(e) => setFactCheckId(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFactCheck()}
+                />
+              </div>
+              <Button className="h-14 w-14 rounded-2xl shadow-lg shadow-primary/20 p-0 shrink-0" onClick={handleFactCheck} disabled={isSearching || !factCheckId}>
+                {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              </Button>
+            </div>
+
+            {factCheckResult === 'not_found' && (
+              <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 flex items-start gap-3 animate-in zoom-in-95">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-black text-rose-900">ఈ వార్త ధృవీకరించబడలేదు!</p>
+                  <p className="text-[11px] text-rose-800 mt-1">
+                    మీరు నమోదు చేసిన ఐడితో ఎటువంటి అధికారిక వార్త మా పోర్టల్‌లో లేదు. దయచేసి పుకార్లను నమ్మకండి.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {factCheckResult && factCheckResult !== 'not_found' && (
+              <div className="space-y-4 animate-in slide-in-from-top-4">
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-black text-emerald-900">అధికారికంగా ధృవీకరించబడింది</p>
+                    <p className="text-[11px] text-emerald-800 mt-1">ఈ వార్త మా పోర్టల్ ద్వారా ప్రచురించబడిన అధికారిక సమాచారం.</p>
+                  </div>
+                </div>
+                
+                <Link href={`/?postId=${factCheckResult.id}`}>
+                  <Card className="overflow-hidden border-none shadow-md group hover:shadow-xl transition-all rounded-[1.5rem] bg-white border border-slate-50">
+                    <div className="flex items-stretch h-28">
+                      <div className="relative w-28 shrink-0">
+                        <Image src={factCheckResult.image_url} alt={factCheckResult.title} fill className="object-cover" />
+                      </div>
+                      <div className="p-4 flex-1 flex flex-col justify-between min-w-0">
+                        <h3 className="font-bold text-sm line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                          {factCheckResult.title}
+                        </h3>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-primary" />
+                            <span className="text-[10px] font-bold text-muted-foreground">{factCheckResult.location.mandal}</span>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 

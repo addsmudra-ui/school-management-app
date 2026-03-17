@@ -182,6 +182,17 @@ export const NewsService = {
     
     const postRef = doc(db, 'approved_news_posts', postId);
     updateDocumentNonBlocking(postRef, { commentsCount: increment(1) });
+  },
+
+  getByCode: async (db: Firestore, code: string): Promise<NewsPost | null> => {
+    try {
+      const q = query(collection(db, 'approved_news_posts'), where('unique_code', '==', code), limit(1));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      return { ...snap.docs[0].data(), id: snap.docs[0].id } as NewsPost;
+    } catch (e) {
+      return null;
+    }
   }
 };
 
