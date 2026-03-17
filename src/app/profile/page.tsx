@@ -228,7 +228,7 @@ export default function ProfilePage() {
         <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
           <div className="h-28 bg-gradient-to-r from-primary/20 to-accent/20 relative" />
           <CardContent className="relative pt-0 px-6 pb-6">
-            <div className="absolute -top-14 left-1/2 -translate-x-1/2">
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2">
               <div 
                 className="relative w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-white text-4xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
@@ -245,7 +245,7 @@ export default function ProfilePage() {
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             </div>
             
-            <div className="mt-24 space-y-6">
+            <div className="mt-16 space-y-6">
               {!isEditing ? (
                 <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
                   <div className="flex flex-col items-center gap-4 w-full">
