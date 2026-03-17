@@ -244,7 +244,7 @@ export default function ProfilePage() {
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             </div>
             
-            <div className="mt-16 space-y-6">
+            <div className="mt-20 space-y-6">
               {!isEditing ? (
                 <div className="animate-in fade-in duration-300 text-center flex flex-col items-center overflow-hidden">
                   <div className="flex flex-col items-center gap-2 w-full">
