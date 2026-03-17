@@ -19,7 +19,6 @@ import { doc, collection } from "firebase/firestore";
 import { UserService, NewsService } from "@/lib/storage";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
-// CRITICAL FIX: Prevent Next.js from prerendering this page at build time
 export const dynamic = 'force-dynamic';
 
 export default function ProfilePage() {
@@ -226,11 +225,11 @@ export default function ProfilePage() {
       
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-6">
         <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
-          <div className="h-28 bg-gradient-to-r from-primary/20 to-accent/20 relative" />
+          <div className="h-24 bg-gradient-to-r from-primary/20 to-accent/20 relative" />
           <CardContent className="relative pt-0 px-6 pb-6">
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2">
               <div 
-                className="relative w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-white text-4xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
+                className="relative w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {profile.photo ? (
@@ -239,7 +238,7 @@ export default function ProfilePage() {
                   profile.name?.[0] || 'U'
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  {isUploading ? <Loader2 className="w-8 h-8 animate-spin text-white" /> : <Camera className="w-8 h-8 text-white" />}
+                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : <Camera className="w-6 h-6 text-white" />}
                 </div>
               </div>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
@@ -248,79 +247,81 @@ export default function ProfilePage() {
             <div className="mt-16 space-y-6">
               {!isEditing ? (
                 <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
-                  <div className="flex flex-col items-center gap-4 w-full">
+                  <div className="flex flex-col items-center gap-2 w-full">
                     <div>
-                      <h1 className="text-3xl font-black tracking-tight text-slate-900">{profile.name}</h1>
-                      <div className="flex flex-col items-center gap-1.5 mt-2">
-                        <p className="text-muted-foreground text-sm font-bold flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-primary" />
+                      <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-tight">{profile.name}</h1>
+                      <div className="flex flex-col items-center gap-1 mt-1">
+                        <p className="text-muted-foreground text-[11px] font-bold flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-primary" />
                           {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
                         </p>
-                        {profile.phone && (
-                          <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-slate-400" />
-                            {profile.phone}
-                          </p>
-                        )}
-                        {profile.email && (
-                          <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-slate-400" />
-                            {profile.email}
-                          </p>
-                        )}
+                        <div className="flex gap-3 mt-1">
+                          {profile.phone && (
+                            <p className="text-muted-foreground text-[10px] font-medium flex items-center gap-1">
+                              <Phone className="w-3 h-3 text-slate-400" />
+                              {profile.phone}
+                            </p>
+                          )}
+                          {profile.email && (
+                            <p className="text-muted-foreground text-[10px] font-medium flex items-center gap-1">
+                              <Mail className="w-3 h-3 text-slate-400" />
+                              {profile.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 capitalize px-4 py-1 text-xs font-bold rounded-full">
+                    <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 capitalize px-3 py-0.5 text-[10px] font-bold rounded-full">
                       {profile.role}
                     </Badge>
                   </div>
 
-                  <div className="flex flex-wrap justify-center gap-3 pt-6 w-full">
-                    <Button variant="outline" className="flex-1 min-w-[140px] gap-2 rounded-2xl h-12 font-bold" onClick={() => setIsEditing(true)}>
-                      <Edit2 className="w-4 h-4" />
+                  <div className="flex justify-center gap-2.5 pt-6 w-full">
+                    <Button variant="outline" size="sm" className="flex-1 max-w-[140px] gap-1.5 rounded-xl h-10 font-bold text-xs" onClick={() => setIsEditing(true)}>
+                      <Edit2 className="w-3.5 h-3.5" />
                       Edit Profile
                     </Button>
-                    <Button variant="outline" className="flex-1 min-w-[140px] gap-2 rounded-2xl h-12 font-bold text-destructive hover:bg-destructive/5" onClick={handleLogout}>
-                      <LogOut className="w-4 h-4" />
+                    <Button variant="outline" size="sm" className="flex-1 max-w-[140px] gap-1.5 rounded-xl h-10 font-bold text-xs text-destructive hover:bg-destructive/5" onClick={handleLogout}>
+                      <LogOut className="w-3.5 h-3.5" />
                       Logout
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-5 animate-in slide-in-from-top-4 duration-300">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
+                <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="space-y-1.5">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">పూర్తి పేరు (Full Name)</Label>
-                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-11 rounded-xl bg-slate-50 border-none font-bold" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఫోన్ (Phone)</Label>
-                        <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                        <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-11 rounded-xl bg-slate-50 border-none font-bold" />
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఈమెయిల్ (Email)</Label>
-                        <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                        <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-11 rounded-xl bg-slate-50 border-none font-bold" />
                       </div>
                     </div>
                     
-                    <div className="space-y-4 pt-2">
+                    <div className="space-y-3 pt-1">
                       <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ప్రాంతం (Location)</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <Select value={editState} onValueChange={(val) => { setEditState(val); setEditDistrict(""); setEditMandal(""); }}>
-                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold"><SelectValue placeholder="State" /></SelectTrigger>
+                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs"><SelectValue placeholder="State" /></SelectTrigger>
                           <SelectContent>
                             {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                           </SelectContent>
                         </Select>
                         <Select value={editDistrict} onValueChange={(val) => { setEditDistrict(val); setEditMandal(""); }} disabled={!editState}>
-                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold"><SelectValue placeholder="District" /></SelectTrigger>
+                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs"><SelectValue placeholder="District" /></SelectTrigger>
                           <SelectContent>
                             {editState && availableLocations[editState] && Object.keys(availableLocations[editState]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                           </SelectContent>
                         </Select>
                         <Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}>
-                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold"><SelectValue placeholder="Mandal" /></SelectTrigger>
+                          <SelectTrigger className="h-10 rounded-xl bg-slate-50 border-none font-bold text-xs"><SelectValue placeholder="Mandal" /></SelectTrigger>
                           <SelectContent>
                             {editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                           </SelectContent>
@@ -329,13 +330,13 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-4">
-                    <Button variant="ghost" className="flex-1 rounded-2xl h-12 font-bold" onClick={() => setIsEditing(false)}>
-                      <X className="w-4 h-4 mr-2" />
+                  <div className="flex gap-2 pt-2">
+                    <Button variant="ghost" size="sm" className="flex-1 rounded-xl h-10 font-bold text-xs" onClick={() => setIsEditing(false)}>
+                      <X className="w-3.5 h-3.5 mr-1.5" />
                       Cancel
                     </Button>
-                    <Button className="flex-1 gap-2 rounded-2xl h-12 font-bold shadow-xl shadow-primary/20" onClick={handleSaveChanges} disabled={isSaving || !editName}>
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <Button size="sm" className="flex-1 gap-1.5 rounded-xl h-10 font-bold text-xs shadow-lg shadow-primary/20" onClick={handleSaveChanges} disabled={isSaving || !editName}>
+                      {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                       Save Changes
                     </Button>
                   </div>
@@ -343,17 +344,17 @@ export default function ProfilePage() {
               )}
 
               {profile.role === 'reporter' && !isEditing && (
-                <Button className="w-full gap-2 rounded-2xl h-14 font-black text-lg bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" asChild>
+                <Button className="w-full gap-2 rounded-2xl h-12 font-black text-base bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" asChild>
                   <Link href="/reporter">
-                    <Newspaper className="w-5 h-5" />
+                    <Newspaper className="w-4 h-4" />
                     వార్తలు పంపండి (Submit News)
                   </Link>
                 </Button>
               )}
               {profile.role === 'admin' && !isEditing && (
-                <Button className="w-full gap-2 rounded-2xl h-14 font-black text-lg bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
+                <Button className="w-full gap-2 rounded-2xl h-12 font-black text-base bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
                   <Link href="/admin">
-                    <Shield className="w-5 h-5" />
+                    <Shield className="w-4 h-4" />
                     అడ్మిన్ ప్యానెల్ (Admin Panel)
                   </Link>
                 </Button>
@@ -364,53 +365,52 @@ export default function ProfilePage() {
 
         {/* Fact Check Section */}
         <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="bg-emerald-50/50 border-b border-emerald-100">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+          <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-4 px-6">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               Fact Check (వార్త ధృవీకరణ)
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
-            <p className="text-xs text-muted-foreground">వార్త యొక్క 5 అంకెల ID ని నమోదు చేసి అది నిజమైనదో కాదో తనిఖీ చేయండి.</p>
+          <CardContent className="p-5 space-y-3">
+            <p className="text-[10px] text-muted-foreground font-medium">వార్త యొక్క 5 అంకెల ID ని నమోదు చేసి తనిఖీ చేయండి.</p>
             <div className="flex gap-2">
               <Input 
                 placeholder="News ID (e.g. 10021)" 
                 value={factCheckId}
                 onChange={(e) => setFactCheckId(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center tracking-widest"
+                className="h-10 rounded-xl bg-slate-50 border-none font-bold text-center tracking-widest text-sm"
               />
-              <Button size="icon" className="h-12 w-12 rounded-xl shadow-lg" onClick={handleFactCheck} disabled={isSearching || factCheckId.length < 5}>
-                {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              <Button size="icon" className="h-10 w-10 rounded-xl shadow-md shrink-0" onClick={handleFactCheck} disabled={isSearching || factCheckId.length < 5}>
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </Button>
             </div>
 
             {factCheckResult === 'not_found' && (
-              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 animate-in zoom-in-95">
-                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-sm font-bold text-rose-900">వార్త కనుగొనబడలేదు!</p>
-                  <p className="text-xs text-rose-800">మీరు నమోదు చేసిన ID తో ఎటువంటి అధికారిక వార్త లేదు. దయచేసి వివరాలను సరిచూసుకోండి.</p>
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-2 animate-in zoom-in-95">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold text-rose-900">వార్త కనుగొనబడలేదు!</p>
+                  <p className="text-[10px] text-rose-800 leading-tight">నమోదు చేసిన ID అధికారికంగా ధృవీకరించబడలేదు.</p>
                 </div>
               </div>
             )}
 
             {factCheckResult && typeof factCheckResult === 'object' && (
-              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl space-y-3 animate-in zoom-in-95">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2 animate-in zoom-in-95">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-emerald-900">Verified (ధృవీకరించబడింది)</p>
-                    <p className="text-[10px] text-emerald-800 uppercase font-black tracking-widest">Official News Pulse Story</p>
+                    <p className="text-xs font-bold text-emerald-900">Verified (ధృవీకరించబడింది)</p>
+                    <p className="text-[9px] text-emerald-800 uppercase font-black tracking-widest">Official Story</p>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-emerald-200">
-                  <p className="text-sm font-bold text-emerald-900 truncate">{factCheckResult.title}</p>
-                  <p className="text-[10px] text-emerald-700 mt-1">Published by: {factCheckResult.author_name}</p>
+                <div className="pt-1.5 border-t border-emerald-200">
+                  <p className="text-xs font-bold text-emerald-900 truncate">{factCheckResult.title}</p>
                 </div>
-                <Button size="sm" variant="link" className="text-emerald-700 h-auto p-0 font-bold" asChild>
-                  <Link href={`/?postId=${factCheckResult.id}`}>వార్తను చూడండి <ChevronRight className="w-3 h-3 ml-1" /></Link>
+                <Button size="sm" variant="link" className="text-emerald-700 h-auto p-0 font-bold text-[10px]" asChild>
+                  <Link href={`/?postId=${factCheckResult.id}`}>వార్తను చూడండి <ChevronRight className="w-2.5 h-2.5 ml-1" /></Link>
                 </Button>
               </div>
             )}
@@ -418,61 +418,61 @@ export default function ProfilePage() {
         </Card>
 
         {/* Legal & Info */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <Link href="/guidelines" className="group">
-            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-4 h-full">
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FileText className="w-5 h-5 text-blue-600" />
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
+              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                <FileText className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-xs font-bold text-slate-900">Guidelines</p>
-              <p className="text-[10px] text-muted-foreground mt-1">నిబంధనలు</p>
+              <p className="text-[11px] font-bold text-slate-900">Guidelines</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">నిబంధనలు</p>
             </Card>
           </Link>
           <Link href="/privacy" className="group">
-            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-4 h-full">
-              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Shield className="w-5 h-5 text-emerald-600" />
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
+              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                <Shield className="w-4 h-4 text-emerald-600" />
               </div>
-              <p className="text-xs font-bold text-slate-900">Privacy Policy</p>
-              <p className="text-[10px] text-muted-foreground mt-1">గోప్యతా విధానం</p>
+              <p className="text-[11px] font-bold text-slate-900">Privacy Policy</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">గోప్యతా విధానం</p>
             </Card>
           </Link>
         </div>
 
         {/* Liked News History */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
               మీకు నచ్చిన వార్తలు
             </h2>
-            <Badge variant="secondary" className="rounded-full">{likedNews.length}</Badge>
+            <Badge variant="secondary" className="rounded-full text-[10px] px-2">{likedNews.length}</Badge>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {likedNews.length > 0 ? (
               likedNews.map((news) => (
                 <Link key={news.id} href={`/?postId=${news.id}`}>
-                  <Card className="border-none shadow-md rounded-2xl overflow-hidden bg-white hover:shadow-lg transition-all group">
-                    <div className="flex p-3 gap-4">
-                      <div className="relative w-24 h-20 rounded-xl overflow-hidden shrink-0">
+                  <Card className="border-none shadow-sm rounded-2xl overflow-hidden bg-white hover:shadow-md transition-all group">
+                    <div className="flex p-2 gap-3">
+                      <div className="relative w-20 h-16 rounded-lg overflow-hidden shrink-0">
                         <Image src={news.image_url} alt={news.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
-                      <div className="flex-1 min-w-0 py-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className="text-[8px] h-4 font-bold bg-primary/10 text-primary border-none">{news.location.mandal}</Badge>
-                          <span className="text-[9px] text-muted-foreground">ID: {news.unique_code}</span>
+                      <div className="flex-1 min-w-0 py-0.5">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <Badge className="text-[7px] h-3.5 font-bold bg-primary/10 text-primary border-none px-1.5">{news.location.mandal}</Badge>
+                          <span className="text-[8px] text-muted-foreground font-mono">ID: {news.unique_code}</span>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug">{news.title}</h3>
+                        <h3 className="text-[11px] font-bold text-slate-900 line-clamp-2 leading-tight">{news.title}</h3>
                       </div>
                     </div>
                   </Card>
                 </Link>
               ))
             ) : (
-              <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-muted">
-                <Heart className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                <p className="text-muted-foreground italic text-sm">ఇంకా వార్తలు ఏవీ లేవు.</p>
+              <div className="text-center py-12 bg-white rounded-3xl border-2 border-dashed border-muted">
+                <Heart className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="text-muted-foreground italic text-[11px]">ఇంకా వార్తలు ఏవీ లేవు.</p>
               </div>
             )}
           </div>
