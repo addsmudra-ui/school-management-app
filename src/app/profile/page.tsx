@@ -227,9 +227,9 @@ export default function ProfilePage() {
         <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
           <div className="h-24 bg-gradient-to-r from-primary/20 to-accent/20 relative" />
           <CardContent className="relative pt-0 px-6 pb-6">
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2">
               <div 
-                className="relative w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
+                className="relative w-20 h-20 rounded-3xl bg-primary flex items-center justify-center text-white text-2xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {profile.photo ? (
@@ -238,7 +238,7 @@ export default function ProfilePage() {
                   profile.name?.[0] || 'U'
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : <Camera className="w-6 h-6 text-white" />}
+                  {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
                 </div>
               </div>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
@@ -246,10 +246,10 @@ export default function ProfilePage() {
             
             <div className="mt-16 space-y-6">
               {!isEditing ? (
-                <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
+                <div className="animate-in fade-in duration-300 text-center flex flex-col items-center overflow-hidden">
                   <div className="flex flex-col items-center gap-2 w-full">
-                    <div>
-                      <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-tight">{profile.name}</h1>
+                    <div className="w-full">
+                      <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-tight truncate whitespace-nowrap px-4">{profile.name}</h1>
                       <div className="flex flex-col items-center gap-1 mt-1">
                         <p className="text-muted-foreground text-[11px] font-bold flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5 text-primary" />
