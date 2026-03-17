@@ -1,12 +1,14 @@
+
 'use client';
 
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
+import { AdCard } from "@/components/news/AdCard";
 import { useEffect, useState, Suspense, useMemo } from "react";
 import { MapPin, Loader2, Globe, AlertCircle, Info, Newspaper, Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, limit, doc } from "firebase/firestore";
+import { collection, query, limit, doc, where } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
@@ -24,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LOCATIONS as MOCK_LOCATIONS, NewsPost } from "@/lib/mock-data";
+import { AdPost } from "@/lib/storage";
 
 function NewsFeedContent() {
   const firestore = useFirestore();
@@ -82,12 +85,27 @@ function NewsFeedContent() {
     return query(collection(firestore, 'approved_news_posts'), limit(150));
   }, [firestore]);
 
-  const { data: allNews, isLoading } = useCollection<NewsPost>(allApprovedQuery);
+  const adsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'ads'), where('status', '==', 'active'), limit(20));
+  }, [firestore]);
+
+  const { data: allNews, isLoading: isNewsLoading } = useCollection<NewsPost>(allApprovedQuery);
+  const { data: allAds, isLoading: isAdsLoading } = useCollection<AdPost>(adsQuery);
 
   const { feedToDisplay, isFallbackActive, localCount } = useMemo(() => {
-    if (!allNews || allNews.length === 0) return { feedToDisplay: [], isFallbackActive: false, localCount: 0 };
+    const news = allNews || [];
+    const ads = allAds || [];
 
-    const sorted = [...allNews].sort((a, b) => {
+    if (news.length === 0 && ads.length === 0) return { feedToDisplay: [], isFallbackActive: false, localCount: 0 };
+
+    // Combine and sort by timestamp
+    const combined: any[] = [
+      ...news.map(n => ({ ...n, feedType: 'news' })),
+      ...ads.map(a => ({ ...a, feedType: 'ad' }))
+    ];
+
+    const sorted = [...combined].sort((a, b) => {
       const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
       const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
       return timeB - timeA;
@@ -99,9 +117,9 @@ function NewsFeedContent() {
       return { feedToDisplay: sorted, isFallbackActive: false, localCount: sorted.length };
     }
 
-    const local = sorted.filter(post => {
-      const districtMatch = post.location.district === selectedDistrict;
-      const mandalMatch = selectedMandal === "All" || post.location.mandal === selectedMandal;
+    const local = sorted.filter(item => {
+      const districtMatch = item.location.district === selectedDistrict;
+      const mandalMatch = selectedMandal === "All" || item.location.mandal === selectedMandal;
       return districtMatch && mandalMatch;
     });
 
@@ -113,7 +131,7 @@ function NewsFeedContent() {
       isFallbackActive: local.length === 0,
       localCount: local.length
     };
-  }, [allNews, selectedDistrict, selectedMandal, forceGlobal]);
+  }, [allNews, allAds, selectedDistrict, selectedMandal, forceGlobal]);
 
   const handleLocationUpdate = () => {
     localStorage.setItem('mandalPulse_district', selectedDistrict);
@@ -132,7 +150,7 @@ function NewsFeedContent() {
     window.dispatchEvent(new Event('mandalPulse_locationChanged'));
   };
 
-  if (isLoading && !allNews) {
+  if ((isNewsLoading || isAdsLoading) && (!allNews || !allAds)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -154,7 +172,7 @@ function NewsFeedContent() {
           <div className="space-y-3">
             <h1 className="text-4xl font-black tracking-tight text-slate-900 font-headline">Zone Maintenance</h1>
             <p className="text-slate-600 font-bold text-lg leading-relaxed">
-              News Pulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్నించండి.
+              News Pulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్ండి.
             </p>
           </div>
           <div className="pt-8 opacity-20 flex justify-center gap-4">
@@ -170,7 +188,6 @@ function NewsFeedContent() {
 
   return (
     <>
-      {/* Floating Location Trigger */}
       <div className="fixed top-4 right-4 z-50">
         <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
           <DialogTrigger asChild>
@@ -215,7 +232,6 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {/* Animated Background Icons */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-10">
           <Newspaper className="absolute top-[15%] left-[10%] w-32 h-32 text-primary animate-float" />
           <Newspaper className="absolute top-[40%] right-[15%] w-24 h-24 text-primary animate-float-reverse" />
@@ -223,7 +239,7 @@ function NewsFeedContent() {
           <Newspaper className="absolute top-[70%] right-[25%] w-20 h-20 text-primary animate-float" />
         </div>
 
-        {allNews && allNews.length > 0 && (
+        {feedToDisplay.length > 0 && (
           <div className="absolute top-4 left-0 right-0 z-30 px-4 pointer-events-none pr-32">
             {isFallbackActive ? (
               <div className="max-w-md bg-amber-50/90 border border-amber-200 p-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md">
@@ -255,7 +271,11 @@ function NewsFeedContent() {
         {feedToDisplay.length > 0 ? (
           feedToDisplay.map((item) => (
             <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
-              <NewsCard news={item as any} />
+              {item.feedType === 'ad' ? (
+                <AdCard ad={item as AdPost} />
+              ) : (
+                <NewsCard news={item as NewsPost} />
+              )}
             </section>
           ))
         ) : (

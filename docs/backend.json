@@ -51,6 +51,27 @@
       },
       "required": ["id", "title", "content", "location", "status", "author_id"]
     },
+    "AdPost": {
+      "title": "AdPost",
+      "type": "object",
+      "description": "A full-screen advertisement story.",
+      "properties": {
+        "id": { "type": "string" },
+        "image_url": { "type": "string" },
+        "link": { "type": "string" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "state": { "type": "string" },
+            "district": { "type": "string" },
+            "mandal": { "type": "string" }
+          }
+        },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["id", "image_url", "location", "status"]
+    },
     "Comment": {
       "title": "Comment",
       "type": "object",
@@ -71,6 +92,7 @@
     "/approved_news_posts/{id}": { "schema": { "$ref": "#/backend/entities/NewsPost" }, "description": "Approved news" },
     "/approved_news_posts/{postId}/comments/{commentId}": { "schema": { "$ref": "#/backend/entities/Comment" }, "description": "Comments on news posts" },
     "/pending_news_posts/{id}": { "schema": { "$ref": "#/backend/entities/NewsPost" }, "description": "Reporter submissions" },
+    "/ads/{id}": { "schema": { "$ref": "#/backend/entities/AdPost" }, "description": "Advertisement stories" },
     "/notifications/{id}": { "schema": { "type": "object" }, "description": "Push notifications history" },
     "/metadata/locations": { "schema": { "type": "object" }, "description": "App location data" },
     "/roles_admins/{uid}": { "schema": { "type": "object" }, "description": "Admin role markers" },

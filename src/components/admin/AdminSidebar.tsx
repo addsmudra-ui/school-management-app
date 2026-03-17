@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -10,7 +11,8 @@ import {
   LogOut,
   Newspaper,
   KeyRound,
-  Palette
+  Palette,
+  Megaphone
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -47,6 +49,7 @@ const navItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/admin", label: "డాష్‌బోర్డ్" },
   { name: "New Post", icon: PlusCircle, href: "/admin/new-post", label: "కొత్త వార్త" },
   { name: "Approvals", icon: CheckSquare, href: "/admin/approvals", label: "ఆమోదాలు" },
+  { name: "Ads", icon: Megaphone, href: "/admin/ads", label: "ప్రకటనలు" },
   { name: "Locations", icon: MapPin, href: "/admin/locations", label: "ప్రాంతాలు" },
   { name: "Users", icon: Users, href: "/admin/users", label: "వినియోగదారులు" },
   { name: "Notifications", icon: Bell, href: "/admin/notifications", label: "నోటిఫికేషన్లు" },
@@ -106,7 +109,7 @@ export function AdminSidebar() {
                 <Newspaper className="w-6 h-6" />
               )}
             </div>
-            <span className="text-xl font-headline tracking-tight">{branding?.appName || 'MandalPulse'}</span>
+            <span className="text-xl font-headline tracking-tight">{branding?.appName || 'News Pulse'}</span>
           </Link>
         </SidebarHeader>
         

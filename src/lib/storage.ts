@@ -32,6 +32,19 @@ export type SentNotification = {
   timestamp: any;
 };
 
+export type AdPost = {
+  id: string;
+  image_url: string;
+  link: string;
+  location: {
+    state: string;
+    district: string;
+    mandal: string;
+  };
+  status: 'active' | 'inactive';
+  timestamp: any;
+};
+
 export const AdminService = {
   getPassword: async (db: Firestore): Promise<string> => {
     try {
@@ -96,6 +109,27 @@ export const AdminService = {
     }, { merge: true });
 
     await batch.commit();
+  }
+};
+
+export const AdService = {
+  add: (db: Firestore, ad: Omit<AdPost, 'id' | 'timestamp'>) => {
+    const adsRef = collection(db, 'ads');
+    const newDocRef = doc(adsRef);
+    const data = {
+      ...ad,
+      id: newDocRef.id,
+      timestamp: serverTimestamp()
+    };
+    setDocumentNonBlocking(newDocRef, data, { merge: true });
+    return newDocRef.id;
+  },
+  delete: (db: Firestore, id: string) => {
+    deleteDocumentNonBlocking(doc(db, 'ads', id));
+  },
+  toggleStatus: (db: Firestore, id: string, currentStatus: string) => {
+    const adRef = doc(db, 'ads', id);
+    updateDocumentNonBlocking(adRef, { status: currentStatus === 'active' ? 'inactive' : 'active' });
   }
 };
 
