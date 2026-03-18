@@ -163,13 +163,13 @@ export function NewsCard({ news }: NewsCardProps) {
       </div>
 
       {/* Content Section */}
-      <div className="p-6 flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-white to-slate-50/50 touch-pan-y">
-        <div className="space-y-4 pb-12 md:pb-6">
+      <div className="px-5 py-4 flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-sky-50/30 to-white touch-pan-y">
+        <div className="space-y-3 pb-12 md:pb-6">
           
-          {/* Reporter Header */}
-          <div className="flex items-center justify-between gap-3 mb-2 bg-slate-50/50 p-2 rounded-2xl border border-slate-100">
-            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-base shrink-0 shadow-md">
+          {/* Reporter Header - Compact */}
+          <div className="flex items-center justify-between gap-3 mb-1 bg-white/60 p-2 rounded-2xl border border-sky-100 shadow-sm backdrop-blur-sm">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-base shrink-0 shadow-sm">
                 {news.author_name ? news.author_name[0] : 'R'}
               </div>
               <div className="flex flex-col min-w-0">
@@ -192,7 +192,7 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
 
             {/* Interactions */}
-            <div className="flex items-center gap-3.5 shrink-0 pr-1">
+            <div className="flex items-center gap-3 shrink-0 pr-1">
               <button onClick={toggleLike} className="flex flex-col items-center gap-0.5 group">
                 <Heart className={cn("w-5 h-5 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
                 <span className="text-[9px] font-black text-slate-700">{news.likes || 0}</span>
@@ -264,19 +264,19 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
           </div>
           
-          <h2 className="text-2xl md:text-3xl font-bold font-headline leading-tight text-foreground tracking-tight">
+          <h2 className="text-xl md:text-2xl font-bold font-headline leading-tight text-slate-900 tracking-tight">
             {news.title}
           </h2>
           
-          <div className="h-px w-full bg-slate-100" />
+          <div className="h-px w-full bg-sky-100/50" />
           
-          <p className="text-slate-600 leading-relaxed text-lg md:text-xl font-medium">
+          <p className="text-slate-600 leading-relaxed text-base md:text-lg font-medium">
             {news.content}
           </p>
 
           <button 
             onClick={scrollToNext}
-            className="flex flex-col items-center justify-center py-8 opacity-50 hover:opacity-100 transition-opacity md:hidden w-full group"
+            className="flex flex-col items-center justify-center py-6 opacity-50 hover:opacity-100 transition-opacity md:hidden w-full group"
           >
             <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2 group-active:scale-95 transition-transform">మరిన్ని వార్తలు చదవండి</p>
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center animate-bounce">
