@@ -86,7 +86,9 @@ export const AdminService = {
   },
   updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string }) => {
     const configRef = doc(db, 'config', 'admin');
-    setDocumentNonBlocking(configRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+    // Remove undefined values to prevent Firebase errors
+    const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+    setDocumentNonBlocking(configRef, { ...cleanData, updatedAt: serverTimestamp() }, { merge: true });
   },
   seedDemoNews: async (db: Firestore) => {
     const batch = writeBatch(db);
@@ -140,12 +142,17 @@ export const NewsService = {
     const newDocRef = doc(newsRef);
     const postId = newDocRef.id;
     
-    const data = {
+    // Create data object carefully to avoid undefined fields
+    const data: any = {
       ...post,
       id: postId,
-      visibility: post.status === 'approved' ? 'live' : undefined,
       timestamp: serverTimestamp(),
     };
+    
+    // Only include visibility if status is approved
+    if (post.status === 'approved') {
+      data.visibility = 'live';
+    }
     
     setDocumentNonBlocking(newDocRef, data, { merge: true });
 
