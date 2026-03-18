@@ -29,6 +29,8 @@ export type SentNotification = {
   body: string;
   target: string;
   postId?: string;
+  imageUrl?: string;
+  topic?: string;
   timestamp: any;
 };
 
@@ -154,7 +156,9 @@ export const NewsService = {
         title: `బ్రేకింగ్: ${post.title}`,
         body: `${post.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
         target: post.location.district,
-        postId: postId
+        postId: postId,
+        imageUrl: post.image_url,
+        topic: 'breaking_news'
       });
     }
 
@@ -182,7 +186,9 @@ export const NewsService = {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
       target: postData.location.district,
-      postId: postId
+      postId: postId,
+      imageUrl: postData.image_url,
+      topic: 'breaking_news'
     });
   },
 
@@ -315,7 +321,7 @@ export const UserService = {
 };
 
 export const NotificationService = {
-  send: (db: Firestore, notification: { title: string; body: string; target: string; postId?: string }) => {
+  send: (db: Firestore, notification: { title: string; body: string; target: string; postId?: string; imageUrl?: string; topic?: string }) => {
     const notifRef = collection(db, 'notifications');
     const newNotif = doc(notifRef);
     setDocumentNonBlocking(newNotif, {
