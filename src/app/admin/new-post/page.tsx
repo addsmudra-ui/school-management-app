@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useMemo } from "react";
@@ -86,7 +87,8 @@ export default function AdminNewPost() {
         author_id: user.uid,
         author_name: user.displayName || "Admin Office",
         author_role: "Desk Incharge",
-        engagement: { likes: 0, comments: 0, commentList: [] }
+        likes: 0,
+        commentsCount: 0
       });
 
       toast({ title: "వార్త ప్రచురించబడింది", description: "వార్త విజయవంతంగా లైవ్ చేయబడింది." });
@@ -139,7 +141,7 @@ export default function AdminNewPost() {
             </div>
             <div className="space-y-2">
               <Label className="font-bold text-xs uppercase tracking-widest text-muted-foreground ml-1">మండలం</Label>
-              <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+              <Select onValueChange={(v) => setMandal(v)} value={mandal} disabled={!district}>
                 <SelectTrigger className="h-12 rounded-xl border-primary/10 bg-slate-50/50"><SelectValue placeholder="మండలం" /></SelectTrigger>
                 <SelectContent>
                   {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}

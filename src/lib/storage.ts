@@ -145,8 +145,6 @@ export const NewsService = {
       id: postId,
       visibility: post.status === 'approved' ? 'live' : undefined,
       timestamp: serverTimestamp(),
-      likes: post.engagement?.likes || 0,
-      commentsCount: post.engagement?.comments || 0,
     };
     
     setDocumentNonBlocking(newDocRef, data, { merge: true });

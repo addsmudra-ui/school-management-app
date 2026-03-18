@@ -77,10 +77,11 @@ export default function ReporterPage() {
   }, [firestore, user?.uid]);
 
   const approvedNewsQuery = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
+    if (!firestore) return null;
+    const authorId = user?.uid || "";
     return query(
       collection(firestore, 'approved_news_posts'),
-      where('author_id', '==', user.uid)
+      where('author_id', '==', authorId)
     );
   }, [firestore, user?.uid]);
 
@@ -147,10 +148,22 @@ export default function ReporterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userProfile || userProfile.status !== 'approved' || !title || !content || !state || !district || !mandal || !imagePreview) {
-      toast({ title: "Validation Error", variant: "destructive" });
+    
+    if (!userProfile) {
+      toast({ title: "Error", description: "Profile loading...", variant: "destructive" });
       return;
     }
+
+    if (userProfile.status === 'rejected') {
+      toast({ title: "Access Denied", description: "Your reporter account has been rejected.", variant: "destructive" });
+      return;
+    }
+
+    if (!title || !content || !state || !district || !mandal || !imagePreview) {
+      toast({ title: "Missing Info", description: "Please fill all fields and upload an image.", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const postData = {
@@ -162,12 +175,20 @@ export default function ReporterPage() {
         status: 'pending' as const,
         author_id: user?.uid || "",
         author_name: userProfile.name || "Reporter",
-        engagement: { likes: 0, comments: 0, commentList: [] }
+        author_role: (userProfile as any).author_role || "Reporter",
+        author_stars: (userProfile as any).author_stars || 0,
+        likes: 0,
+        commentsCount: 0
       };
+      
       NewsService.add(firestore!, postData);
-      toast({ title: "సమర్పించబడింది", description: "అడ్మిన్ ఆమోదం కోసం వేచి ఉండండి." });
+      
+      toast({ title: "సమర్పించబడింది", description: "వార్త అడ్మిన్ ఆమోదం కోసం పంపబడింది." });
       setTitle(""); setContent(""); setState(""); setDistrict(""); setMandal(""); setImagePreview(null);
       setActiveTab("portfolio");
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Error", description: "Could not submit news.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -193,12 +214,10 @@ export default function ReporterPage() {
     <div className="min-h-screen bg-slate-50/50 flex flex-col">
       <Navbar />
       <main className="flex-1 pt-20 pb-24 px-4 max-w-4xl mx-auto w-full">
-        {/* Reporter Profile Header Card */}
         {userProfile && (
           <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white mb-6 border-b-4 border-cyan-500/20">
             <CardContent className="p-6">
               <div className="flex items-center gap-5">
-                {/* Photo and Name are clearly separate elements in a row */}
                 <div className="relative w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 text-xl font-bold shadow-sm border-2 border-white overflow-hidden shrink-0">
                   {userProfile.photo ? (
                     <Image src={userProfile.photo} alt={userProfile.name} fill className="object-cover" />
@@ -212,9 +231,9 @@ export default function ReporterPage() {
                     <Badge className="bg-cyan-50 text-cyan-700 border-cyan-100 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-tighter">
                       {userProfile.role}
                     </Badge>
-                    {userProfile.author_stars && (
+                    {(userProfile as any).author_stars && (
                       <div className="flex items-center gap-0.5">
-                        {Array.from({ length: userProfile.author_stars }).map((_, i) => (
+                        {Array.from({ length: (userProfile as any).author_stars }).map((_, i) => (
                           <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
                         ))}
                       </div>
