@@ -19,7 +19,7 @@ export function Navbar() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor' | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [userStatus, setUserStatus] = useState<string>("");
@@ -28,7 +28,7 @@ export function Navbar() {
   const [hasNewNotif, setHasNewNotif] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   
-  // 1. Navigation Visibility State
+  // Navigation Visibility State
   const [isMinimized, setIsMinimized] = useState(false);
   
   const lastToastedId = useRef<string | null>(null);
@@ -40,6 +40,13 @@ export function Navbar() {
   }, [firestore]);
   const { data: branding } = useDoc(brandingRef);
 
+  // Real-time Profile for fallback
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
+  const { data: profile } = useDoc(profileRef);
+
   const notifQuery = useMemoFirebase(() => {
     if (!firestore || isUserLoading) return null;
     return query(collection(firestore, 'notifications'), orderBy('timestamp', 'desc'), limit(20));
@@ -47,18 +54,16 @@ export function Navbar() {
 
   const { data: notifications } = useCollection<SentNotification>(notifQuery);
 
-  // 2. Distraction-Free Interaction Logic
+  // Distraction-Free Interaction Logic
   useEffect(() => {
-    const handleTouch = (e: TouchEvent | MouseEvent) => {
-      // Don't minimize if user is touching the navbar itself
-      const nav = document.querySelector('nav');
-      if (nav && nav.contains(e.target as Node)) return;
+    const handleTouch = (e: any) => {
+      // Don't toggle if user is touching the navbar, a button, or a dialog
+      if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]')) return;
       
       setIsMinimized(prev => !prev);
     };
 
     window.addEventListener('touchstart', handleTouch);
-    // Also support click for desktop testing
     window.addEventListener('mousedown', handleTouch);
 
     return () => {
@@ -75,16 +80,23 @@ export function Navbar() {
   }, []);
 
   const updateAuthState = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    const savedRole = localStorage.getItem('teluguNewsPulse_role') as any;
-    const savedName = localStorage.getItem('teluguNewsPulse_userName');
-    const savedStatus = localStorage.getItem('teluguNewsPulse_userStatus');
-    const savedPhoto = localStorage.getItem('teluguNewsPulse_userPhoto');
-    setRole(savedRole || null);
-    setUserName(savedName || "");
-    setUserStatus(savedStatus || "");
-    setUserPhoto(savedPhoto || null);
-  }, []);
+    if (profile) {
+      setRole(profile.role);
+      setUserName(profile.name);
+      setUserStatus(profile.status);
+      setUserPhoto(profile.photo || null);
+    } else {
+      if (typeof window === 'undefined') return;
+      const savedRole = localStorage.getItem('teluguNewsPulse_role') as any;
+      const savedName = localStorage.getItem('teluguNewsPulse_userName');
+      const savedStatus = localStorage.getItem('teluguNewsPulse_userStatus');
+      const savedPhoto = localStorage.getItem('teluguNewsPulse_userPhoto');
+      setRole(savedRole || null);
+      setUserName(savedName || "");
+      setUserStatus(savedStatus || "");
+      setUserPhoto(savedPhoto || null);
+    }
+  }, [profile]);
 
   useEffect(() => {
     updateAuthState();
@@ -173,22 +185,22 @@ export function Navbar() {
 
   return (
     <nav className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted transition-all duration-500 pb-safe md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg",
-      isMinimized ? "h-12 opacity-90 backdrop-blur-md" : "h-16 opacity-100"
+      "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted transition-all duration-500 pb-safe md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-lg",
+      isMinimized ? "h-14 opacity-95 backdrop-blur-md translate-y-2 md:translate-y-0" : "h-16 opacity-100"
     )}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        {/* Logo - Always Visible (100% Opacity) */}
-        <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl transition-colors shrink-0", theme.text)}>
-          <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden">
+        {/* Logo - ALWAYS Fully Visible */}
+        <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl shrink-0", theme.text)}>
+          <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden shrink-0">
             {branding?.appLogo ? (
-              <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-100" />
+              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" priority />
             ) : (
-              <Newspaper className="w-6 h-6 opacity-100" />
+              <Newspaper className="w-6 h-6" />
             )}
           </div>
           <span className={cn(
-            "hidden sm:inline font-headline tracking-tight transition-all duration-300",
-            isMinimized ? "opacity-0 w-0" : "opacity-100"
+            "hidden sm:inline font-headline tracking-tight transition-all duration-300 overflow-hidden",
+            isMinimized ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
           )}>
             {branding?.appName || 'Telugu News Pulse'}
           </span>
@@ -218,11 +230,11 @@ export function Navbar() {
             <span className="text-[10px] md:text-sm font-semibold">Home</span>
           </Link>
 
-          {/* Notification Icon - ALWAYS Visible */}
+          {/* Notification Icon - ALWAYS Visible & Enhanced when minimized */}
           <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
             <SheetTrigger asChild>
               <button className={cn(
-                "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300 relative",
+                "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300 relative px-4",
                 theme.hover,
                 isMinimized ? "scale-125" : "scale-100"
               )}>

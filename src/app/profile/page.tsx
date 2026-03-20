@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -18,8 +19,6 @@ import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, useAuth 
 import { doc, collection } from "firebase/firestore";
 import { UserService, NewsService } from "@/lib/storage";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-
-export const dynamic = 'force-dynamic';
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
@@ -229,15 +228,15 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/50 pb-24 md:pt-20">
+    <main className="min-h-screen bg-slate-50/50 pb-32 md:pt-20">
       <Navbar />
       
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-6">
-        {/* Dynamic Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-[2rem] p-8 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="flex flex-col md:flex-row items-center gap-6">
+        {/* Profile Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-[2.5rem] p-8 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col items-center gap-6">
             <div 
-              className="relative w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white/30 overflow-hidden group cursor-pointer"
+              className="relative w-28 h-28 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-4xl font-bold shadow-2xl border-4 border-white/30 overflow-hidden group cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
             >
               {profile.photo ? (
@@ -246,24 +245,24 @@ export default function ProfilePage() {
                 profile.name?.[0] || 'U'
               )}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
+                {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : <Camera className="w-6 h-6 text-white" />}
               </div>
             </div>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             
-            <div className="text-center md:text-left flex-1">
-              <h1 className="text-3xl font-black tracking-tight leading-tight mb-1 truncate">నమస్కారం, {profile.name}!</h1>
-              <p className="opacity-90 font-bold text-sm flex items-center justify-center md:justify-start gap-1.5">
+            <div className="text-center">
+              <h1 className="text-3xl font-black tracking-tight leading-tight mb-2 truncate">నమస్కారం, {profile.name}!</h1>
+              <p className="opacity-90 font-bold text-sm flex items-center justify-center gap-1.5">
                 <MapPin className="w-4 h-4" />
                 {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
               </p>
-              <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-2">
-                <Badge className="bg-white/20 hover:bg-white/30 border-none text-white font-black text-[10px] uppercase tracking-widest px-3">
+              <div className="mt-4 flex justify-center gap-2">
+                <Badge className="bg-white/20 border-none text-white font-black text-[10px] uppercase tracking-widest px-3">
                   {profile.role}
                 </Badge>
                 {profile.status === 'approved' && (
                   <Badge className="bg-emerald-500 text-white border-none font-black text-[10px] uppercase tracking-widest px-3">
-                    Verified Account
+                    Verified
                   </Badge>
                 )}
               </div>
@@ -303,7 +302,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Actions & Settings */}
-        <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+        <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
           <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-black flex items-center gap-2">
               <LayoutDashboard className="w-5 h-5 text-primary" />
@@ -339,7 +338,7 @@ export default function ProfilePage() {
                       </Link>
                     </Button>
                   )}
-                  {profile.role === 'admin' && (
+                  {(profile.role === 'admin' || profile.role === 'editor') && (
                     <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
                       <Link href="/admin">
                         <Shield className="w-5 h-5" />
@@ -412,7 +411,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Fact Check Section */}
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+        <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
           <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-4 px-6">
             <CardTitle className="text-base font-bold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -497,7 +496,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Liked News History */}
-        <div className="space-y-3">
+        <div className="space-y-3 pb-10">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-base font-bold flex items-center gap-2">
               <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
