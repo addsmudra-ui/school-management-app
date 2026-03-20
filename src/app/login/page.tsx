@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,7 +13,15 @@ import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/l
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useUser, useAuth, useDoc, useMemoFirebase } from "@/firebase";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult
+} from "firebase/auth";
 import { doc } from "firebase/firestore";
 
 export default function LoginPage() {
@@ -22,6 +31,7 @@ export default function LoginPage() {
   const [method, setMethod] = useState<'phone' | 'email' | 'google'>('phone');
   const [step, setStep] = useState<'auth' | 'otp' | 'details'>('auth');
   const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -30,6 +40,7 @@ export default function LoginPage() {
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -45,6 +56,16 @@ export default function LoginPage() {
   }, [locationsDoc]);
 
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
+
+  // Initialize Recaptcha
+  useEffect(() => {
+    if (typeof window !== 'undefined' && auth && !window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': () => {}
+      });
+    }
+  }, [auth]);
 
   const handleGoogleLogin = async () => {
     if (!firestore || !auth) return;
@@ -88,28 +109,13 @@ export default function LoginPage() {
             return;
           }
           
-          const existing = await UserService.getByPhone(firestore, phone);
-          if (existing) {
-            const shadowEmail = `${phone}@newspulse.app`;
-            const shadowPass = "password123";
-            try {
-              await signInWithEmailAndPassword(auth, shadowEmail, shadowPass);
-            } catch (authErr) {
-              await createUserWithEmailAndPassword(auth, shadowEmail, shadowPass);
-            }
-
-            syncLocalStorage(existing);
-            if (existing.role === 'admin' || existing.role === 'editor') {
-              setRole(existing.role);
-              setName(existing.name);
-              setStep('details'); 
-            } else {
-              router.push(existing.role === 'reporter' ? '/reporter' : '/');
-              return;
-            }
-          } else {
-            setStep('otp');
-          }
+          const formattedPhone = `+91${phone}`;
+          const appVerifier = window.recaptchaVerifier;
+          
+          const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+          setConfirmationResult(result);
+          setStep('otp');
+          toast({ title: "OTP Sent", description: "Please check your messages." });
         } else if (method === 'email') {
           if (!email || !password) {
             toast({ variant: "destructive", title: "Error", description: "Email and password are required." });
@@ -143,7 +149,28 @@ export default function LoginPage() {
         }
       }
       else if (step === 'otp') {
-        setStep('details');
+        if (!confirmationResult || !otp || otp.length < 6) {
+          toast({ variant: "destructive", title: "Error", description: "Please enter the 6-digit OTP." });
+          setIsLoading(false);
+          return;
+        }
+
+        const userCredential = await confirmationResult.confirm(otp);
+        const firebaseUser = userCredential.user;
+        
+        const existing = await UserService.getById(firestore, firebaseUser.uid);
+        if (existing) {
+          syncLocalStorage(existing);
+          if (existing.role === 'admin' || existing.role === 'editor') {
+            setRole(existing.role);
+            setName(existing.name);
+            setStep('details'); 
+          } else {
+            router.push(existing.role === 'reporter' ? '/reporter' : '/');
+          }
+        } else {
+          setStep('details');
+        }
       }
       else {
         // Details Step
@@ -156,20 +183,10 @@ export default function LoginPage() {
           }
         }
 
-        let currentUser = user;
-        if (method === 'email' && !user) {
+        let currentUser = auth.currentUser;
+        if (method === 'email' && !currentUser) {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           currentUser = userCredential.user;
-        } else if (method === 'phone') {
-          const shadowEmail = `${phone}@newspulse.app`;
-          const shadowPass = "password123";
-          try {
-            const userCredential = await createUserWithEmailAndPassword(auth, shadowEmail, shadowPass);
-            currentUser = userCredential.user;
-          } catch (e) {
-            const userCredential = await signInWithEmailAndPassword(auth, shadowEmail, shadowPass);
-            currentUser = userCredential.user;
-          }
         }
 
         if (!currentUser?.uid) {
@@ -183,7 +200,7 @@ export default function LoginPage() {
           status: role === 'reporter' ? 'pending' : 'approved',
         };
 
-        if (phone) newUser.phone = phone;
+        if (phone) newUser.phone = `+91${phone}`;
         if (email || currentUser.email) newUser.email = email || currentUser.email;
 
         if (role !== 'admin' && role !== 'editor' && state && district && mandal) {
@@ -245,6 +262,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Hidden Recaptcha Container */}
+      <div id="recaptcha-container"></div>
+
       {/* Animated Background Icons */}
       <div className="absolute inset-0 pointer-events-none opacity-5">
         <Newspaper className="absolute top-[10%] left-[5%] w-32 h-32 text-primary animate-float" />
@@ -365,16 +385,27 @@ export default function LoginPage() {
           {step === 'otp' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="space-y-4 text-center">
-                <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">OTP ని నమోదు చేయండి</Label>
-                <div className="flex justify-between gap-2">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <Input key={i} className="text-center text-xl font-bold h-12 w-full rounded-xl" maxLength={1} defaultValue="0" />
-                  ))}
+                <Label className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest">OTP ని నమోదు చేయండి (6 digits)</Label>
+                <div className="relative">
+                  <Input 
+                    className="text-center text-2xl font-black h-14 tracking-[0.5em] rounded-xl bg-slate-50 border-none" 
+                    placeholder="000000"
+                    maxLength={6} 
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  />
                 </div>
               </div>
-              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={isLoading}>
+              <Button className="w-full h-12 text-lg rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={isLoading || otp.length < 6}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ధృవీకరించండి"}
               </Button>
+              <button 
+                className="w-full text-xs text-primary font-bold hover:underline"
+                onClick={() => setStep('auth')}
+                disabled={isLoading}
+              >
+                Resend Code / Change Number
+              </button>
             </div>
           )}
 
@@ -438,7 +469,7 @@ export default function LoginPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label>జిల్లా (District)</Label>
-                        <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
+                        <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={newDistrict} disabled={!state}>
                           <SelectTrigger className="h-11 rounded-xl">
                             <SelectValue placeholder="జిల్లా" />
                           </SelectTrigger>

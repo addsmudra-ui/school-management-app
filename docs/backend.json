@@ -4,7 +4,7 @@
     "User": {
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the News Pulse app.",
+      "description": "Represents a user of the Telugu News Pulse app.",
       "properties": {
         "id": { "type": "string", "description": "Firebase Auth UID" },
         "phone": { "type": "string", "description": "User's phone number" },
@@ -85,7 +85,7 @@
     }
   },
   "auth": {
-    "providers": ["password", "anonymous", "google.com"]
+    "providers": ["password", "anonymous", "google.com", "phone"]
   },
   "firestore": {
     "/users/{userId}": { "schema": { "$ref": "#/backend/entities/User" }, "description": "User profiles" },
