@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -126,7 +127,7 @@ export default function BrandingPage() {
                     alt="App Logo" 
                     width={200} 
                     height={200} 
-                    className="object-contain max-h-full opacity-50" 
+                    className="object-contain max-h-full" 
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-3xl">
                     <Button variant="destructive" size="icon" onClick={() => setLogoPreview(null)}>
@@ -142,7 +143,7 @@ export default function BrandingPage() {
                   <div className="bg-white p-2 rounded-xl border flex items-center gap-2">
                     <div className="bg-primary/10 p-1.5 rounded-lg relative w-8 h-8 flex items-center justify-center">
                       {logoPreview ? (
-                        <Image src={logoPreview} alt="Logo" fill className="object-contain p-0.5 opacity-50" />
+                        <Image src={logoPreview} alt="Logo" fill className="object-contain p-0.5" />
                       ) : (
                         <Palette className="w-4 h-4 text-primary" />
                       )}

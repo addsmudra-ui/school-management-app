@@ -159,7 +159,7 @@ export function Navbar() {
         <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl transition-colors", theme.text)}>
           <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden">
             {branding?.appLogo ? (
-              <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-50" />
+              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
             ) : (
               <Newspaper className="w-6 h-6" />
             )}

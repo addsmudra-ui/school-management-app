@@ -1,7 +1,7 @@
 
 /**
  * Utility to add a watermark to an image string (base64).
- * Positions the watermark in the bottom-left corner with transparency.
+ * Positions the watermark in the bottom-left corner with 100% visibility.
  */
 export async function addWatermark(
   base64Image: string, 
@@ -41,10 +41,10 @@ export async function addWatermark(
           const x = padding;
           const y = canvas.height - padding - logoHeight;
           
-          ctx.globalAlpha = 0.5; // 50% Transparency
+          ctx.globalAlpha = 1.0; // 100% Visibility
           ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
           
-          // Draw text beside or below logo
+          // Draw text beside logo
           drawTextWatermark(ctx, canvas, domainName, x + logoWidth + 10, y + (logoHeight / 2));
           
           ctx.globalAlpha = 1.0;
@@ -73,7 +73,7 @@ function drawTextWatermark(
 ) {
   const fontSize = Math.max(20, Math.floor(canvas.width / 25));
   ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // 50% Transparency
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // High Visibility white
   ctx.textAlign = 'left';
   ctx.textBaseline = isBottomAlign ? 'bottom' : 'middle';
   

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from "next/image";
@@ -126,8 +127,8 @@ export function NewsCard({ news }: NewsCardProps) {
           className="object-cover transition-transform duration-700 group-hover/image:scale-105"
         />
         
-        {/* Large Logo Watermark Overlay */}
-        <div className="absolute bottom-4 left-4 z-20 opacity-50 select-none pointer-events-none drop-shadow-2xl">
+        {/* Large Logo Watermark Overlay - 100% visibility */}
+        <div className="absolute bottom-4 left-4 z-20 select-none pointer-events-none drop-shadow-2xl">
           {branding?.appLogo ? (
             <div className="relative w-24 h-24 md:w-32 md:h-32">
               <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
@@ -302,8 +303,8 @@ export function NewsCard({ news }: NewsCardProps) {
                 priority
               />
               
-              {/* Branding Overlay Bottom-Left */}
-              <div className="absolute bottom-6 left-6 flex items-center gap-3 opacity-30 select-none pointer-events-none group-hover:opacity-50 transition-opacity">
+              {/* Branding Overlay Bottom-Left - 100% visibility */}
+              <div className="absolute bottom-6 left-6 flex items-center gap-3 select-none pointer-events-none group-hover:opacity-80 transition-opacity">
                 {branding?.appLogo ? (
                   <div className="relative w-16 h-16 md:w-24 md:h-24">
                     <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
