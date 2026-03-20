@@ -17,10 +17,10 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase, useAuth, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import Image from "next/image";
 import {
@@ -60,6 +60,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const firestore = useFirestore();
   const auth = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPass, setNewPass] = useState("");
@@ -69,7 +70,13 @@ export function AdminSidebar() {
     return doc(firestore, 'config', 'admin');
   }, [firestore]);
 
+  const userRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
+
   const { data: branding } = useDoc(brandingRef);
+  const { data: profile } = useDoc(userRef);
 
   const handleLogout = async () => {
     try {
@@ -97,6 +104,15 @@ export function AdminSidebar() {
     toast({ title: "Success", description: "Admin password updated successfully." });
   };
 
+  const filteredNavItems = useMemo(() => {
+    if (!profile) return [];
+    if (profile.role === 'admin') return navItems;
+    
+    // Editors only see content moderation tools
+    const editorAllowed = ["Dashboard", "New Post", "Approvals", "Ads", "Locations"];
+    return navItems.filter(item => editorAllowed.includes(item.name));
+  }, [profile]);
+
   return (
     <>
       <Sidebar className="border-r border-muted bg-white">
@@ -120,7 +136,7 @@ export function AdminSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="px-3">
-                {navItems.map((item) => (
+                {filteredNavItems.map((item) => (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild isActive={pathname === item.href}>
                       <Link 
@@ -145,23 +161,25 @@ export function AdminSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup className="mt-4">
-            <SidebarGroupLabel className="px-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
-              సెట్టింగ్స్
-            </SidebarGroupLabel>
-            <SidebarGroupContent className="px-3">
-              <button 
-                onClick={() => setIsPasswordModalOpen(true)}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition-all font-bold group"
-              >
-                <KeyRound className="w-5 h-5 group-hover:text-rose-600" />
-                <div className="flex flex-col text-left">
-                  <span className="text-sm">Password</span>
-                  <span className="text-[10px] opacity-70">పాస్‌వర్డ్ మార్చు</span>
-                </div>
-              </button>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          {profile?.role === 'admin' && (
+            <SidebarGroup className="mt-4">
+              <SidebarGroupLabel className="px-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+                సెట్టింగ్స్
+              </SidebarGroupLabel>
+              <SidebarGroupContent className="px-3">
+                <button 
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition-all font-bold group"
+                >
+                  <KeyRound className="w-5 h-5 group-hover:text-rose-600" />
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm">Password</span>
+                    <span className="text-[10px] opacity-70">పాస్‌వర్డ్ మార్చు</span>
+                  </div>
+                </button>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
 
         <SidebarFooter className="p-6 mt-auto">

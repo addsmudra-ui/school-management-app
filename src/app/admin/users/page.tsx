@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone } from "lucide-react";
+import { UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone, UserCog } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
@@ -119,7 +120,7 @@ export default function AdminUsers() {
           <DialogTrigger asChild>
             <Button className="gap-2 shadow-lg shadow-primary/20 h-11 rounded-xl">
               <UserPlus className="w-4 h-4" />
-              రిపోర్టర్‌ను చేర్చండి
+              సిబ్బందిని చేర్చండి (Add Staff)
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md rounded-3xl">
@@ -141,9 +142,9 @@ export default function AdminUsers() {
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
-                    <SelectItem value="user">పాఠకుడు (User)</SelectItem>
-                    <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
                     <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
+                    <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
+                    <SelectItem value="user">పాఠకుడు (User)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -225,7 +226,13 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        {user.role === 'admin' ? <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> : <ShieldCheck className="w-3.5 h-3.5 text-primary" />}
+                        {user.role === 'admin' ? (
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                        ) : user.role === 'editor' ? (
+                          <UserCog className="w-3.5 h-3.5 text-amber-500" />
+                        ) : (
+                          <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                        )}
                         <Badge variant="outline" className="capitalize text-[10px] font-bold border-muted-foreground/20">{user.role}</Badge>
                       </div>
                     </TableCell>
