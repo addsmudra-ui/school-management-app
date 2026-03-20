@@ -45,6 +45,20 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // 1. Redirection Logic: If user is already logged in, don't show login page
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      const savedRole = localStorage.getItem('teluguNewsPulse_role');
+      if (savedRole === 'admin' || savedRole === 'editor') {
+        router.push('/admin');
+      } else if (savedRole === 'reporter') {
+        router.push('/reporter');
+      } else {
+        router.push('/profile');
+      }
+    }
+  }, [user, isUserLoading, router]);
+
   // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
@@ -78,7 +92,7 @@ export default function LoginPage() {
       const existing = await UserService.getById(firestore, googleUser.uid);
       if (existing) {
         syncLocalStorage(existing);
-        const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/';
+        const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/profile';
         router.push(targetPath);
       } else {
         setName(googleUser.displayName || "");
@@ -133,7 +147,7 @@ export default function LoginPage() {
                 setName(existing.name);
                 setStep('details'); 
               } else {
-                const targetPath = existing.role === 'reporter' ? '/reporter' : '/';
+                const targetPath = existing.role === 'reporter' ? '/reporter' : '/profile';
                 router.push(targetPath);
               }
             } else {
@@ -166,7 +180,7 @@ export default function LoginPage() {
             setName(existing.name);
             setStep('details'); 
           } else {
-            router.push(existing.role === 'reporter' ? '/reporter' : '/');
+            router.push(existing.role === 'reporter' ? '/reporter' : '/profile');
           }
         } else {
           setStep('details');
@@ -211,7 +225,7 @@ export default function LoginPage() {
         syncLocalStorage(newUser);
         
         toast({ title: "Welcome", description: "Profile setup complete." });
-        const targetPath = (role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/';
+        const targetPath = (role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/profile';
         router.push(targetPath);
       }
     } catch (error: any) {

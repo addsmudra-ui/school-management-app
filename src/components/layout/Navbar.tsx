@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { Newspaper, User, PlusCircle, LayoutDashboard, LogOut, MapPin, Bell, ChevronRight } from "lucide-react";
+import { Newspaper, User, PlusCircle, LayoutDashboard, Bell, ChevronRight, MapPin } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -18,7 +19,7 @@ export function Navbar() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isUserLoading } = useUser();
+  const { isUserLoading } = useUser();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor' | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [userStatus, setUserStatus] = useState<string>("");
@@ -26,6 +27,9 @@ export function Navbar() {
   const [location, setLocation] = useState({ mandal: "", district: "" });
   const [hasNewNotif, setHasNewNotif] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  
+  // 1. Navigation Visibility State
+  const [isMinimized, setIsMinimized] = useState(false);
   
   const lastToastedId = useRef<string | null>(null);
 
@@ -42,6 +46,26 @@ export function Navbar() {
   }, [firestore, isUserLoading]);
 
   const { data: notifications } = useCollection<SentNotification>(notifQuery);
+
+  // 2. Distraction-Free Interaction Logic
+  useEffect(() => {
+    const handleTouch = (e: TouchEvent | MouseEvent) => {
+      // Don't minimize if user is touching the navbar itself
+      const nav = document.querySelector('nav');
+      if (nav && nav.contains(e.target as Node)) return;
+      
+      setIsMinimized(prev => !prev);
+    };
+
+    window.addEventListener('touchstart', handleTouch);
+    // Also support click for desktop testing
+    window.addEventListener('mousedown', handleTouch);
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouch);
+      window.removeEventListener('mousedown', handleTouch);
+    };
+  }, []);
 
   const updateLocationState = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -75,22 +99,18 @@ export function Navbar() {
     };
   }, [updateLocationState, updateAuthState]);
 
-  // Real-time toast notification logic
   useEffect(() => {
     if (notifications && notifications.length > 0) {
       const latest = notifications[0];
       const lastSeen = localStorage.getItem('teluguNewsPulse_lastSeenNotif');
       
-      // If this is a new notification we haven't processed in this session
       if (lastToastedId.current !== latest.id) {
         if (latest.id !== lastSeen) {
           setHasNewNotif(true);
-          
-          // Toast for real-time alerts if it's very recent (within 2 mins)
           if (latest.timestamp?.toDate) {
             const now = new Date().getTime();
             const notifTime = latest.timestamp.toDate().getTime();
-            if (now - notifTime < 120000) { // 2 minute threshold
+            if (now - notifTime < 120000) {
               toast({
                 title: "బ్రేకింగ్ న్యూస్! (Breaking)",
                 description: latest.title,
@@ -152,20 +172,33 @@ export function Navbar() {
   const theme = getRoleTheme();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted h-16 md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg pb-safe">
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted transition-all duration-500 pb-safe md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg",
+      isMinimized ? "h-12 opacity-90 backdrop-blur-md" : "h-16 opacity-100"
+    )}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl transition-colors", theme.text)}>
+        {/* Logo - Always Visible (100% Opacity) */}
+        <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl transition-colors shrink-0", theme.text)}>
           <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden">
             {branding?.appLogo ? (
-              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+              <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-100" />
             ) : (
-              <Newspaper className="w-6 h-6" />
+              <Newspaper className="w-6 h-6 opacity-100" />
             )}
           </div>
-          <span className="hidden sm:inline font-headline tracking-tight">{branding?.appName || 'Telugu News Pulse'}</span>
+          <span className={cn(
+            "hidden sm:inline font-headline tracking-tight transition-all duration-300",
+            isMinimized ? "opacity-0 w-0" : "opacity-100"
+          )}>
+            {branding?.appName || 'Telugu News Pulse'}
+          </span>
         </Link>
 
-        <div className={cn("hidden md:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all", theme.bg, theme.border, theme.text)}>
+        <div className={cn(
+          "hidden lg:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all duration-300",
+          theme.bg, theme.border, theme.text,
+          isMinimized ? "scale-0 w-0 opacity-0" : "scale-100"
+        )}>
           <MapPin className={cn("w-3.5 h-3.5", theme.icon)} />
           <span>
             {location.district === "All" 
@@ -175,21 +208,31 @@ export function Navbar() {
         </div>
 
         <div className="flex flex-1 justify-around md:justify-end md:gap-8 items-center h-full">
-          <Link href="/" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
+          {/* Home Icon - Hide on minimize */}
+          <Link href="/" className={cn(
+            "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+            theme.hover,
+            isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
+          )}>
             <Newspaper className="w-5 h-5" />
             <span className="text-[10px] md:text-sm font-semibold">Home</span>
           </Link>
 
+          {/* Notification Icon - ALWAYS Visible */}
           <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
             <SheetTrigger asChild>
-              <button className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors relative", theme.hover)}>
+              <button className={cn(
+                "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300 relative",
+                theme.hover,
+                isMinimized ? "scale-125" : "scale-100"
+              )}>
                 <div className="relative">
                   <Bell className={cn("w-5 h-5", hasNewNotif && "animate-bell", hasNewNotif && theme.text)} />
                   {hasNewNotif && (
                     <span className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white animate-pulse", role === 'admin' ? "bg-rose-500" : "bg-primary")} />
                   )}
                 </div>
-                <span className="text-[10px] md:text-sm font-semibold">Alerts</span>
+                {!isMinimized && <span className="text-[10px] md:text-sm font-semibold">Alerts</span>}
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[90%] sm:max-w-sm p-0 z-[100]">
@@ -239,24 +282,39 @@ export function Navbar() {
             </SheetContent>
           </Sheet>
 
+          {/* Post Icon - Hide on minimize */}
           {canPost && (
-            <Link href="/reporter" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
+            <Link href="/reporter" className={cn(
+              "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+              theme.hover,
+              isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
+            )}>
               <PlusCircle className="w-5 h-5" />
               <span className="text-[10px] md:text-sm font-semibold">Post</span>
             </Link>
           )}
 
+          {/* Admin Icon - Hide on minimize */}
           {(role === 'admin' || role === 'editor') && (
-            <Link href="/admin" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
+            <Link href="/admin" className={cn(
+              "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+              theme.hover,
+              isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
+            )}>
               <LayoutDashboard className="w-5 h-5" />
               <span className="text-[10px] md:text-sm font-semibold">Moderate</span>
             </Link>
           )}
 
-          <Link href={userName ? "/profile" : "/login"} className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-colors", theme.hover)}>
+          {/* Profile Icon - Hide on minimize */}
+          <Link href={userName ? "/profile" : "/login"} className={cn(
+            "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+            theme.hover,
+            isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
+          )}>
             {userPhoto ? (
               <div className={cn("relative w-6 h-6 rounded-full overflow-hidden border", theme.border)}>
-                <Image src={userPhoto} alt={userName} fill className="object-cover" />
+                <Image src={userPhoto} alt={userName} fill className="object-cover opacity-100" />
               </div>
             ) : (
               <User className={cn("w-5 h-5", theme.icon)} />

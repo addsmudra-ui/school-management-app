@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from "next/image";
@@ -126,14 +127,14 @@ export function NewsCard({ news }: NewsCardProps) {
           className="object-cover transition-transform duration-700 group-hover/image:scale-105"
         />
         
-        {/* Large Logo Watermark Overlay - 100% visibility */}
-        <div className="absolute bottom-4 left-4 z-20 select-none pointer-events-none drop-shadow-2xl">
+        {/* Large Logo Watermark Overlay - Fixed 100% visibility */}
+        <div className="absolute bottom-4 left-4 z-20 select-none pointer-events-none drop-shadow-2xl opacity-100">
           {branding?.appLogo ? (
             <div className="relative w-24 h-24 md:w-32 md:h-32">
-              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+              <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-100" />
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-white/80">
+            <div className="flex items-center gap-2 text-white opacity-100">
               <Newspaper className="w-10 h-10" />
               <span className="font-headline font-black text-xl tracking-tighter">Telugu News Pulse</span>
             </div>
@@ -298,15 +299,15 @@ export function NewsCard({ news }: NewsCardProps) {
                 src={news.image_url} 
                 alt={news.title} 
                 fill 
-                className="object-contain"
+                className="object-contain opacity-100"
                 priority
               />
               
-              {/* Branding Overlay Bottom-Left - 100% visibility */}
-              <div className="absolute bottom-6 left-6 flex items-center gap-3 select-none pointer-events-none group-hover:opacity-80 transition-opacity">
+              {/* Branding Overlay - Fixed 100% visibility */}
+              <div className="absolute bottom-6 left-6 flex items-center gap-3 select-none pointer-events-none opacity-100">
                 {branding?.appLogo ? (
                   <div className="relative w-16 h-16 md:w-24 md:h-24">
-                    <Image src={branding.appLogo} alt="Logo" fill className="object-contain" />
+                    <Image src={branding.appLogo} alt="Logo" fill className="object-contain opacity-100" />
                   </div>
                 ) : (
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
