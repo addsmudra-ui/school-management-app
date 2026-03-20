@@ -52,6 +52,22 @@ export default function ProfilePage() {
   
   const { data: profile, isLoading: isProfileLoading } = useDoc(user?.uid ? profileRef : null);
 
+  // Sync profile data to LocalStorage if it's missing or changed
+  useEffect(() => {
+    if (profile) {
+      localStorage.setItem('teluguNewsPulse_userName', profile.name);
+      localStorage.setItem('teluguNewsPulse_role', profile.role);
+      localStorage.setItem('teluguNewsPulse_userStatus', profile.status);
+      if (profile.location) {
+        localStorage.setItem('teluguNewsPulse_state', profile.location.state);
+        localStorage.setItem('teluguNewsPulse_district', profile.location.district);
+        localStorage.setItem('teluguNewsPulse_mandal', profile.location.mandal);
+      }
+      if (profile.photo) localStorage.setItem('teluguNewsPulse_userPhoto', profile.photo);
+      window.dispatchEvent(new Event('teluguNewsPulse_authChanged'));
+    }
+  }, [profile]);
+
   // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
@@ -157,16 +173,6 @@ export default function ProfilePage() {
       }
 
       await UserService.update(firestore, user.uid, updates);
-      
-      localStorage.setItem('teluguNewsPulse_userName', editName);
-      if (editPhone) localStorage.setItem('teluguNewsPulse_userPhone', editPhone);
-      if (editState) {
-        localStorage.setItem('teluguNewsPulse_state', editState);
-        localStorage.setItem('teluguNewsPulse_district', editDistrict);
-        localStorage.setItem('teluguNewsPulse_mandal', editMandal);
-      }
-      
-      window.dispatchEvent(new Event('teluguNewsPulse_authChanged'));
       setIsEditing(false);
       toast({ title: "Profile Updated", description: "Your changes have been saved successfully." });
     } catch (error) {
@@ -214,13 +220,23 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user || !profile) {
+  // If technically logged in (possibly anonymous) but no profile document found
+  if (!user || user.isAnonymous || (!profile && !isProfileLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center space-y-4">
-          <p className="text-muted-foreground font-medium">ప్రొఫైల్ చూడటానికి లాగిన్ అవ్వండి.</p>
-          <Button asChild className="rounded-xl px-8 shadow-lg shadow-primary/20">
-            <Link href="/login">Login Now</Link>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <Navbar />
+        <div className="text-center space-y-6 max-w-sm animate-in zoom-in-95 duration-500">
+          <div className="w-20 h-20 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
+            <User className="w-10 h-10 text-orange-600" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-slate-900">Dashboard Locked</h2>
+            <p className="text-muted-foreground font-medium leading-relaxed">
+              మీ ప్రొఫైల్ డాష్‌బోర్డ్ చూడటానికి దయచేసి లాగిన్ అవ్వండి లేదా రిజిస్ట్రేషన్ పూర్తి చేయండి.
+            </p>
+          </div>
+          <Button asChild className="w-full h-14 rounded-2xl text-lg font-bold shadow-xl shadow-orange-500/20">
+            <Link href="/login">Login / Sign Up</Link>
           </Button>
         </div>
       </div>
@@ -410,6 +426,37 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Legal & Feedback Section (Enhanced) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Link href="/guidelines" className="group">
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
+              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                <FileText className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-[11px] font-bold text-slate-900">Guidelines</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">నిబంధనలు</p>
+            </Card>
+          </Link>
+          <Link href="/privacy" className="group">
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
+              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                <Shield className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-[11px] font-bold text-slate-900">Privacy Policy</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">గోప్యతా విధానం</p>
+            </Card>
+          </Link>
+          <a href="mailto:telugunewspulseinfo@gmail.com" className="group">
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full border-l-4 border-l-primary/30">
+              <div className="w-9 h-9 bg-primary/5 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-4 h-4 text-primary" />
+              </div>
+              <p className="text-[11px] font-bold text-slate-900">Help & Feedback</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">ఫిర్యాదులు చేయండి</p>
+            </Card>
+          </a>
+        </div>
+
         {/* Fact Check Section */}
         <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
           <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-4 px-6">
@@ -463,37 +510,6 @@ export default function ProfilePage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Legal & Feedback */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Link href="/guidelines" className="group">
-            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
-              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-                <FileText className="w-4 h-4 text-blue-600" />
-              </div>
-              <p className="text-[11px] font-bold text-slate-900">Guidelines</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">నిబంధనలు</p>
-            </Card>
-          </Link>
-          <Link href="/privacy" className="group">
-            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
-              <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-                <Shield className="w-4 h-4 text-emerald-600" />
-              </div>
-              <p className="text-[11px] font-bold text-slate-900">Privacy Policy</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">గోప్యతా విధానం</p>
-            </Card>
-          </Link>
-          <a href="mailto:telugunewspulseinfo@gmail.com" className="group">
-            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full border-l-4 border-l-primary/30">
-              <div className="w-9 h-9 bg-primary/5 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-                <MessageSquare className="w-4 h-4 text-primary" />
-              </div>
-              <p className="text-[11px] font-bold text-slate-900">Help & Feedback</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">ఫిర్యాదులు చేయండి</p>
-            </Card>
-          </a>
-        </div>
 
         {/* Liked News History */}
         <div className="space-y-3 pb-10">

@@ -45,19 +45,31 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // 1. Redirection Logic: If user is already logged in, don't show login page
+  // Real-time Profile for redirection
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid || user.isAnonymous) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid, user?.isAnonymous]);
+  const { data: dbProfile, isLoading: isProfileLoading } = useDoc(profileRef);
+
+  // 1. Redirection Logic: Redirect only if NOT anonymous and profile is loaded
   useEffect(() => {
-    if (!isUserLoading && user) {
-      const savedRole = localStorage.getItem('teluguNewsPulse_role');
-      if (savedRole === 'admin' || savedRole === 'editor') {
-        router.push('/admin');
-      } else if (savedRole === 'reporter') {
-        router.push('/reporter');
+    if (!isUserLoading && !isProfileLoading && user && !user.isAnonymous) {
+      const currentRole = dbProfile?.role || localStorage.getItem('teluguNewsPulse_role');
+      if (currentRole) {
+        if (currentRole === 'admin' || currentRole === 'editor') {
+          router.push('/admin');
+        } else if (currentRole === 'reporter') {
+          router.push('/reporter');
+        } else {
+          router.push('/profile');
+        }
       } else {
-        router.push('/profile');
+        // Logged in but no profile doc? Go to details.
+        setStep('details');
       }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, isProfileLoading, dbProfile, router]);
 
   // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);

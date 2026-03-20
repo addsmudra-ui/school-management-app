@@ -112,7 +112,7 @@ export default function ReporterPage() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64 = reader.result as string;
-      const appName = branding?.appName || "News Pulse";
+      const appName = branding?.appName || "Telugu News Pulse";
       const logo = branding?.appLogo;
       const watermarked = await addWatermark(base64, appName, logo);
       
@@ -149,12 +149,12 @@ export default function ReporterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userProfile) {
-      toast({ title: "Error", description: "Profile loading...", variant: "destructive" });
+    if (!userProfile && !isProfileLoading) {
+      toast({ title: "Error", description: "Profile not found. Please log in again.", variant: "destructive" });
       return;
     }
 
-    if (userProfile.status === 'rejected') {
+    if (userProfile?.status === 'rejected') {
       toast({ title: "Access Denied", description: "Your reporter account has been rejected.", variant: "destructive" });
       return;
     }
@@ -174,9 +174,9 @@ export default function ReporterPage() {
         location: { state, district, mandal },
         status: 'pending' as const,
         author_id: user?.uid || "",
-        author_name: userProfile.name || "Reporter",
-        author_role: (userProfile as any).author_role || "Reporter",
-        author_stars: (userProfile as any).author_stars || 0,
+        author_name: userProfile?.name || "Reporter",
+        author_role: (userProfile as any)?.author_role || "Reporter",
+        author_stars: (userProfile as any)?.author_stars || 0,
         likes: 0,
         commentsCount: 0
       };
@@ -207,7 +207,34 @@ export default function ReporterPage() {
   };
 
   if (isProfileLoading) {
-    return <main className="pt-20 text-center"><Loader2 className="animate-spin mx-auto" /></main>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  // If technically logged in but no profile document found
+  if (!user || user.isAnonymous || (!userProfile && !isProfileLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <Navbar />
+        <div className="text-center space-y-6 max-w-sm animate-in zoom-in-95 duration-500">
+          <div className="w-20 h-20 bg-cyan-100 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
+            <Briefcase className="w-10 h-10 text-cyan-600" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-slate-900">Reporter Access Required</h2>
+            <p className="text-muted-foreground font-medium leading-relaxed">
+              రిపోర్టర్ డాష్‌బోర్డ్ చూడటానికి దయచేసి రిపోర్టర్‌గా లాగిన్ అవ్వండి.
+            </p>
+          </div>
+          <Button asChild className="w-full h-14 rounded-2xl text-lg font-bold shadow-xl shadow-cyan-500/20 bg-cyan-600 hover:bg-cyan-700">
+            <Link href="/login">Login as Reporter</Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
