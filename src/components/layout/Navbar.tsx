@@ -45,17 +45,17 @@ export function Navbar() {
 
   const updateLocationState = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const savedDistrict = localStorage.getItem('mandalPulse_district') || "All";
-    const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
+    const savedDistrict = localStorage.getItem('teluguNewsPulse_district') || "All";
+    const savedMandal = localStorage.getItem('teluguNewsPulse_mandal') || "All";
     setLocation({ district: savedDistrict, mandal: savedMandal });
   }, []);
 
   const updateAuthState = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const savedRole = localStorage.getItem('mandalPulse_role') as any;
-    const savedName = localStorage.getItem('mandalPulse_userName');
-    const savedStatus = localStorage.getItem('mandalPulse_userStatus');
-    const savedPhoto = localStorage.getItem('mandalPulse_userPhoto');
+    const savedRole = localStorage.getItem('teluguNewsPulse_role') as any;
+    const savedName = localStorage.getItem('teluguNewsPulse_userName');
+    const savedStatus = localStorage.getItem('teluguNewsPulse_userStatus');
+    const savedPhoto = localStorage.getItem('teluguNewsPulse_userPhoto');
     setRole(savedRole || null);
     setUserName(savedName || "");
     setUserStatus(savedStatus || "");
@@ -66,12 +66,12 @@ export function Navbar() {
     updateAuthState();
     updateLocationState();
 
-    window.addEventListener('mandalPulse_locationChanged', updateLocationState);
-    window.addEventListener('mandalPulse_authChanged', updateAuthState);
+    window.addEventListener('teluguNewsPulse_locationChanged', updateLocationState);
+    window.addEventListener('teluguNewsPulse_authChanged', updateAuthState);
     
     return () => {
-      window.removeEventListener('mandalPulse_locationChanged', updateLocationState);
-      window.removeEventListener('mandalPulse_authChanged', updateAuthState);
+      window.removeEventListener('teluguNewsPulse_locationChanged', updateLocationState);
+      window.removeEventListener('teluguNewsPulse_authChanged', updateAuthState);
     };
   }, [updateLocationState, updateAuthState]);
 
@@ -79,7 +79,7 @@ export function Navbar() {
   useEffect(() => {
     if (notifications && notifications.length > 0) {
       const latest = notifications[0];
-      const lastSeen = localStorage.getItem('mandalPulse_lastSeenNotif');
+      const lastSeen = localStorage.getItem('teluguNewsPulse_lastSeenNotif');
       
       // If this is a new notification we haven't processed in this session
       if (lastToastedId.current !== latest.id) {
@@ -87,7 +87,6 @@ export function Navbar() {
           setHasNewNotif(true);
           
           // Toast for real-time alerts if it's very recent (within 2 mins)
-          // This prevents "old" news history from triggering toasts when the app first loads
           if (latest.timestamp?.toDate) {
             const now = new Date().getTime();
             const notifTime = latest.timestamp.toDate().getTime();
@@ -106,7 +105,7 @@ export function Navbar() {
 
   const markAsRead = () => {
     if (notifications && notifications.length > 0) {
-      localStorage.setItem('mandalPulse_lastSeenNotif', notifications[0].id);
+      localStorage.setItem('teluguNewsPulse_lastSeenNotif', notifications[0].id);
       setHasNewNotif(false);
     }
   };

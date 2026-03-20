@@ -227,21 +227,21 @@ export default function LoginPage() {
   };
 
   const syncLocalStorage = (profile: any) => {
-    localStorage.setItem('mandalPulse_role', profile.role);
-    localStorage.setItem('mandalPulse_userName', profile.name);
-    if (profile.phone) localStorage.setItem('mandalPulse_userPhone', profile.phone);
-    localStorage.setItem('mandalPulse_userStatus', profile.status);
+    localStorage.setItem('teluguNewsPulse_role', profile.role);
+    localStorage.setItem('teluguNewsPulse_userName', profile.name);
+    if (profile.phone) localStorage.setItem('teluguNewsPulse_userPhone', profile.phone);
+    localStorage.setItem('teluguNewsPulse_userStatus', profile.status);
     
     if (profile.location) {
-      localStorage.setItem('mandalPulse_state', profile.location.state);
-      localStorage.setItem('mandalPulse_district', profile.location.district);
-      localStorage.setItem('mandalPulse_mandal', profile.location.mandal);
+      localStorage.setItem('teluguNewsPulse_state', profile.location.state);
+      localStorage.setItem('teluguNewsPulse_district', profile.location.district);
+      localStorage.setItem('teluguNewsPulse_mandal', profile.location.mandal);
     }
     if (profile.photo) {
-      localStorage.setItem('mandalPulse_userPhoto', profile.photo);
+      localStorage.setItem('teluguNewsPulse_userPhoto', profile.photo);
     }
     
-    window.dispatchEvent(new Event('mandalPulse_authChanged'));
+    window.dispatchEvent(new Event('teluguNewsPulse_authChanged'));
   };
 
   const isDetailsValid = () => {
@@ -321,10 +321,10 @@ export default function LoginPage() {
                   <Label htmlFor="phone">ఫోన్ నంబర్ (Phone Number)</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-muted-foreground">+91</span>
-                    <Input 
-                      id="phone" 
-                      className="pl-12 h-12 rounded-xl" 
-                      placeholder="10 అంకెల నంబర్" 
+                    <input
+                      id="phone"
+                      className="flex h-12 w-full rounded-xl border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-12"
+                      placeholder="10 అంకెల నంబర్"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     />
@@ -448,7 +448,6 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-11 rounded-xl border-rose-200 focus:ring-rose-500"
                     />
-                    <p className="text-[10px] text-muted-foreground italic">Default password is admin123</p>
                   </div>
                 )}
 
@@ -469,7 +468,7 @@ export default function LoginPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-2">
                         <Label>జిల్లా (District)</Label>
-                        <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={newDistrict} disabled={!state}>
+                        <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
                           <SelectTrigger className="h-11 rounded-xl">
                             <SelectValue placeholder="జిల్లా" />
                           </SelectTrigger>

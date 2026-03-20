@@ -80,11 +80,11 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      localStorage.removeItem('mandalPulse_role');
-      localStorage.removeItem('mandalPulse_userName');
-      localStorage.removeItem('mandalPulse_userPhone');
-      localStorage.removeItem('mandalPulse_userStatus');
-      localStorage.removeItem('mandalPulse_userPhoto');
+      localStorage.removeItem('teluguNewsPulse_role');
+      localStorage.removeItem('teluguNewsPulse_userName');
+      localStorage.removeItem('teluguNewsPulse_userPhone');
+      localStorage.removeItem('teluguNewsPulse_userStatus');
+      localStorage.removeItem('teluguNewsPulse_userPhoto');
       window.location.href = '/login';
     } catch (err) {
       console.error("Logout failed:", err);
@@ -196,7 +196,7 @@ export function AdminSidebar() {
       </Sidebar>
 
       <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <DialogContent className="max-w-sm rounded-2xl">
+        <DialogContent className="max-sm rounded-2xl">
           <DialogHeader>
             <DialogTitle>పాస్‌వర్డ్ మార్చండి</DialogTitle>
           </DialogHeader>

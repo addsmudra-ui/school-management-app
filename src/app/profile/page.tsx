@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -9,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText, Edit2, Save, X, Phone, Mail, Search, CheckCircle2, AlertTriangle, MessageSquare } from "lucide-react";
+import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText, Edit2, Save, X, Phone, Mail, Search, CheckCircle2, AlertTriangle, MessageSquare, LayoutDashboard, Zap } from "lucide-react";
 import { NewsPost, STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -84,7 +83,7 @@ export default function ProfilePage() {
     return doc(firestore, 'users', user.uid, 'private', 'likes');
   }, [firestore, user?.uid]);
   const { data: likesDoc } = useDoc(user?.uid ? likesRef : null);
-  const likedPostIds = likesDoc?.postIds || [];
+  const likedPostIds = Array.isArray(likesDoc?.postIds) ? likesDoc.postIds : [];
 
   // Real-time Approved News
   const newsRef = useMemoFirebase(() => {
@@ -94,6 +93,15 @@ export default function ProfilePage() {
   const { data: allNews } = useCollection<NewsPost>(newsRef);
 
   const likedNews = allNews?.filter(n => likedPostIds.includes(n.id)) || [];
+  
+  // Calculate local news count
+  const localNewsCount = useMemo(() => {
+    if (!allNews || !profile?.location) return 0;
+    return allNews.filter(n => 
+      n.location.district === profile.location?.district && 
+      (profile.location?.mandal === 'All' || n.location.mandal === profile.location?.mandal)
+    ).length;
+  }, [allNews, profile?.location]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -123,8 +131,8 @@ export default function ProfilePage() {
       const base64String = reader.result as string;
       updateDocumentNonBlocking(profileRef, { photo: base64String });
       setIsUploading(false);
-      localStorage.setItem('mandalPulse_userPhoto', base64String);
-      window.dispatchEvent(new Event('mandalPulse_authChanged'));
+      localStorage.setItem('teluguNewsPulse_userPhoto', base64String);
+      window.dispatchEvent(new Event('teluguNewsPulse_authChanged'));
       toast({ title: "Photo Updated" });
     };
     reader.readAsDataURL(file);
@@ -151,15 +159,15 @@ export default function ProfilePage() {
 
       await UserService.update(firestore, user.uid, updates);
       
-      localStorage.setItem('mandalPulse_userName', editName);
-      if (editPhone) localStorage.setItem('mandalPulse_userPhone', editPhone);
+      localStorage.setItem('teluguNewsPulse_userName', editName);
+      if (editPhone) localStorage.setItem('teluguNewsPulse_userPhone', editPhone);
       if (editState) {
-        localStorage.setItem('mandalPulse_state', editState);
-        localStorage.setItem('mandalPulse_district', editDistrict);
-        localStorage.setItem('mandalPulse_mandal', editMandal);
+        localStorage.setItem('teluguNewsPulse_state', editState);
+        localStorage.setItem('teluguNewsPulse_district', editDistrict);
+        localStorage.setItem('teluguNewsPulse_mandal', editMandal);
       }
       
-      window.dispatchEvent(new Event('mandalPulse_authChanged'));
+      window.dispatchEvent(new Event('teluguNewsPulse_authChanged'));
       setIsEditing(false);
       toast({ title: "Profile Updated", description: "Your changes have been saved successfully." });
     } catch (error) {
@@ -192,7 +200,7 @@ export default function ProfilePage() {
     try {
       await auth.signOut();
       localStorage.clear();
-      window.dispatchEvent(new Event('mandalPulse_authChanged'));
+      window.dispatchEvent(new Event('teluguNewsPulse_authChanged'));
       window.location.href = '/login';
     } catch (err) {
       console.error("Logout failed:", err);
@@ -225,140 +233,181 @@ export default function ProfilePage() {
       <Navbar />
       
       <div className="max-w-2xl mx-auto px-4 pt-8 space-y-6">
-        <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-          <div className="h-20 bg-slate-50 border-b border-slate-100" />
-          <CardContent className="p-8">
-            <div className="flex flex-col items-center gap-6">
-              <div 
-                className="relative w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {profile.photo ? (
-                  <Image src={profile.photo} alt={profile.name} fill className="object-cover" />
-                ) : (
-                  profile.name?.[0] || 'U'
+        {/* Dynamic Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-[2rem] p-8 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div 
+              className="relative w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white/30 overflow-hidden group cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {profile.photo ? (
+                <Image src={profile.photo} alt={profile.name} fill className="object-cover" />
+              ) : (
+                profile.name?.[0] || 'U'
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
+              </div>
+            </div>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+            
+            <div className="text-center md:text-left flex-1">
+              <h1 className="text-3xl font-black tracking-tight leading-tight mb-1 truncate">నమస్కారం, {profile.name}!</h1>
+              <p className="opacity-90 font-bold text-sm flex items-center justify-center md:justify-start gap-1.5">
+                <MapPin className="w-4 h-4" />
+                {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
+              </p>
+              <div className="mt-4 flex flex-wrap justify-center md:justify-start gap-2">
+                <Badge className="bg-white/20 hover:bg-white/30 border-none text-white font-black text-[10px] uppercase tracking-widest px-3">
+                  {profile.role}
+                </Badge>
+                {profile.status === 'approved' && (
+                  <Badge className="bg-emerald-500 text-white border-none font-black text-[10px] uppercase tracking-widest px-3">
+                    Verified Account
+                  </Badge>
                 )}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : <Camera className="w-5 h-5 text-white" />}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Card className="border-none shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardContent className="p-4 flex flex-col items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-2">
+                <Heart className="w-5 h-5 text-orange-600 fill-orange-600" />
+              </div>
+              <p className="text-2xl font-black text-slate-900">{likedPostIds.length}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liked News</p>
+            </CardContent>
+          </Card>
+          <Card className="border-none shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardContent className="p-4 flex flex-col items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center mb-2">
+                <Zap className="w-5 h-5 text-yellow-600 fill-yellow-600" />
+              </div>
+              <p className="text-2xl font-black text-slate-900">{localNewsCount}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Local Pulse</p>
+            </CardContent>
+          </Card>
+          <Card className="border-none shadow-md rounded-2xl bg-white overflow-hidden hidden md:block">
+            <CardContent className="p-4 flex flex-col items-center text-center">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2">
+                <Shield className="w-5 h-5 text-blue-600 fill-blue-600" />
+              </div>
+              <p className="text-2xl font-black text-slate-900">Active</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Actions & Settings */}
+        <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-black flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 text-primary" />
+              Dashboard Settings
+            </CardTitle>
+            {!isEditing && (
+              <Button variant="ghost" size="sm" className="rounded-xl h-9 px-4 font-bold text-primary hover:bg-primary/5" onClick={() => setIsEditing(true)}>
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Profile
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="p-8">
+            {!isEditing ? (
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
+                    <p className="text-lg font-bold text-slate-900">{profile.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</Label>
+                    <p className="text-lg font-bold text-slate-900">{profile.phone || profile.email || 'Not set'}</p>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t flex flex-col gap-3">
+                  {profile.role === 'reporter' && (
+                    <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" asChild>
+                      <Link href="/reporter">
+                        <Newspaper className="w-5 h-5" />
+                        వార్తలు పంపండి (Submit News)
+                      </Link>
+                    </Button>
+                  )}
+                  {profile.role === 'admin' && (
+                    <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
+                      <Link href="/admin">
+                        <Shield className="w-5 h-5" />
+                        అడ్మిన్ ప్యానెల్ (Admin Panel)
+                      </Link>
+                    </Button>
+                  )}
+                  <Button variant="outline" className="w-full gap-2 rounded-2xl h-14 font-black text-base text-destructive hover:bg-destructive/5" onClick={handleLogout}>
+                    <LogOut className="w-5 h-5" />
+                    Logout Account
+                  </Button>
                 </div>
               </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-              
-              <div className="w-full">
-                {!isEditing ? (
-                  <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
-                    <div className="w-full px-4 mb-6">
-                      <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-tight truncate">{profile.name}</h1>
-                      <div className="flex flex-col items-center gap-1.5 mt-2">
-                        <p className="text-muted-foreground text-xs font-bold flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-primary" />
-                          {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
-                        </p>
-                        <div className="flex gap-4 mt-1">
-                          {profile.phone && (
-                            <p className="text-muted-foreground text-[11px] font-medium flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-slate-400" />
-                              {profile.phone}
-                            </p>
-                          )}
-                          {profile.email && (
-                            <p className="text-muted-foreground text-[11px] font-medium flex items-center gap-1">
-                              <Mail className="w-3 h-3 text-slate-400" />
-                              {profile.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className="mt-4 bg-primary/5 text-primary border-primary/10 capitalize px-4 py-1 text-[10px] font-black rounded-full uppercase tracking-widest">
-                        {profile.role}
-                      </Badge>
+            ) : (
+              <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">పూర్తి పేరు (Full Name)</Label>
+                    <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-lg" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఫోన్ (Phone)</Label>
+                      <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
                     </div>
-
-                    <div className="flex justify-center gap-3 pt-2 w-full max-w-sm">
-                      <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-xl h-11 font-bold text-xs shadow-sm" onClick={() => setIsEditing(true)}>
-                        <Edit2 className="w-3.5 h-3.5 text-primary" />
-                        Edit Profile
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1 gap-1.5 rounded-xl h-11 font-bold text-xs text-destructive hover:bg-destructive/5 shadow-sm" onClick={handleLogout}>
-                        <LogOut className="w-3.5 h-3.5" />
-                        Logout
-                      </Button>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఈమెయిల్ (Email)</Label>
+                      <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">పూర్తి పేరు (Full Name)</Label>
-                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-lg" />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఫోన్ (Phone)</Label>
-                          <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ఈమెయిల్ (Email)</Label>
-                          <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-3 pt-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ప్రాంతం (Location)</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <Select value={editState} onValueChange={(val) => { setEditState(val); setEditDistrict(""); setEditMandal(""); }}>
-                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="State" /></SelectTrigger>
-                            <SelectContent>
-                              {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Select value={editDistrict} onValueChange={(val) => { setEditDistrict(val); setEditMandal(""); }} disabled={!editState}>
-                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="District" /></SelectTrigger>
-                            <SelectContent>
-                              {editState && availableLocations[editState] && Object.keys(availableLocations[editState]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}>
-                            <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="Mandal" /></SelectTrigger>
-                            <SelectContent>
-                              {editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <Button variant="ghost" size="lg" className="flex-1 rounded-xl h-12 font-bold" onClick={() => setIsEditing(false)}>
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
-                      </Button>
-                      <Button size="lg" className="flex-1 gap-2 rounded-xl h-12 font-bold shadow-xl shadow-primary/20" onClick={handleSaveChanges} disabled={isSaving || !editName}>
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Save Changes
-                      </Button>
+                  
+                  <div className="space-y-3 pt-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">ప్రాంతం (Location)</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <Select value={editState} onValueChange={(val) => { setEditState(val); setEditDistrict(""); setEditMandal(""); }}>
+                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="State" /></SelectTrigger>
+                        <SelectContent>
+                          {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={editDistrict} onValueChange={(val) => { setEditDistrict(val); setEditMandal(""); }} disabled={!editState}>
+                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="District" /></SelectTrigger>
+                        <SelectContent>
+                          {editState && availableLocations[editState] && Object.keys(availableLocations[editState]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}>
+                        <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue placeholder="Mandal" /></SelectTrigger>
+                        <SelectContent>
+                          {editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                )}
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button variant="ghost" size="lg" className="flex-1 rounded-xl h-12 font-bold" onClick={() => setIsEditing(false)}>
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button size="lg" className="flex-1 gap-2 rounded-xl h-12 font-bold shadow-xl shadow-primary/20" onClick={handleSaveChanges} disabled={isSaving || !editName}>
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Changes
+                  </Button>
+                </div>
               </div>
-
-              {profile.role === 'reporter' && !isEditing && (
-                <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-cyan-600 hover:bg-cyan-700 shadow-xl shadow-cyan-600/20" asChild>
-                  <Link href="/reporter">
-                    <Newspaper className="w-5 h-5" />
-                    వార్తలు పంపండి (Submit News)
-                  </Link>
-                </Button>
-              )}
-              {profile.role === 'admin' && !isEditing && (
-                <Button className="w-full gap-2 rounded-2xl h-14 font-black text-base bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/20" asChild>
-                  <Link href="/admin">
-                    <Shield className="w-5 h-5" />
-                    అడ్మిన్ ప్యానెల్ (Admin Panel)
-                  </Link>
-                </Button>
-              )}
-            </div>
+            )}
           </CardContent>
         </Card>
 

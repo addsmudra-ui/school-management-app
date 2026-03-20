@@ -58,8 +58,8 @@ function NewsFeedContent() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const savedDistrict = localStorage.getItem('mandalPulse_district') || "All";
-    const savedMandal = localStorage.getItem('mandalPulse_mandal') || "All";
+    const savedDistrict = localStorage.getItem('teluguNewsPulse_district') || "All";
+    const savedMandal = localStorage.getItem('teluguNewsPulse_mandal') || "All";
     
     setSelectedDistrict(savedDistrict);
     setSelectedMandal(savedMandal);
@@ -105,9 +105,12 @@ function NewsFeedContent() {
     ];
 
     const sorted = [...combined].sort((a, b) => {
-      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
-      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
-      return timeB - timeA;
+      const getTime = (item: any) => {
+        if (item.timestamp?.toDate) return item.timestamp.toDate().getTime();
+        if (item.timestamp) return new Date(item.timestamp).getTime();
+        return 0;
+      };
+      return getTime(b) - getTime(a);
     });
 
     const isGlobalFilter = selectedDistrict === "All";
@@ -133,20 +136,20 @@ function NewsFeedContent() {
   }, [allNews, allAds, selectedDistrict, selectedMandal, forceGlobal]);
 
   const handleLocationUpdate = () => {
-    localStorage.setItem('mandalPulse_district', selectedDistrict);
-    localStorage.setItem('mandalPulse_mandal', selectedMandal);
+    localStorage.setItem('teluguNewsPulse_district', selectedDistrict);
+    localStorage.setItem('teluguNewsPulse_mandal', selectedMandal);
     setIsLocationModalOpen(false);
     setForceGlobal(false);
-    window.dispatchEvent(new Event('mandalPulse_locationChanged'));
+    window.dispatchEvent(new Event('teluguNewsPulse_locationChanged'));
   };
 
   const handleResetToGlobal = () => {
     setSelectedDistrict("All");
     setSelectedMandal("All");
-    localStorage.setItem('mandalPulse_district', "All");
-    localStorage.setItem('mandalPulse_mandal', "All");
+    localStorage.setItem('teluguNewsPulse_district', "All");
+    localStorage.setItem('teluguNewsPulse_mandal', "All");
     setForceGlobal(false);
-    window.dispatchEvent(new Event('mandalPulse_locationChanged'));
+    window.dispatchEvent(new Event('teluguNewsPulse_locationChanged'));
   };
 
   if ((isNewsLoading || isAdsLoading) && (!allNews || !allAds)) {
