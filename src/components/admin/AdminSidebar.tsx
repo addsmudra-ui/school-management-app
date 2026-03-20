@@ -108,8 +108,8 @@ export function AdminSidebar() {
     if (!profile) return [];
     if (profile.role === 'admin') return navItems;
     
-    // Editors only see content moderation tools
-    const editorAllowed = ["Dashboard", "New Post", "Approvals", "Ads", "Locations"];
+    // Editors only see Dashboard, New Post (Write), and Approvals (Edit/Approve)
+    const editorAllowed = ["Dashboard", "New Post", "Approvals"];
     return navItems.filter(item => editorAllowed.includes(item.name));
   }, [profile]);
 
