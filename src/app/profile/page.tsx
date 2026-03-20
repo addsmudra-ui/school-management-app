@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText, Edit2, Save, X, Phone, Mail, Search, CheckCircle2, AlertTriangle } from "lucide-react";
+import { User, MapPin, Heart, LogOut, ChevronRight, Newspaper, Camera, Loader2, Shield, FileText, Edit2, Save, X, Phone, Mail, Search, CheckCircle2, AlertTriangle, MessageSquare } from "lucide-react";
 import { NewsPost, STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -228,7 +229,6 @@ export default function ProfilePage() {
           <div className="h-20 bg-slate-50 border-b border-slate-100" />
           <CardContent className="p-8">
             <div className="flex flex-col items-center gap-6">
-              {/* Photo Section - Separate, no overlap */}
               <div 
                 className="relative w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-white text-3xl font-bold shadow-2xl border-4 border-white overflow-hidden group cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
@@ -244,7 +244,6 @@ export default function ProfilePage() {
               </div>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
               
-              {/* Profile Details */}
               <div className="w-full">
                 {!isEditing ? (
                   <div className="animate-in fade-in duration-300 text-center flex flex-col items-center">
@@ -417,8 +416,8 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Legal & Info */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Legal & Feedback */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Link href="/guidelines" className="group">
             <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full">
               <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
@@ -437,6 +436,15 @@ export default function ProfilePage() {
               <p className="text-[9px] text-muted-foreground mt-0.5">గోప్యతా విధానం</p>
             </Card>
           </Link>
+          <a href="mailto:telugunewspulseinfo@gmail.com" className="group">
+            <Card className="border-none shadow-md rounded-2xl bg-white hover:bg-slate-50 transition-colors cursor-pointer p-3.5 h-full border-l-4 border-l-primary/30">
+              <div className="w-9 h-9 bg-primary/5 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-4 h-4 text-primary" />
+              </div>
+              <p className="text-[11px] font-bold text-slate-900">Help & Feedback</p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">ఫిర్యాదులు చేయండి</p>
+            </Card>
+          </a>
         </div>
 
         {/* Liked News History */}

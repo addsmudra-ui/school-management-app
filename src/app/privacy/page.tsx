@@ -1,9 +1,10 @@
+
 "use client";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Lock, Eye, ArrowLeft } from "lucide-react";
+import { Shield, Lock, Eye, ArrowLeft, Mail, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -26,7 +27,7 @@ export default function PrivacyPolicyPage() {
             </div>
             <CardTitle className="text-3xl font-bold font-headline text-center">గోప్యతా విధానం (Privacy Policy)</CardTitle>
           </CardHeader>
-          <CardContent className="p-8 space-y-6 text-slate-700 leading-relaxed">
+          <CardContent className="p-8 space-y-8 text-slate-700 leading-relaxed">
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" />
@@ -62,14 +63,25 @@ export default function PrivacyPolicyPage() {
               </ul>
             </section>
 
-            <section className="space-y-3">
-              <h2 className="text-xl font-bold text-foreground">సంప్రదించండి</h2>
-              <p>
-                గోప్యతా విధానం గురించి మీకు ఏవైనా సందేహాలు ఉంటే, దయచేసి అడ్మిన్ కార్యాలయాన్ని సంప్రదించండి.
+            <section className="space-y-4 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                ఫిర్యాదులు మరియు సమాచారం (Complaints)
+              </h2>
+              <p className="text-sm font-medium">
+                మా గోప్యతా విధానం లేదా వార్తల కంటెంట్ గురించి మీకు ఏవైనా ఫిర్యాదులు లేదా సందేహాలు ఉంటే, దయచేసి మా అధికారిక ఈమెయిల్ ద్వారా మమ్మల్ని సంప్రదించండి:
               </p>
+              <div className="flex items-center gap-2 pt-2">
+                <a 
+                  href="mailto:telugunewspulseinfo@gmail.com" 
+                  className="text-lg font-black text-primary hover:underline underline-offset-4"
+                >
+                  telugunewspulseinfo@gmail.com
+                </a>
+              </div>
             </section>
             
-            <div className="pt-6 border-t text-xs text-muted-foreground text-center">
+            <div className="pt-6 border-t text-[10px] text-muted-foreground text-center font-bold uppercase tracking-widest">
               చివరిగా అప్‌డేట్ చేయబడింది: {new Date().toLocaleDateString('te-IN')}
             </div>
           </CardContent>
