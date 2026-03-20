@@ -159,7 +159,7 @@ export const NewsService = {
       NotificationService.send(db, {
         title: `బ్రేకింగ్: ${post.title}`,
         body: `${post.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
-        target: post.location.district,
+        target: 'All Users',
         postId: postId,
         imageUrl: post.image_url,
         topic: 'breaking_news'
@@ -189,7 +189,7 @@ export const NewsService = {
     NotificationService.send(db, {
       title: `బ్రేకింగ్: ${postData.title}`,
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
-      target: postData.location.district,
+      target: 'All Users',
       postId: postId,
       imageUrl: postData.image_url,
       topic: 'breaking_news'
