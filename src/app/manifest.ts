@@ -4,7 +4,7 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'News Pulse',
+    name: 'Telugu News Pulse',
     description: 'మీ మండలం మరియు జిల్లా స్థాయి వార్తల కోసం మీ నమ్మకమైన మూలం.',
     start_url: '/',
     display: 'standalone',

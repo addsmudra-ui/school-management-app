@@ -99,7 +99,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight">నిర్వాహక డాష్‌బోర్డ్</h1>
-          <p className="text-muted-foreground mt-1">MandalPulse ప్లాట్‌ఫారమ్ గణాంకాలను ఇక్కడ చూడవచ్చు.</p>
+          <p className="text-muted-foreground mt-1">Telugu News Pulse ప్లాట్‌ఫారమ్ గణాంకాలను ఇక్కడ చూడవచ్చు.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button 

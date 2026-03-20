@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -125,7 +124,7 @@ export function AdminSidebar() {
                 <Newspaper className="w-6 h-6" />
               )}
             </div>
-            <span className="text-xl font-headline tracking-tight">{branding?.appName || 'News Pulse'}</span>
+            <span className="text-xl font-headline tracking-tight">{branding?.appName || 'Telugu News Pulse'}</span>
           </Link>
         </SidebarHeader>
         

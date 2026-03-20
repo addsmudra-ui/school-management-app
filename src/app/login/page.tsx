@@ -266,7 +266,7 @@ export default function LoginPage() {
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
             < Newspaper className="w-10 h-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-bold font-headline">News Pulse</CardTitle>
+          <CardTitle className="text-2xl font-bold font-headline">Telugu News Pulse</CardTitle>
           <CardDescription>మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-8">

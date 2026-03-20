@@ -18,7 +18,7 @@ export function Footer() {
       <div className="max-w-md mx-auto px-4">
         <div className="h-px w-12 bg-muted-foreground/20 mx-auto mb-6" />
         <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold opacity-50">
-          © {year || '2025'} News Pulse. All Rights Reserved.
+          © {year || '2025'} Telugu News Pulse. All Rights Reserved.
         </p>
       </div>
     </footer>

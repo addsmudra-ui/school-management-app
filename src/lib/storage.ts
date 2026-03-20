@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -75,13 +74,13 @@ export const AdminService = {
       if (snapshot.exists()) {
         return {
           appLogo: snapshot.data().appLogo || null,
-          appName: snapshot.data().appName || 'News Pulse',
+          appName: snapshot.data().appName || 'Telugu News Pulse',
           systemStatus: snapshot.data().systemStatus || 'online'
         };
       }
-      return { appLogo: null, appName: 'News Pulse', systemStatus: 'online' };
+      return { appLogo: null, appName: 'Telugu News Pulse', systemStatus: 'online' };
     } catch (e) {
-      return { appLogo: null, appName: 'News Pulse', systemStatus: 'online' };
+      return { appLogo: null, appName: 'Telugu News Pulse', systemStatus: 'online' };
     }
   },
   updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string }) => {
@@ -103,7 +102,7 @@ export const AdminService = {
     });
 
     const adminRef = doc(db, 'config', 'admin');
-    batch.set(adminRef, { password: 'admin123', appName: 'News Pulse', systemStatus: 'online' }, { merge: true });
+    batch.set(adminRef, { password: 'admin123', appName: 'Telugu News Pulse', systemStatus: 'online' }, { merge: true });
 
     const locRef = doc(db, 'metadata', 'locations');
     batch.set(locRef, {

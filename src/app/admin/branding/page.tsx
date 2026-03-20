@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -32,7 +31,7 @@ export default function BrandingPage() {
   // Initialize form state when data loads
   useEffect(() => {
     if (branding) {
-      setAppName(branding.appName || "MandalPulse");
+      setAppName(branding.appName || "Telugu News Pulse");
       setLogoPreview(branding.appLogo || null);
     }
   }, [branding]);
@@ -103,7 +102,7 @@ export default function BrandingPage() {
             <Input 
               value={appName} 
               onChange={(e) => setAppName(e.target.value)} 
-              placeholder="ఉదా: MandalPulse"
+              placeholder="ఉదా: Telugu News Pulse"
               className="h-12 rounded-xl"
             />
           </div>
@@ -148,7 +147,7 @@ export default function BrandingPage() {
                         <Palette className="w-4 h-4 text-primary" />
                       )}
                     </div>
-                    <span className="font-bold text-sm truncate">{appName || "MandalPulse"}</span>
+                    <span className="font-bold text-sm truncate">{appName || "Telugu News Pulse"}</span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">

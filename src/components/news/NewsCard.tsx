@@ -1,4 +1,3 @@
-
 'use client';
 
 import Image from "next/image";
@@ -84,7 +83,7 @@ export function NewsCard({ news }: NewsCardProps) {
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareTitle = news.title;
-    const shareText = `${news.title}\n\nవార్త వివరాల కోసం News Pulse చూడండి.\n\n`;
+    const shareText = `${news.title}\n\nవార్త వివరాల కోసం Telugu News Pulse చూడండి.\n\n`;
     const shareUrl = `${window.location.origin}/?postId=${news.id}`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -136,7 +135,7 @@ export function NewsCard({ news }: NewsCardProps) {
           ) : (
             <div className="flex items-center gap-2 text-white/80">
               <Newspaper className="w-10 h-10" />
-              <span className="font-headline font-black text-xl tracking-tighter">News Pulse</span>
+              <span className="font-headline font-black text-xl tracking-tighter">Telugu News Pulse</span>
             </div>
           )}
         </div>
@@ -315,7 +314,7 @@ export function NewsCard({ news }: NewsCardProps) {
                   </div>
                 )}
                 <div className="flex flex-col">
-                  <span className="text-white font-black text-xs tracking-[0.2em] uppercase leading-none">News Pulse</span>
+                  <span className="text-white font-black text-xs tracking-[0.2em] uppercase leading-none">Telugu News Pulse</span>
                   <span className="text-white/80 font-bold text-[10px] tracking-widest lowercase mt-1">newspulse.app</span>
                 </div>
               </div>

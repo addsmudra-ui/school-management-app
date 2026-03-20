@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
@@ -172,7 +171,7 @@ function NewsFeedContent() {
           <div className="space-y-3">
             <h1 className="text-4xl font-black tracking-tight text-slate-900 font-headline">Zone Maintenance</h1>
             <p className="text-slate-600 font-bold text-lg leading-relaxed">
-              News Pulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్ండి.
+              Telugu News Pulse ప్రస్తుతానికి మెయింటెనెన్స్‌లో ఉంది.<br />కాసేపటి తర్వాత మళ్ళీ ప్రయత్ండి.
             </p>
           </div>
           <div className="pt-8 opacity-20 flex justify-center gap-4">

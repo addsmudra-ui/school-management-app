@@ -28,7 +28,7 @@ const summarizeArticlePrompt = ai.definePrompt({
   name: 'summarizeArticlePrompt',
   input: {schema: SummarizeArticleInputSchema},
   output: {schema: SummarizeArticleOutputSchema},
-  prompt: `You are an AI assistant tasked with summarizing news articles for a Telugu news app (MandalPulse). Your goal is to create a concise and impactful summary.
+  prompt: `You are an AI assistant tasked with summarizing news articles for a Telugu news app (Telugu News Pulse). Your goal is to create a concise and impactful summary.
 
 IMPORTANT: The summary must be written in Telugu (తెలుగు) language.
 

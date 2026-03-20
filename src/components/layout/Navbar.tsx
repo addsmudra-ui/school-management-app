@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -164,7 +163,7 @@ export function Navbar() {
               <Newspaper className="w-6 h-6" />
             )}
           </div>
-          <span className="hidden sm:inline font-headline tracking-tight">{branding?.appName || 'News Pulse'}</span>
+          <span className="hidden sm:inline font-headline tracking-tight">{branding?.appName || 'Telugu News Pulse'}</span>
         </Link>
 
         <div className={cn("hidden md:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all", theme.bg, theme.border, theme.text)}>
