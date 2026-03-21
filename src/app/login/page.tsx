@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -259,8 +258,7 @@ export default function LoginPage() {
                     <SelectContent>
                       <SelectItem value="user">పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
-                      <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
-                      <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
+                      {/* Admin and Editor roles are hidden from public registration */}
                     </SelectContent>
                   </Select>
                 </div>
