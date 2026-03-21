@@ -155,9 +155,7 @@ export default function LoginPage() {
             if (existing) {
               syncLocalStorage(existing);
               if (existing.role === 'admin' || existing.role === 'editor') {
-                setRole(existing.role);
-                setName(existing.name);
-                setStep('details'); 
+                router.push('/admin');
               } else {
                 const targetPath = existing.role === 'reporter' ? '/reporter' : '/profile';
                 router.push(targetPath);
@@ -188,9 +186,7 @@ export default function LoginPage() {
         if (existing) {
           syncLocalStorage(existing);
           if (existing.role === 'admin' || existing.role === 'editor') {
-            setRole(existing.role);
-            setName(existing.name);
-            setStep('details'); 
+            router.push('/admin');
           } else {
             router.push(existing.role === 'reporter' ? '/reporter' : '/profile');
           }
@@ -200,15 +196,6 @@ export default function LoginPage() {
       }
       else {
         // Details Step
-        if (role === 'admin' || role === 'editor') {
-          const correctPassword = await AdminService.getPassword(firestore);
-          if (password !== correctPassword) {
-            toast({ variant: "destructive", title: "Authentication Failed", description: "Invalid password." });
-            setIsLoading(false);
-            return;
-          }
-        }
-
         let currentUser = auth.currentUser;
         if (method === 'email' && !currentUser) {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -222,14 +209,14 @@ export default function LoginPage() {
         const newUser: any = {
           id: currentUser.uid,
           name,
-          role,
+          role, // admin/editor no longer selectable here, defaults to user/reporter
           status: role === 'reporter' ? 'pending' : 'approved',
         };
 
         if (phone) newUser.phone = `+91${phone}`;
         if (email || currentUser.email) newUser.email = email || currentUser.email;
 
-        if (role !== 'admin' && role !== 'editor' && state && district && mandal) {
+        if (state && district && mandal) {
           newUser.location = { state, district, mandal };
         }
 
@@ -237,7 +224,7 @@ export default function LoginPage() {
         syncLocalStorage(newUser);
         
         toast({ title: "Welcome", description: "Profile setup complete." });
-        const targetPath = (role === 'admin' || role === 'editor') ? '/admin' : role === 'reporter' ? '/reporter' : '/profile';
+        const targetPath = role === 'reporter' ? '/reporter' : '/profile';
         router.push(targetPath);
       }
     } catch (error: any) {
@@ -271,9 +258,7 @@ export default function LoginPage() {
   };
 
   const isDetailsValid = () => {
-    if (!name) return false;
-    if (role === 'admin' || role === 'editor') return password.length >= 4;
-    return !!(state && district && mandal);
+    return !!(name && state && district && mandal);
   };
 
   if (isUserLoading) {
@@ -283,8 +268,6 @@ export default function LoginPage() {
       </div>
     );
   }
-
-  const isAdminOrEditor = role === 'admin' || role === 'editor';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
@@ -447,74 +430,55 @@ export default function LoginPage() {
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
                     <SelectTrigger className="h-11 rounded-xl">
                       <div className="flex items-center gap-2">
-                        {isAdminOrEditor ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
+                        <UserIcon className="w-4 h-4 text-primary" />
                         <SelectValue />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="user">సాధారణ పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">స్థానిక రిపోర్టర్ (Reporter)</SelectItem>
-                      <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
-                      <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
-                {isAdminOrEditor && (
-                  <div className="space-y-2 animate-in zoom-in-95 duration-200">
-                    <Label className="text-rose-600 font-bold">పాస్‌వర్డ్ (Password)</Label>
-                    <Input 
-                      type="password" 
-                      placeholder="Enter Admin Password" 
-                      value={password} 
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-11 rounded-xl border-rose-200 focus:ring-rose-500"
-                    />
+                <div className="space-y-2">
+                  <Label>రాష్ట్రం (State)</Label>
+                  <Select onValueChange={(val) => { setState(val); setDistrict(""); setMandal(""); }} value={state}>
+                    <SelectTrigger className="h-11 rounded-xl">
+                      <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>జిల్లా (District)</Label>
+                    <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
+                      <SelectTrigger className="h-11 rounded-xl">
+                        <SelectValue placeholder="జిల్లా" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-
-                {!isAdminOrEditor && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>రాష్ట్రం (State)</Label>
-                      <Select onValueChange={(val) => { setState(val); setDistrict(""); setMandal(""); }} value={state}>
-                        <SelectTrigger className="h-11 rounded-xl">
-                          <SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label>జిల్లా (District)</Label>
-                        <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
-                          <SelectTrigger className="h-11 rounded-xl">
-                            <SelectValue placeholder="జిల్లా" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>మండలం (Mandal)</Label>
-                        <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                          <SelectTrigger className="h-11 rounded-xl">
-                            <SelectValue placeholder="మండలం" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {district && availableLocations[state]?.[district]?.map((m: string) => (
-                              <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </>
-                )}
+                  <div className="space-y-2">
+                    <Label>మండలం (Mandal)</Label>
+                    <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+                      <SelectTrigger className="h-11 rounded-xl">
+                        <SelectValue placeholder="మండలం" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {district && availableLocations[state]?.[district]?.map((m: string) => (
+                          <SelectItem key={m} value={m} className="font-bold">{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <Button className="w-full h-12 text-lg mt-4 rounded-xl shadow-lg shadow-primary/20" onClick={handleNext} disabled={!isDetailsValid() || isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "ప్రారంభించండి"}
