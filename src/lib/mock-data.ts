@@ -23,6 +23,19 @@ export const LOCATIONS = {
   ...LOCATIONS_BY_STATE["Andhra Pradesh"]
 };
 
+export type NewsCategory = 'International' | 'National' | 'Home' | 'Health' | 'Financial' | 'Entertainment' | 'Sports' | 'Technology';
+
+export const NEWS_CATEGORIES: { value: NewsCategory; label: string; icon: string }[] = [
+  { value: 'Home', label: 'హోమ్', icon: 'Home' },
+  { value: 'National', label: 'జాతీయ', icon: 'Flag' },
+  { value: 'International', label: 'అంతర్జాతీయ', icon: 'Globe' },
+  { value: 'Financial', label: 'ఆర్థిక', icon: 'Wallet' },
+  { value: 'Health', label: 'ఆరోగ్యం', icon: 'HeartPulse' },
+  { value: 'Entertainment', label: 'వినోదం', icon: 'Film' },
+  { value: 'Sports', label: 'క్రీడలు', icon: 'Trophy' },
+  { value: 'Technology', label: 'టెక్నాలజీ', icon: 'Cpu' },
+];
+
 export type Comment = {
   id: string;
   userName: string;
@@ -53,6 +66,8 @@ export type NewsPost = {
   title: string;
   content: string;
   image_url: string;
+  video_url?: string;
+  category: NewsCategory;
   location: {
     state: string;
     district: string;
@@ -79,6 +94,7 @@ export const MOCK_NEWS: NewsPost[] = [
     title: "హన్మకొండలో భారీ వర్షాలు, జనజీవనం అస్తవ్యస్తం",
     content: "హన్మకొండ నగరంలో గత రాత్రి కురిసిన భారీ వర్షం కారణంగా లోతట్టు ప్రాంతాలు జలమయమయ్యాయి. అధికారులు సహాయక చర్యలు చేపట్టారు.",
     image_url: "https://picsum.photos/seed/hanamkonda/800/600",
+    category: 'Home',
     location: { state: "Telangana", district: "Warangal", mandal: "Hanamkonda" },
     status: "approved",
     visibility: "live",
@@ -96,6 +112,7 @@ export const MOCK_NEWS: NewsPost[] = [
     title: "బంజారాహిల్స్ లో కొత్త ట్రాఫిక్ నిబంధనలు",
     content: "హైదరాబాద్ బంజారాహిల్స్ ప్రాంతంలో ట్రాఫిక్ సమస్యను తగ్గించడానికి పోలీసులు కొత్త రూల్స్ ప్రవేశపెట్టారు. వాహనదారులు గమనించగలరు.",
     image_url: "https://picsum.photos/seed/hyderabad/800/600",
+    category: 'Home',
     location: { state: "Telangana", district: "Hyderabad", mandal: "Banjara Hills" },
     status: "approved",
     visibility: "live",
@@ -113,6 +130,7 @@ export const MOCK_NEWS: NewsPost[] = [
     title: "తిమ్మాపూర్ రైతులకు శుభవార్త, ఎరువుల పంపిణీ",
     content: "కరీంనగర్ జిల్లా తిమ్మాపూర్ మండలంలో రైతులకు సబ్సిడీపై ఎరువుల పంపిణీ కార్యక్రమం ప్రారంభమైంది. వ్యవసాయ అధికారులు పాల్గొన్నారు.",
     image_url: "https://picsum.photos/seed/agriculture/800/600",
+    category: 'Home',
     location: { state: "Telangana", district: "Karimnagar", mandal: "Thimmapur" },
     status: "approved",
     visibility: "live",
