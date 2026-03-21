@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Newspaper, User, PlusCircle, LayoutDashboard, Bell, ChevronRight, MapPin } from "lucide-react";
+import { Newspaper, User, PlusCircle, LayoutDashboard, Bell, ChevronRight, MapPin, FileText, Shield, Info, AlertTriangle, ExternalLink } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -27,6 +27,7 @@ export function Navbar() {
   const [location, setLocation] = useState({ mandal: "", district: "" });
   const [hasNewNotif, setHasNewNotif] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isLegalOpen, setIsLegalOpen] = useState(false);
   
   // Navigation Visibility State
   const [isMinimized, setIsMinimized] = useState(false);
@@ -169,21 +170,106 @@ export function Navbar() {
       isMinimized ? "h-12 opacity-95 backdrop-blur-md translate-y-1 md:translate-y-0" : "h-14 opacity-100"
     )}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        <Link href="/" className={cn("flex items-center gap-1.5 font-bold text-lg shrink-0", theme.text)}>
-          <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden shrink-0">
-            {branding?.appLogo ? (
-              <Image src={branding.appLogo} alt="Logo" fill className="object-contain" priority />
-            ) : (
-              <Newspaper className="w-5 h-5" />
-            )}
-          </div>
-          <span className={cn(
-            "hidden sm:inline font-headline tracking-tight transition-all duration-300 overflow-hidden",
-            isMinimized ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
-          )}>
-            {branding?.appName || 'Telugu News Pulse'}
-          </span>
-        </Link>
+        
+        {/* App Logo & Details Sheet */}
+        <Sheet open={isLegalOpen} onOpenChange={setIsLegalOpen}>
+          <SheetTrigger asChild>
+            <button className={cn("flex items-center gap-1.5 font-bold text-lg shrink-0", theme.text)}>
+              <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden shrink-0">
+                {branding?.appLogo ? (
+                  <Image src={branding.appLogo} alt="Logo" fill className="object-contain" priority />
+                ) : (
+                  <Newspaper className="w-5 h-5" />
+                )}
+              </div>
+              <span className={cn(
+                "hidden sm:inline font-headline tracking-tight transition-all duration-300 overflow-hidden",
+                isMinimized ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
+              )}>
+                {branding?.appName || 'Telugu News Pulse'}
+              </span>
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[85%] sm:max-w-xs p-0 z-[110] border-none shadow-2xl">
+            <SheetHeader className={cn("p-6 border-b", theme.bg)}>
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">
+                  {branding?.appLogo ? (
+                    <Image src={branding.appLogo} alt="Logo" fill className="object-contain" priority />
+                  ) : (
+                    <Newspaper className="w-8 h-8 text-primary" />
+                  )}
+                </div>
+                <SheetTitle className="text-sm font-black tracking-tight">{branding?.appName || 'Telugu News Pulse'}</SheetTitle>
+              </div>
+            </SheetHeader>
+            
+            <div className="flex flex-col h-full overflow-y-auto pb-32">
+              {/* User Details Section */}
+              {userName && (
+                <div className="p-4 border-b bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full border bg-white overflow-hidden shrink-0">
+                      {userPhoto ? <Image src={userPhoto} alt={userName} width={40} height={40} className="object-cover" /> : <User className="w-full h-full p-2 text-muted-foreground" />}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-black truncate">{userName}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Badge variant="outline" className="text-[8px] font-bold uppercase border-muted-foreground/20 px-1 h-4">{role}</Badge>
+                        <span className="text-[8px] text-muted-foreground font-medium flex items-center gap-0.5">
+                          <MapPin className="w-2 h-2" />
+                          {location.mandal}, {location.district}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Menu Links */}
+              <div className="p-4 space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-2 mb-2">Legal & Information</p>
+                  
+                  <Link href="/privacy" onClick={() => setIsLegalOpen(false)} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <Shield className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="text-[11px] font-bold">Privacy Policy</span>
+                    <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/50" />
+                  </Link>
+
+                  <Link href="/guidelines" onClick={() => setIsLegalOpen(false)} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <FileText className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="text-[11px] font-bold">Terms & Conditions</span>
+                    <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/50" />
+                  </Link>
+
+                  <div className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-100">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="text-[10px] font-black uppercase tracking-tight text-amber-800">Disclaimer</span>
+                    </div>
+                    <p className="text-[9px] text-amber-900 leading-relaxed font-medium opacity-80">
+                      ఈ యాప్‌లో ప్రచురించబడే వార్తలు మరియు అభిప్రాయాలు సంబంధిత రిపోర్టర్లవే. ప్లాట్‌ఫారమ్ ఏవైనా వాస్తవాలకు లేదా వార్తా కంటెంట్‌కు బాధ్యత వహించదు. దయచేసి సమాచారాన్ని మీ విచక్షణతో గ్రహించగలరు.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t space-y-1">
+                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-2 mb-2">Support</p>
+                  <a href="mailto:telugunewspulseinfo@gmail.com" className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <Info className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                    <span className="text-[11px] font-bold">Contact Support</span>
+                    <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground/30" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="mt-auto p-6 text-center">
+                <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Version 1.0.4 - Build 2025</p>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
 
         <div className={cn(
           "hidden lg:flex items-center gap-1.5 px-3 py-1 border rounded-full text-[10px] font-bold transition-all duration-300",
