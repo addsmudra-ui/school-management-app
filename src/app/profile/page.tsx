@@ -202,8 +202,10 @@ export default function ProfilePage() {
               </div>
             </div>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-            <div className="text-center">
-              <h1 className="text-xl font-black tracking-tight leading-none mb-1.5 truncate">నమస్కారం, {profile.name}!</h1>
+            <div className="text-center w-full px-2">
+              <h1 className="text-lg font-black tracking-tight leading-tight mb-1.5 line-clamp-2 break-words">
+                నమస్కారం, {profile.name}!
+              </h1>
               <p className="opacity-90 font-bold text-[10px] flex items-center justify-center gap-1">
                 <MapPin className="w-3 h-3" />
                 {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
