@@ -2,7 +2,6 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
-
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "build": "next build",
@@ -15,7 +14,6 @@
     "build:android": "npm run static:export && npx cap sync android",
     "open:android": "npx cap open android"
   },
-
   "dependencies": {
     "next": "15.5.9",
     "react": "^19.2.1",
@@ -52,6 +50,7 @@
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
     "genkit": "^1.28.0",
+    "html2canvas": "^1.4.1",
     "lucide-react": "^0.475.0",
     "patch-package": "^8.0.0",
     "react-day-picker": "^9.11.3",
@@ -61,7 +60,6 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2"
   },
-
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
     "@types/node": "^20",

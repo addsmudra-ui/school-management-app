@@ -1,9 +1,8 @@
-
 'use client';
 
 import Image from "next/image";
 import { NewsPost, NEWS_CATEGORIES } from "@/lib/mock-data";
-import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2, Globe, Newspaper, Play, Pause } from "lucide-react";
+import { Heart, MessageCircle, Share2, MapPin, Hash, Send, Star, ChevronDown, Maximize2, Globe, Newspaper, Play, Pause, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NewsService } from "@/lib/storage";
 import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, doc } from "firebase/firestore";
+import html2canvas from "html2canvas";
 
 interface NewsCardProps {
   news: NewsPost;
@@ -27,6 +27,7 @@ export function NewsCard({ news }: NewsCardProps) {
   const [newComment, setNewComment] = useState("");
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -122,24 +123,50 @@ export function NewsCard({ news }: NewsCardProps) {
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!cardRef.current || isSharing) return;
+
+    setIsSharing(true);
     const shareTitle = news.title;
     const shareText = `${news.title}\n\nవార్త వివరాల కోసం Telugu News Pulse చూడండి.\n\n`;
     const shareUrl = `${window.location.origin}/?postId=${news.id}`;
 
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
-        return;
-      } catch (err) {
-        if ((err as Error).name === 'AbortError') return;
-      }
-    }
-
     try {
-      await navigator.clipboard.writeText(`${shareTitle}\n${shareUrl}`);
-      toast({ title: "లింక్ కాపీ చేయబడింది", description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది." });
+      // 1. Create Screenshot
+      const canvas = await html2canvas(cardRef.current, {
+        useCORS: true,
+        scale: 2,
+        logging: false,
+        backgroundColor: '#ffffff',
+        ignoreElements: (element) => {
+          return element.tagName === 'BUTTON' || element.classList.contains('share-ignore');
+        }
+      });
+
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      
+      if (blob && navigator.canShare && navigator.canShare({ files: [new File([blob], 'news.png', { type: 'image/png' })] })) {
+        const file = new File([blob], `news-${news.unique_code}.png`, { type: 'image/png' });
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+          files: [file],
+        });
+      } else {
+        // Fallback to text share if files aren't supported
+        if (navigator.share) {
+          await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        } else {
+          await navigator.clipboard.writeText(`${shareTitle}\n${shareUrl}`);
+          toast({ title: "లింక్ కాపీ చేయబడింది", description: "వార్త లింక్ క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది." });
+        }
+      }
     } catch (err) {
-      toast({ variant: "destructive", title: "Error", description: "Could not share." });
+      if ((err as Error).name !== 'AbortError') {
+        toast({ variant: "destructive", title: "Error", description: "Could not share." });
+      }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -170,14 +197,14 @@ export function NewsCard({ news }: NewsCardProps) {
               muted
               playsInline
             />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none share-ignore">
               {!isPlaying && (
                 <div className="bg-black/40 backdrop-blur-md p-4 rounded-full border border-white/20">
                   <Play className="w-8 h-8 text-white fill-white" />
                 </div>
               )}
             </div>
-            <div className="absolute bottom-2 right-2 z-20">
+            <div className="absolute bottom-2 right-2 z-20 share-ignore">
               <div className="bg-black/40 backdrop-blur-md text-white p-1 rounded-md text-[8px] font-bold border border-white/10 uppercase tracking-tighter flex items-center gap-1">
                 <Play className="w-2 h-2" />
                 Video
@@ -257,7 +284,7 @@ export function NewsCard({ news }: NewsCardProps) {
             </div>
 
             {/* Interactions */}
-            <div className="flex items-center gap-3 shrink-0 pr-1">
+            <div className="flex items-center gap-3 shrink-0 pr-1 share-ignore">
               <button onClick={toggleLike} className="flex flex-col items-center gap-0.5 group">
                 <Heart className={cn("w-3.5 h-3.5 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-slate-400 group-hover:text-rose-400")} />
                 <span className="text-[7px] font-black text-slate-700">{news.likes || 0}</span>
@@ -317,8 +344,8 @@ export function NewsCard({ news }: NewsCardProps) {
                 </SheetContent>
               </Sheet>
 
-              <button onClick={handleShare} className="group flex flex-col items-center gap-0.5">
-                <Share2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary" />
+              <button onClick={handleShare} disabled={isSharing} className="group flex flex-col items-center gap-0.5">
+                {isSharing ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> : <Share2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary" />}
                 <span className="text-[7px] font-black text-slate-700 uppercase">Share</span>
               </button>
             </div>
@@ -336,7 +363,7 @@ export function NewsCard({ news }: NewsCardProps) {
 
           <button 
             onClick={scrollToNext}
-            className="flex flex-col items-center justify-center py-4 opacity-30 hover:opacity-100 transition-opacity md:hidden w-full group"
+            className="flex flex-col items-center justify-center py-4 opacity-30 hover:opacity-100 transition-opacity md:hidden w-full group share-ignore"
           >
             <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">మరిన్ని వార్తలు</p>
             <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center animate-bounce">
