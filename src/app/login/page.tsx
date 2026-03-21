@@ -52,14 +52,12 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Real-time Profile for redirection
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid, user?.isAnonymous]);
   const { data: dbProfile, isLoading: isProfileLoading } = useDoc(profileRef);
 
-  // Recognition and Redirection Logic
   useEffect(() => {
     const handleRecognition = async () => {
       if (isUserLoading || isProfileLoading || !user || user.isAnonymous) return;
@@ -68,7 +66,6 @@ export default function LoginPage() {
         const targetPath = (dbProfile.role === 'admin' || dbProfile.role === 'editor') ? '/admin' : dbProfile.role === 'reporter' ? '/reporter' : '/profile';
         router.push(targetPath);
       } else {
-        // Recognition logic for pre-provisioned staff
         setIsLoading(true);
         try {
           const userPhone = user.phoneNumber;
@@ -82,9 +79,7 @@ export default function LoginPage() {
           }
 
           if (provisioned && provisioned.id.startsWith('MANUAL_')) {
-            // Claim the profile!
             await UserService.claimProfile(firestore!, user.uid, provisioned);
-            toast({ title: "Staff recognized!", description: `Welcome back, ${provisioned.name}.` });
             const targetPath = (provisioned.role === 'admin' || provisioned.role === 'editor') ? '/admin' : provisioned.role === 'reporter' ? '/reporter' : '/profile';
             router.push(targetPath);
           } else {
@@ -101,7 +96,6 @@ export default function LoginPage() {
     handleRecognition();
   }, [user, isUserLoading, isProfileLoading, dbProfile, router, firestore, toast]);
 
-  // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
   
@@ -113,7 +107,6 @@ export default function LoginPage() {
 
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
-  // Initialize Recaptcha with robustness check
   useEffect(() => {
     if (typeof window !== 'undefined' && auth && !isUserLoading && !window.recaptchaVerifier) {
       const container = document.getElementById('recaptcha-container');
@@ -151,33 +144,26 @@ export default function LoginPage() {
       if (step === 'auth') {
         if (method === 'phone') {
           if (!phone || phone.length < 10) {
-            toast({ variant: "destructive", title: "Error", description: "Please enter a valid 10-digit phone number." });
+            toast({ variant: "destructive", title: "Error", description: "Please enter 10 digits." });
             setIsLoading(false);
             return;
           }
-
           if (!window.recaptchaVerifier) {
-            toast({ variant: "destructive", title: "System Error", description: "Recaptcha not ready. Please refresh the page." });
+            toast({ variant: "destructive", title: "Error", description: "System not ready." });
             setIsLoading(false);
             return;
           }
-
           const formattedPhone = `+91${phone}`;
           const result = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
           setConfirmationResult(result);
           setStep('otp');
-          toast({ title: "OTP Sent" });
         } else if (method === 'email') {
           try {
             await signInWithEmailAndPassword(auth, email, password);
           } catch (error: any) {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
               setStep('details');
-            } else if (error.code === 'auth/too-many-requests') {
-              toast({ variant: "destructive", title: "Too Many Requests", description: "చాలా సార్లు ప్రయత్నించారు. దయచేసి కాసేపు ఆగి మళ్ళీ ప్రయత్నించండి." });
-            } else {
-              throw error;
-            }
+            } else throw error;
           }
         }
       }
@@ -186,13 +172,11 @@ export default function LoginPage() {
         await confirmationResult.confirm(otp);
       }
       else {
-        // Details Step
         let currentUser = auth.currentUser;
         if (method === 'email' && !currentUser) {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           currentUser = userCredential.user;
         }
-
         if (!currentUser?.uid) throw new Error("Session failed.");
 
         const newUser: any = {
@@ -201,100 +185,94 @@ export default function LoginPage() {
           role,
           status: role === 'reporter' ? 'pending' : 'approved',
         };
-
         if (phone) newUser.phone = `+91${phone}`;
         if (email || currentUser.email) newUser.email = email || currentUser.email;
         if (state && district && mandal) newUser.location = { state, district, mandal };
 
         await UserService.create(firestore, newUser);
-        toast({ title: "Welcome" });
-        
-        const targetPath = role === 'reporter' ? '/reporter' : '/profile';
-        router.push(targetPath);
+        router.push(role === 'reporter' ? '/reporter' : '/profile');
       }
     } catch (error: any) {
-      if (error.code === 'auth/too-many-requests') {
-        toast({ variant: "destructive", title: "Too Many Requests", description: "చాలా సార్లు ప్రయత్నించారు. దయచేసి కాసేపు ఆగి మళ్ళీ ప్రయత్నించండి." });
-      } else {
-        toast({ variant: "destructive", title: "Error", description: error.message });
-      }
+      toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
       setIsLoading(false);
     }
   };
 
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-12 h-12 text-primary animate-spin" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       <div id="recaptcha-container"></div>
       
-      <div className="w-full max-w-md z-10 space-y-6">
-        <Card className="shadow-2xl border-none rounded-3xl overflow-hidden bg-white/95 backdrop-blur-sm">
-          <CardHeader className="text-center relative bg-primary/5 pb-8">
-            {step !== 'auth' && <button className="absolute left-4 top-4 p-2" onClick={() => setStep('auth')}><ChevronLeft className="w-5 h-5" /></button>}
-            <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
-              <Newspaper className="w-10 h-10 text-primary" />
+      <div className="w-full max-w-sm z-10 space-y-4">
+        <Card className="shadow-xl border-none rounded-2xl overflow-hidden bg-white/95 backdrop-blur-sm">
+          <CardHeader className="text-center relative bg-primary/5 pb-6">
+            {step !== 'auth' && <button className="absolute left-3 top-3 p-1.5" onClick={() => setStep('auth')}><ChevronLeft className="w-4 h-4" /></button>}
+            <div className="mx-auto w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-3 mt-2">
+              <Newspaper className="w-7 h-7 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold">Telugu News Pulse</CardTitle>
-            <CardDescription>మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
+            <CardTitle className="text-xl font-bold">Telugu News Pulse</CardTitle>
+            <CardDescription className="text-xs">మీ ప్రాంతీయ వార్తలు (Local News)</CardDescription>
           </CardHeader>
           
-          <CardContent className="space-y-6 pt-8">
+          <CardContent className="space-y-4 pt-6">
             {step === 'auth' && (
-              <div className="space-y-4">
-                <div className="flex gap-2 p-1 bg-muted rounded-xl mb-4">
-                  <Button variant={method === 'phone' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setMethod('phone')}><Phone className="w-3 h-3 mr-1" /> Phone</Button>
-                  <Button variant={method === 'email' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setMethod('email')}><Mail className="w-3 h-3 mr-1" /> Email</Button>
-                  <Button variant={method === 'google' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setMethod('google')}><Chrome className="w-3 h-3 mr-1" /> Google</Button>
+              <div className="space-y-3">
+                <div className="flex gap-1.5 p-1 bg-muted rounded-lg mb-2">
+                  <Button variant={method === 'phone' ? 'default' : 'ghost'} className="flex-1 h-8 text-[10px] px-0" onClick={() => setMethod('phone')}>Phone</Button>
+                  <Button variant={method === 'email' ? 'default' : 'ghost'} className="flex-1 h-8 text-[10px] px-0" onClick={() => setMethod('email')}>Email</Button>
+                  <Button variant={method === 'google' ? 'default' : 'ghost'} className="flex-1 h-8 text-[10px] px-0" onClick={() => setMethod('google')}>Google</Button>
                 </div>
 
                 {method === 'phone' && (
-                  <div className="space-y-2">
-                    <Label>ఫోన్ నంబర్</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2.5 text-muted-foreground">+91</span>
-                      <Input className="pl-12 h-12" placeholder="10 అంకెల నంబర్" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">ఫోన్ నంబర్</Label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2 text-[11px] text-muted-foreground">+91</span>
+                        <Input className="pl-9 h-9 text-sm" placeholder="10 అంకెలు" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+                      </div>
                     </div>
-                    <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : "ప్రవేశించండి"}</Button>
+                    <Button className="w-full h-10 text-base" onClick={handleNext} disabled={isLoading}>{isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "ప్రవేశించండి"}</Button>
                   </div>
                 )}
 
                 {method === 'email' && (
-                  <div className="space-y-4">
-                    <Input placeholder="ఈమెయిల్" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <Input type="password" placeholder="పాస్‌వర్డ్" value={password} onChange={(e) => setPassword(e.target.value)} />
-                    <Button className="w-full h-12" onClick={handleNext} disabled={isLoading}>ప్రవేశించండి</Button>
+                  <div className="space-y-2.5">
+                    <Input placeholder="ఈమెయిల్" className="h-9 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <Input type="password" placeholder="పాస్‌వర్డ్" className="h-9 text-sm" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <Button className="w-full h-10 text-base" onClick={handleNext} disabled={isLoading}>ప్రవేశించండి</Button>
                   </div>
                 )}
 
-                {method === 'google' && <Button variant="outline" className="w-full h-14 font-bold gap-3" onClick={handleGoogleLogin} disabled={isLoading}><Chrome className="w-6 h-6 text-primary" /> Sign in with Google</Button>}
+                {method === 'google' && <Button variant="outline" className="w-full h-11 font-bold gap-2 text-sm" onClick={handleGoogleLogin} disabled={isLoading}><Chrome className="w-5 h-5 text-primary" /> Sign in with Google</Button>}
               </div>
             )}
 
             {step === 'otp' && (
-              <div className="space-y-4 text-center">
-                <Label className="text-xs font-bold text-muted-foreground">OTP (6 Digits)</Label>
-                <Input className="text-center text-2xl h-14 tracking-[0.5em] font-black" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} />
-                <Button className="w-full h-12" onClick={handleNext} disabled={isLoading}>ధృవీకరించండి</Button>
+              <div className="space-y-3 text-center">
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase">OTP (6 Digits)</Label>
+                <Input className="text-center text-xl h-11 tracking-[0.4em] font-black" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} />
+                <Button className="w-full h-10" onClick={handleNext} disabled={isLoading}>ధృవీకరించండి</Button>
               </div>
             )}
 
             {step === 'details' && (
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>మీ పేరు (Name)</Label>
-                    <Input placeholder="పూర్తి పేరు" className="h-11" value={name} onChange={(e) => setName(e.target.value)} />
+              <div className="space-y-3 max-h-[50vh] overflow-y-auto px-0.5">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">మీ పేరు (Name)</Label>
+                    <Input placeholder="పూర్తి పేరు" className="h-9 text-sm" value={name} onChange={(e) => setName(e.target.value)} />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>నేను ఒక...</Label>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">నేను ఒక...</Label>
                     <Select onValueChange={(v: any) => setRole(v)} value={role}>
-                      <SelectTrigger className="h-11">
-                        <div className="flex items-center gap-2"><UserIcon className="w-4 h-4 text-primary" /><SelectValue /></div>
+                      <SelectTrigger className="h-9 text-sm">
+                        <div className="flex items-center gap-2"><UserIcon className="w-3.5 h-3.5 text-primary" /><SelectValue /></div>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="user">పాఠకుడు (Reader)</SelectItem>
@@ -303,32 +281,32 @@ export default function LoginPage() {
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label>రాష్ట్రం</Label>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">రాష్ట్రం</Label>
                     <Select onValueChange={(val) => { setState(val); setDistrict(""); setMandal(""); }} value={state}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="రాష్ట్రం ఎంచుకోండి" /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="ఎంచుకోండి" /></SelectTrigger>
                       <SelectContent>{availableStates.sort().map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>జిల్లా</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">జిల్లా</Label>
                       <Select onValueChange={(val) => { setDistrict(val); setMandal(""); }} value={district} disabled={!state}>
-                        <SelectTrigger className="h-11"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
                         <SelectContent>{state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>మండలం</Label>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">మండలం</Label>
                       <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                        <SelectTrigger className="h-11"><SelectValue placeholder="మండలం" /></SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="మండలం" /></SelectTrigger>
                         <SelectContent>{district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
-                <Button className="w-full h-12 text-lg mt-4" onClick={handleNext} disabled={!name || isLoading}>ప్రారంభించండి</Button>
+                <Button className="w-full h-10 text-base mt-2" onClick={handleNext} disabled={!name || isLoading}>ప్రారంభించండి</Button>
               </div>
             )}
           </CardContent>
@@ -336,7 +314,7 @@ export default function LoginPage() {
 
         <div className="text-center">
           <Link href="/staff/login">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary gap-2 font-bold uppercase text-[10px] tracking-widest">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary gap-1.5 font-bold uppercase text-[9px] tracking-widest h-7">
               <ShieldCheck className="w-3 h-3" />
               Staff Login Portal
             </Button>

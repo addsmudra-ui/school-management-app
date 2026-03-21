@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -94,20 +95,18 @@ export function AdminSidebar() {
   const handleChangePassword = () => {
     if (!firestore) return;
     if (newPass.length < 4) {
-      toast({ variant: "destructive", title: "Error", description: "Password must be at least 4 characters." });
+      toast({ variant: "destructive", title: "Error", description: "Min 4 characters." });
       return;
     }
     AdminService.setPassword(firestore, newPass);
     setIsPasswordModalOpen(false);
     setNewPass("");
-    toast({ title: "Success", description: "Admin password updated successfully." });
+    toast({ title: "Updated" });
   };
 
   const filteredNavItems = useMemo(() => {
     if (!profile) return [];
     if (profile.role === 'admin') return navItems;
-    
-    // Editors only see Dashboard, New Post (Write), and Approvals (Edit/Approve)
     const editorAllowed = ["Dashboard", "New Post", "Approvals"];
     return navItems.filter(item => editorAllowed.includes(item.name));
   }, [profile]);
@@ -115,42 +114,42 @@ export function AdminSidebar() {
   return (
     <>
       <Sidebar className="border-r border-muted bg-white">
-        <SidebarHeader className="p-6">
-          <Link href="/" className="flex items-center gap-3 text-primary font-bold">
-            <div className="bg-primary p-2 rounded-xl text-white relative w-10 h-10 flex items-center justify-center">
+        <SidebarHeader className="p-4">
+          <Link href="/" className="flex items-center gap-2 text-primary font-bold">
+            <div className="bg-primary p-1.5 rounded-lg text-white relative w-8 h-8 flex items-center justify-center">
               {branding?.appLogo ? (
-                <Image src={branding.appLogo} alt="Logo" fill className="object-contain p-1" />
+                <Image src={branding.appLogo} alt="Logo" fill className="object-contain p-0.5" />
               ) : (
-                <Newspaper className="w-6 h-6" />
+                <Newspaper className="w-5 h-5" />
               )}
             </div>
-            <span className="text-xl font-headline tracking-tight">{branding?.appName || 'Telugu News Pulse'}</span>
+            <span className="text-lg font-headline tracking-tight leading-tight">{branding?.appName || 'Telugu News Pulse'}</span>
           </Link>
         </SidebarHeader>
         
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel className="px-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
-              నిర్వహణ (Management)
+            <SidebarGroupLabel className="px-4 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
+              Management
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="px-3">
+              <SidebarMenu className="px-2">
                 {filteredNavItems.map((item) => (
                   <SidebarMenuItem key={item.name}>
                     <SidebarMenuButton asChild isActive={pathname === item.href}>
                       <Link 
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                          "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group",
                           pathname === item.href 
-                            ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                            ? "bg-primary text-white shadow-md shadow-primary/20" 
                             : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                         )}
                       >
-                        <item.icon className={cn("w-5 h-5", pathname === item.href ? "text-white" : "text-muted-foreground group-hover:text-primary")} />
+                        <item.icon className={cn("w-4 h-4", pathname === item.href ? "text-white" : "text-muted-foreground group-hover:text-primary")} />
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold leading-none">{item.name}</span>
-                          <span className="text-[10px] opacity-70 leading-tight mt-1">{item.label}</span>
+                          <span className="text-xs font-bold leading-none">{item.name}</span>
+                          <span className="text-[9px] opacity-70 leading-tight mt-0.5">{item.label}</span>
                         </div>
                       </Link>
                     </SidebarMenuButton>
@@ -161,19 +160,19 @@ export function AdminSidebar() {
           </SidebarGroup>
 
           {profile?.role === 'admin' && (
-            <SidebarGroup className="mt-4">
-              <SidebarGroupLabel className="px-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
-                సెట్టింగ్స్
+            <SidebarGroup className="mt-2">
+              <SidebarGroupLabel className="px-4 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
+                Settings
               </SidebarGroupLabel>
-              <SidebarGroupContent className="px-3">
+              <SidebarGroupContent className="px-2">
                 <button 
                   onClick={() => setIsPasswordModalOpen(true)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition-all font-bold group"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-600 transition-all font-bold group"
                 >
-                  <KeyRound className="w-5 h-5 group-hover:text-rose-600" />
+                  <KeyRound className="w-4 h-4 group-hover:text-rose-600" />
                   <div className="flex flex-col text-left">
-                    <span className="text-sm">Password</span>
-                    <span className="text-[10px] opacity-70">పాస్‌వర్డ్ మార్చు</span>
+                    <span className="text-xs">Password</span>
+                    <span className="text-[9px] opacity-70">పాస్‌వర్డ్</span>
                   </div>
                 </button>
               </SidebarGroupContent>
@@ -181,40 +180,32 @@ export function AdminSidebar() {
           )}
         </SidebarContent>
 
-        <SidebarFooter className="p-6 mt-auto">
+        <SidebarFooter className="p-4 mt-auto">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/5 transition-colors font-bold"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-destructive hover:bg-destructive/5 transition-colors font-bold"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
             <div className="flex flex-col text-left">
-              <span className="text-sm">Logout</span>
-              <span className="text-[10px] opacity-70">లాగ్ అవుట్</span>
+              <span className="text-xs">Logout</span>
+              <span className="text-[9px] opacity-70">లాగ్ అవుట్</span>
             </div>
           </button>
         </SidebarFooter>
       </Sidebar>
 
       <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <DialogContent className="max-sm rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>పాస్‌వర్డ్ మార్చండి</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-muted-foreground">కొత్త పాస్‌వర్డ్</label>
-              <Input 
-                type="password" 
-                value={newPass} 
-                onChange={(e) => setNewPass(e.target.value)} 
-                placeholder="New Admin Password"
-                className="h-11"
-              />
+        <DialogContent className="max-sm rounded-xl">
+          <DialogHeader><DialogTitle className="text-base">పాస్‌వర్డ్ మార్చండి</DialogTitle></DialogHeader>
+          <div className="py-2 space-y-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">కొత్త పాస్‌వర్డ్</label>
+              <Input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Password" className="h-9 text-sm" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPasswordModalOpen(false)}>రద్దు</Button>
-            <Button onClick={handleChangePassword}>నవీకరించు</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => setIsPasswordModalOpen(false)}>రద్దు</Button>
+            <Button size="sm" className="h-9 text-xs" onClick={handleChangePassword}>నవీకరించు</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

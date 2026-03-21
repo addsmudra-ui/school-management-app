@@ -57,9 +57,7 @@ export function Navbar() {
   // Distraction-Free Interaction Logic
   useEffect(() => {
     const handleTouch = (e: any) => {
-      // Don't toggle if user is touching the navbar, a button, or a dialog
       if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]')) return;
-      
       setIsMinimized(prev => !prev);
     };
 
@@ -124,7 +122,7 @@ export function Navbar() {
             const notifTime = latest.timestamp.toDate().getTime();
             if (now - notifTime < 120000) {
               toast({
-                title: "బ్రేకింగ్ న్యూస్! (Breaking)",
+                title: "బ్రేకింగ్ న్యూస్!",
                 description: latest.title,
               });
             }
@@ -155,29 +153,11 @@ export function Navbar() {
     switch (role) {
       case 'admin':
       case 'editor':
-        return {
-          text: "text-rose-600",
-          bg: "bg-rose-50",
-          border: "border-rose-200",
-          icon: "text-rose-500",
-          hover: "hover:text-rose-700"
-        };
+        return { text: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", icon: "text-rose-500", hover: "hover:text-rose-700" };
       case 'reporter':
-        return {
-          text: "text-cyan-600",
-          bg: "bg-cyan-50",
-          border: "border-cyan-200",
-          icon: "text-cyan-500",
-          hover: "hover:text-cyan-700"
-        };
+        return { text: "text-cyan-600", bg: "bg-cyan-50", border: "border-cyan-200", icon: "text-cyan-500", hover: "hover:text-cyan-700" };
       default:
-        return {
-          text: "text-primary",
-          bg: "bg-primary/5",
-          border: "border-primary/10",
-          icon: "text-primary",
-          hover: "hover:text-primary"
-        };
+        return { text: "text-primary", bg: "bg-primary/5", border: "border-primary/10", icon: "text-primary", hover: "hover:text-primary" };
     }
   };
 
@@ -185,17 +165,16 @@ export function Navbar() {
 
   return (
     <nav className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted transition-all duration-500 pb-safe md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-lg",
-      isMinimized ? "h-14 opacity-95 backdrop-blur-md translate-y-2 md:translate-y-0" : "h-16 opacity-100"
+      "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted transition-all duration-500 pb-safe md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg",
+      isMinimized ? "h-12 opacity-95 backdrop-blur-md translate-y-1 md:translate-y-0" : "h-14 opacity-100"
     )}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-        {/* Logo - ALWAYS Fully Visible */}
-        <Link href="/" className={cn("flex items-center gap-2 font-bold text-xl shrink-0", theme.text)}>
-          <div className="relative w-8 h-8 flex items-center justify-center overflow-hidden shrink-0">
+        <Link href="/" className={cn("flex items-center gap-1.5 font-bold text-lg shrink-0", theme.text)}>
+          <div className="relative w-7 h-7 flex items-center justify-center overflow-hidden shrink-0">
             {branding?.appLogo ? (
               <Image src={branding.appLogo} alt="Logo" fill className="object-contain" priority />
             ) : (
-              <Newspaper className="w-6 h-6" />
+              <Newspaper className="w-5 h-5" />
             )}
           </div>
           <span className={cn(
@@ -207,131 +186,121 @@ export function Navbar() {
         </Link>
 
         <div className={cn(
-          "hidden lg:flex items-center gap-2 px-4 py-1.5 border rounded-full text-xs font-bold transition-all duration-300",
+          "hidden lg:flex items-center gap-1.5 px-3 py-1 border rounded-full text-[10px] font-bold transition-all duration-300",
           theme.bg, theme.border, theme.text,
           isMinimized ? "scale-0 w-0 opacity-0" : "scale-100"
         )}>
-          <MapPin className={cn("w-3.5 h-3.5", theme.icon)} />
+          <MapPin className={cn("w-3 h-3", theme.icon)} />
           <span>
             {location.district === "All" 
-              ? "Location: Global" 
-              : `Location: ${location.mandal === "All" ? "All Mandals" : location.mandal}, ${location.district}`}
+              ? "Global" 
+              : `${location.mandal === "All" ? "All Mandals" : location.mandal}, ${location.district}`}
           </span>
         </div>
 
-        <div className="flex flex-1 justify-around md:justify-end md:gap-8 items-center h-full">
-          {/* Home Icon - Hide on minimize */}
+        <div className="flex flex-1 justify-around md:justify-end md:gap-6 items-center h-full">
           <Link href="/" className={cn(
-            "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+            "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300",
             theme.hover,
             isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
           )}>
-            <Newspaper className="w-5 h-5" />
-            <span className="text-[10px] md:text-sm font-semibold">Home</span>
+            <Newspaper className="w-4 h-4" />
+            <span className="text-[9px] md:text-xs font-semibold">Home</span>
           </Link>
 
-          {/* Notification Icon - ALWAYS Visible & Enhanced when minimized */}
           <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
             <SheetTrigger asChild>
               <button className={cn(
-                "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300 relative px-4",
+                "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300 relative px-3",
                 theme.hover,
-                isMinimized ? "scale-125" : "scale-100"
+                isMinimized ? "scale-110" : "scale-100"
               )}>
                 <div className="relative">
-                  <Bell className={cn("w-5 h-5", hasNewNotif && "animate-bell", hasNewNotif && theme.text)} />
+                  <Bell className={cn("w-4 h-4", hasNewNotif && "animate-bell", hasNewNotif && theme.text)} />
                   {hasNewNotif && (
-                    <span className={cn("absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white animate-pulse", role === 'admin' ? "bg-rose-500" : "bg-primary")} />
+                    <span className={cn("absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white animate-pulse", role === 'admin' ? "bg-rose-500" : "bg-primary")} />
                   )}
                 </div>
-                {!isMinimized && <span className="text-[10px] md:text-sm font-semibold">Alerts</span>}
+                {!isMinimized && <span className="text-[9px] md:text-xs font-semibold">Alerts</span>}
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[90%] sm:max-w-sm p-0 z-[100]">
-              <SheetHeader className={cn("p-6 border-b", theme.bg)}>
-                <SheetTitle className="flex items-center gap-2">
-                  <Bell className={cn("w-5 h-5", theme.icon)} />
-                  నోటిఫికేషన్లు (Notifications)
+            <SheetContent side="right" className="w-[85%] sm:max-w-xs p-0 z-[100] border-none shadow-2xl">
+              <SheetHeader className={cn("p-4 border-b", theme.bg)}>
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <Bell className={cn("w-4 h-4", theme.icon)} />
+                  నోటిఫికేషన్లు
                 </SheetTitle>
               </SheetHeader>
-              <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4 pb-32">
+              <div className="flex flex-col h-full overflow-y-auto p-3 space-y-3 pb-32">
                 {notifications && notifications.length > 0 ? (
                   notifications.map((n) => (
                     <div 
                       key={n.id} 
                       onClick={() => handleNotifClick(n.postId)}
                       className={cn(
-                        "p-4 rounded-2xl border transition-all group",
-                        n.postId ? "cursor-pointer bg-white border-muted hover:shadow-md" : "bg-muted/30 border-transparent"
+                        "p-3 rounded-xl border transition-all group",
+                        n.postId ? "cursor-pointer bg-white border-muted hover:shadow-md" : "bg-muted/20 border-transparent"
                       )}
                     >
-                      <div className="flex justify-between items-start mb-1">
-                        <Badge variant="secondary" className={cn("text-[10px] font-bold uppercase tracking-tighter border-none", theme.bg, theme.text)}>
+                      <div className="flex justify-between items-start mb-0.5">
+                        <Badge variant="secondary" className={cn("text-[8px] font-bold uppercase px-1.5 border-none", theme.bg, theme.text)}>
                           {n.target}
                         </Badge>
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[8px] text-muted-foreground">
                           {n.timestamp?.toDate ? format(n.timestamp.toDate(), 'h:mm a') : 'Just now'}
                         </span>
                       </div>
-                      <h4 className="font-bold text-sm mb-1">{n.title}</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{n.body}</p>
-                      {n.postId && (
-                        <div className={cn("mt-2 text-[10px] font-bold flex items-center gap-1 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity", theme.text)}>
-                          View Details <ChevronRight className="w-3 h-3" />
-                        </div>
-                      )}
+                      <h4 className="font-bold text-xs mb-0.5 line-clamp-1">{n.title}</h4>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">{n.body}</p>
                     </div>
                   ))
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                      <Bell className="w-8 h-8 text-muted-foreground/30" />
+                  <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                      <Bell className="w-6 h-6 text-muted-foreground/30" />
                     </div>
-                    <p className="text-muted-foreground italic text-sm">ప్రస్తుతానికి నోటిఫికేషన్లు ఏవీ లేవు.</p>
+                    <p className="text-muted-foreground italic text-xs">నోటిఫికేషన్లు లేవు.</p>
                   </div>
                 )}
               </div>
             </SheetContent>
           </Sheet>
 
-          {/* Post Icon - Hide on minimize */}
           {canPost && (
             <Link href="/reporter" className={cn(
-              "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+              "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300",
               theme.hover,
               isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
             )}>
-              <PlusCircle className="w-5 h-5" />
-              <span className="text-[10px] md:text-sm font-semibold">Post</span>
+              <PlusCircle className="w-4 h-4" />
+              <span className="text-[9px] md:text-xs font-semibold">Post</span>
             </Link>
           )}
 
-          {/* Admin Icon - Hide on minimize */}
           {(role === 'admin' || role === 'editor') && (
             <Link href="/admin" className={cn(
-              "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+              "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300",
               theme.hover,
               isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
             )}>
-              <LayoutDashboard className="w-5 h-5" />
-              <span className="text-[10px] md:text-sm font-semibold">Moderate</span>
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="text-[9px] md:text-xs font-semibold">Moderate</span>
             </Link>
           )}
 
-          {/* Profile Icon - Hide on minimize */}
           <Link href={userName ? "/profile" : "/login"} className={cn(
-            "flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300",
+            "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300",
             theme.hover,
             isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
           )}>
             {userPhoto ? (
-              <div className={cn("relative w-6 h-6 rounded-full overflow-hidden border", theme.border)}>
-                <Image src={userPhoto} alt={userName} fill className="object-cover opacity-100" />
+              <div className={cn("relative w-5 h-5 rounded-full overflow-hidden border", theme.border)}>
+                <Image src={userPhoto} alt={userName} fill className="object-cover" />
               </div>
             ) : (
-              <User className={cn("w-5 h-5", theme.icon)} />
+              <User className={cn("w-4 h-4", theme.icon)} />
             )}
-            <span className="text-[10px] md:text-sm font-semibold truncate max-w-[60px] md:max-w-none">
+            <span className="text-[9px] md:text-xs font-semibold truncate max-w-[50px] md:max-w-none">
               {userName || "Profile"}
             </span>
           </Link>
