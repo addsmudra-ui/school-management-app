@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useMemo } from "react";
@@ -10,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, Send, Upload, X, Loader2, MapPin, Video, VideoOff, Globe, Flag, Wallet, HeartPulse, Trophy, Film, Home as HomeIcon, Cpu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NEWS_CATEGORIES, NewsCategory } from "@/lib/mock-data";
+import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NEWS_CATEGORIES } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
 import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import Image from "next/image";
@@ -22,7 +21,7 @@ export default function AdminNewPost() {
   const { user } = useUser();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState<NewsCategory>("Home");
+  const [category, setCategory] = useState<string>("Home");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
@@ -40,6 +39,11 @@ export default function AdminNewPost() {
     return doc(firestore, 'config', 'admin');
   }, [firestore]);
   const { data: branding } = useDoc(brandingRef);
+
+  // Dynamic Categories
+  const catRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'categories') : null, [firestore]);
+  const { data: categoriesDoc } = useDoc(catRef);
+  const availableCategories = useMemo(() => categoriesDoc?.items || NEWS_CATEGORIES, [categoriesDoc]);
 
   // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
@@ -72,7 +76,7 @@ export default function AdminNewPost() {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit for base64 prototype
+    if (file.size > 10 * 1024 * 1024) {
       toast({ variant: "destructive", title: "Video too large", description: "Please upload a clip smaller than 10MB." });
       return;
     }
@@ -100,7 +104,7 @@ export default function AdminNewPost() {
         unique_code: Math.floor(10000 + Math.random() * 90000).toString(),
         title,
         content,
-        category,
+        category: category as any,
         image_url: imagePreview,
         video_url: videoUrl || undefined,
         location: { state, district, mandal },
@@ -114,17 +118,8 @@ export default function AdminNewPost() {
 
       toast({ title: "వార్త ప్రచురించబడింది", description: "వార్త విజయవంతంగా లైవ్ చేయబడింది." });
       
-      // Reset
-      setTitle("");
-      setContent("");
-      setCategory("Home");
-      setState("");
-      setDistrict("");
-      setMandal("");
-      setImagePreview(null);
-      setVideoUrl(null);
+      setTitle(""); setContent(""); setCategory("Home"); setState(""); setDistrict(""); setMandal(""); setImagePreview(null); setVideoUrl(null);
     } catch (error) {
-      console.error(error);
       toast({ title: "Error", description: "Could not publish news.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
@@ -132,15 +127,16 @@ export default function AdminNewPost() {
   };
 
   const getCategoryIcon = (val: string) => {
-    switch(val) {
+    const iconName = availableCategories.find((c: any) => c.value === val)?.icon;
+    switch(iconName) {
       case 'Home': return <HomeIcon className="w-4 h-4" />;
-      case 'National': return <Flag className="w-4 h-4" />;
-      case 'International': return <Globe className="w-4 h-4" />;
-      case 'Financial': return <Wallet className="w-4 h-4" />;
-      case 'Health': return <HeartPulse className="w-4 h-4" />;
-      case 'Entertainment': return <Film className="w-4 h-4" />;
-      case 'Sports': return <Trophy className="w-4 h-4" />;
-      case 'Technology': return <Cpu className="w-4 h-4" />;
+      case 'Flag': return <Flag className="w-4 h-4" />;
+      case 'Globe': return <Globe className="w-4 h-4" />;
+      case 'Wallet': return <Wallet className="w-4 h-4" />;
+      case 'HeartPulse': return <HeartPulse className="w-4 h-4" />;
+      case 'Film': return <Film className="w-4 h-4" />;
+      case 'Trophy': return <Trophy className="w-4 h-4" />;
+      case 'Cpu': return <Cpu className="w-4 h-4" />;
       default: return <Newspaper className="w-4 h-4" />;
     }
   };
@@ -163,7 +159,7 @@ export default function AdminNewPost() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground ml-1">న్యూస్ సెక్షన్ (Category)</Label>
-              <Select onValueChange={(v: any) => setCategory(v)} value={category}>
+              <Select onValueChange={setCategory} value={category}>
                 <SelectTrigger className="h-12 rounded-xl border-primary/10 bg-slate-50/50">
                   <div className="flex items-center gap-2">
                     {getCategoryIcon(category)}
@@ -171,7 +167,7 @@ export default function AdminNewPost() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  {NEWS_CATEGORIES.map(cat => (
+                  {availableCategories.map((cat: any) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       <div className="flex items-center gap-2">
                         <span className="opacity-50">{cat.label}</span>
@@ -202,7 +198,7 @@ export default function AdminNewPost() {
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground ml-1">మండలం</Label>
-                <Select onValueChange={(v) => setMandal(v)} value={mandal} disabled={!district}>
+                <Select onValueChange={setMandal} value={mandal} disabled={!district}>
                   <SelectTrigger className="h-12 rounded-xl border-primary/10 bg-slate-50/50"><SelectValue placeholder="Mandal" /></SelectTrigger>
                   <SelectContent>
                     {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
@@ -239,10 +235,7 @@ export default function AdminNewPost() {
                 చిత్రం (Image)
               </Label>
               {!imagePreview ? (
-                <div 
-                  onClick={() => fileInputRef.current?.click()} 
-                  className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group h-[200px] flex flex-col justify-center"
-                >
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
                   <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-500">Upload Image</p>
                 </div>
@@ -263,10 +256,7 @@ export default function AdminNewPost() {
                 వీడియో (Video - Optional)
               </Label>
               {!videoUrl ? (
-                <div 
-                  onClick={() => videoInputRef.current?.click()} 
-                  className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-rose-50/50 transition-all border-slate-200 group h-[200px] flex flex-col justify-center"
-                >
+                <div onClick={() => videoInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-rose-50/50 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
                   <Video className="w-8 h-8 text-slate-400 group-hover:text-rose-500 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-500">Upload Short Clip</p>
                   <p className="text-[8px] text-muted-foreground mt-1">Max 10MB</p>

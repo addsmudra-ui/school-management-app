@@ -20,7 +20,7 @@ import {
   deleteField
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { NewsPost, UserProfile, Comment, MOCK_NEWS, LOCATIONS_BY_STATE } from './mock-data';
+import { NewsPost, UserProfile, Comment, MOCK_NEWS, LOCATIONS_BY_STATE, NEWS_CATEGORIES } from './mock-data';
 
 export type SentNotification = {
   id: string;
@@ -85,7 +85,6 @@ export const AdminService = {
   },
   updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string }) => {
     const configRef = doc(db, 'config', 'admin');
-    // Remove undefined values to prevent Firebase errors
     const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
     setDocumentNonBlocking(configRef, { ...cleanData, updatedAt: serverTimestamp() }, { merge: true });
   },
@@ -109,7 +108,27 @@ export const AdminService = {
       ...LOCATIONS_BY_STATE
     }, { merge: true });
 
+    const catRef = doc(db, 'metadata', 'categories');
+    batch.set(catRef, {
+      items: NEWS_CATEGORIES
+    }, { merge: true });
+
     await batch.commit();
+  }
+};
+
+export const CategoryService = {
+  add: (db: Firestore, category: { value: string; label: string; icon: string }) => {
+    const catRef = doc(db, 'metadata', 'categories');
+    updateDocumentNonBlocking(catRef, {
+      items: arrayUnion(category)
+    });
+  },
+  remove: (db: Firestore, category: { value: string; label: string; icon: string }) => {
+    const catRef = doc(db, 'metadata', 'categories');
+    updateDocumentNonBlocking(catRef, {
+      items: arrayRemove(category)
+    });
   }
 };
 
@@ -141,14 +160,12 @@ export const NewsService = {
     const newDocRef = doc(newsRef);
     const postId = newDocRef.id;
     
-    // Create data object carefully to avoid undefined fields
     const data: any = {
       ...post,
       id: postId,
       timestamp: serverTimestamp(),
     };
     
-    // Only include visibility if status is approved
     if (post.status === 'approved') {
       data.visibility = 'live';
     }
@@ -326,7 +343,6 @@ export const UserService = {
   claimProfile: async (db: Firestore, realUid: string, provisionedProfile: UserProfile) => {
     const batch = writeBatch(db);
     
-    // Create new doc with real UID
     const newRef = doc(db, 'users', realUid);
     const oldRef = doc(db, 'users', provisionedProfile.id);
     
@@ -339,7 +355,6 @@ export const UserService = {
     batch.set(newRef, updatedData);
     batch.delete(oldRef);
     
-    // Also update role markers
     const roleCollectionMap = {
       'admin': 'roles_admins',
       'reporter': 'roles_reporters',
