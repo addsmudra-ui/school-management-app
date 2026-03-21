@@ -51,7 +51,7 @@ export function AdCard({ ad }: AdCardProps) {
         <div className="absolute bottom-10 left-0 right-0 p-6 flex flex-col items-center gap-4 text-center">
           <div className="space-y-1.5">
             <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.3em]">Special Promotion</p>
-            <h3 className="text-white font-black text-xl leading-tight">హైపర్ లోకల్ ఆఫర్స్ కోసం క్లిక్ చేయండి</h3>
+            <h3 className="text-white font-black text-base leading-tight">హైపర్ లోకల్ ఆఫర్స్ కోసం క్లిక్ చేయండి</h3>
           </div>
 
           {ad.link && (
