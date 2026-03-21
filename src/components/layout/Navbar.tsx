@@ -1,10 +1,9 @@
-
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { Newspaper, User, PlusCircle, LayoutDashboard, Bell, ChevronRight, MapPin, FileText, Shield, Info, AlertTriangle, ExternalLink } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { format } from "date-fns";
@@ -14,6 +13,22 @@ import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@
 import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { LOCATIONS as MOCK_LOCATIONS } from "@/lib/mock-data";
 
 export function Navbar() {
   const firestore = useFirestore();
@@ -28,6 +43,7 @@ export function Navbar() {
   const [hasNewNotif, setHasNewNotif] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isLegalOpen, setIsLegalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   
   // Navigation Visibility State
   const [isMinimized, setIsMinimized] = useState(false);
@@ -55,20 +71,27 @@ export function Navbar() {
 
   const { data: notifications } = useCollection<SentNotification>(notifQuery);
 
+  const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locDocRef);
+  
+  const dynamicLocations = useMemo(() => {
+    if (!locationsDoc) return MOCK_LOCATIONS;
+    const { id, ...statesOnly } = locationsDoc as any;
+    return Object.values(statesOnly).reduce((acc: any, stateObj: any) => {
+      if (typeof stateObj !== 'object' || stateObj === null) return acc;
+      return { ...acc, ...stateObj };
+    }, {});
+  }, [locationsDoc]);
+
   // Distraction-Free Interaction Logic
   useEffect(() => {
     const handleTouch = (e: any) => {
-      if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]')) return;
+      if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]') || e.target.closest('[role="menu"]')) return;
       setIsMinimized(prev => !prev);
     };
 
-    window.addEventListener('touchstart', handleTouch);
     window.addEventListener('mousedown', handleTouch);
-
-    return () => {
-      window.removeEventListener('touchstart', handleTouch);
-      window.removeEventListener('mousedown', handleTouch);
-    };
+    return () => window.removeEventListener('mousedown', handleTouch);
   }, []);
 
   const updateLocationState = useCallback(() => {
@@ -146,6 +169,13 @@ export function Navbar() {
     if (postId) {
       router.push(`/?postId=${postId}`);
     }
+  };
+
+  const handleLocationUpdate = (dist: string, mandal: string) => {
+    localStorage.setItem('teluguNewsPulse_district', dist);
+    localStorage.setItem('teluguNewsPulse_mandal', mandal);
+    setIsLocationModalOpen(false);
+    window.dispatchEvent(new Event('teluguNewsPulse_locationChanged'));
   };
 
   const canPost = role === 'admin' || role === 'editor' || (role === 'reporter' && userStatus === 'approved');
@@ -271,19 +301,6 @@ export function Navbar() {
           </SheetContent>
         </Sheet>
 
-        <div className={cn(
-          "hidden lg:flex items-center gap-1.5 px-3 py-1 border rounded-full text-[10px] font-bold transition-all duration-300",
-          theme.bg, theme.border, theme.text,
-          isMinimized ? "scale-0 w-0 opacity-0" : "scale-100"
-        )}>
-          <MapPin className={cn("w-3 h-3", theme.icon)} />
-          <span>
-            {location.district === "All" 
-              ? "Global" 
-              : `${location.mandal === "All" ? "All Mandals" : location.mandal}, ${location.district}`}
-          </span>
-        </div>
-
         <div className="flex flex-1 justify-around md:justify-end md:gap-6 items-center h-full">
           <Link href="/" className={cn(
             "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300",
@@ -293,6 +310,62 @@ export function Navbar() {
             <Newspaper className="w-4 h-4" />
             <span className="text-[9px] md:text-xs font-semibold">Home</span>
           </Link>
+
+          {/* New Location Selector in Navbar */}
+          <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+            <DialogTrigger asChild>
+              <button className={cn(
+                "flex flex-col md:flex-row items-center gap-0.5 text-muted-foreground transition-all duration-300 relative px-3",
+                theme.hover,
+                isMinimized ? "scale-110" : "scale-100"
+              )}>
+                <MapPin className={cn("w-4 h-4", !isMinimized && theme.text)} />
+                {!isMinimized && (
+                  <span className="text-[9px] md:text-xs font-semibold max-w-[60px] truncate">
+                    {location.district === "All" ? "Global" : location.mandal === "All" ? location.district : location.mandal}
+                  </span>
+                )}
+              </button>
+            </DialogTrigger>
+            <DialogContent className="w-[92%] max-w-sm rounded-[2rem] p-8 border-none shadow-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-black text-center mb-4">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-primary uppercase tracking-widest ml-1">జిల్లా (District)</label>
+                  <Select 
+                    value={location.district} 
+                    onValueChange={(val) => handleLocationUpdate(val, "All")}
+                  >
+                    <SelectTrigger className="w-full h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold text-xs"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
+                      {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d} className="font-bold text-xs">{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {location.district !== "All" && (
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-primary uppercase tracking-widest ml-1">మండలం (Mandal)</label>
+                    <Select 
+                      value={location.mandal} 
+                      onValueChange={(val) => handleLocationUpdate(location.district, val)}
+                    >
+                      <SelectTrigger className="w-full h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold text-xs"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All">అన్ని మండలాలు</SelectItem>
+                        {dynamicLocations[location.district]?.map((m: string) => (
+                          <SelectItem key={m} value={m} className="font-bold text-xs">{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <Button className="w-full h-12 text-sm font-bold rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={() => setIsLocationModalOpen(false)}>వార్తలు చూడండి</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
             <SheetTrigger asChild>

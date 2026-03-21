@@ -39,6 +39,7 @@ function NewsFeedContent() {
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory | 'All'>('Home');
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [forceGlobal, setForceGlobal] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // Real-time branding and system status
   const brandingRef = useMemoFirebase(() => {
@@ -81,6 +82,18 @@ function NewsFeedContent() {
       setForceGlobal(false);
     }
   }, [targetPostId]);
+
+  // Distraction-Free Interaction Logic
+  useEffect(() => {
+    const handleTouch = (e: any) => {
+      // Don't toggle if clicking a button or menu
+      if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]') || e.target.closest('[role="menu"]')) return;
+      setIsMinimized(prev => !prev);
+    };
+
+    window.addEventListener('mousedown', handleTouch);
+    return () => window.removeEventListener('mousedown', handleTouch);
+  }, []);
 
   const allApprovedQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -147,14 +160,6 @@ function NewsFeedContent() {
     };
   }, [allNews, allAds, selectedDistrict, selectedMandal, forceGlobal, selectedCategory]);
 
-  const handleLocationUpdate = () => {
-    localStorage.setItem('teluguNewsPulse_district', selectedDistrict);
-    localStorage.setItem('teluguNewsPulse_mandal', selectedMandal);
-    setIsLocationModalOpen(false);
-    setForceGlobal(false);
-    window.dispatchEvent(new Event('teluguNewsPulse_locationChanged'));
-  };
-
   const handleResetToGlobal = () => {
     setSelectedDistrict("All");
     setSelectedMandal("All");
@@ -198,51 +203,11 @@ function NewsFeedContent() {
 
   return (
     <>
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-        <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="rounded-full gap-2 h-9 border-primary/20 text-primary hover:bg-primary/5 px-3 font-bold shadow-xl bg-white/80 backdrop-blur-md text-[10px]">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>
-                {isActuallyGlobal ? "Global" : (selectedMandal === "All" ? selectedDistrict : selectedMandal)}
-              </span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-[92%] max-w-sm rounded-[2rem] p-8 border-none shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-black text-center mb-4">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-primary uppercase tracking-widest ml-1">జిల్లా (District)</label>
-                <Select value={selectedDistrict} onValueChange={(val) => { setSelectedDistrict(val); setSelectedMandal("All"); }}>
-                  <SelectTrigger className="w-full h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold text-xs"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
-                    {Object.keys(dynamicLocations).sort().map((d) => <SelectItem key={d} value={d} className="font-bold text-xs">{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-primary uppercase tracking-widest ml-1">మండలం (Mandal)</label>
-                <Select value={selectedMandal} onValueChange={setSelectedMandal} disabled={selectedDistrict === "All"}>
-                  <SelectTrigger className="w-full h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold text-xs"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">అన్ని మండలాలు</SelectItem>
-                    {selectedDistrict !== "All" && dynamicLocations[selectedDistrict]?.map((m: string) => (
-                      <SelectItem key={m} value={m} className="font-bold text-xs">{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button className="w-full h-12 text-sm font-bold rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleLocationUpdate}>వార్తలు చూడండి</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
       {/* Dynamic Category Scroll Bar */}
-      <div className="fixed top-4 left-4 right-32 z-40">
+      <div className={cn(
+        "fixed top-4 left-4 right-4 z-40 transition-all duration-500",
+        isMinimized ? "-translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+      )}>
         <div className="bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-muted p-1 overflow-x-auto no-scrollbar flex items-center gap-1.5 px-2">
           <button 
             onClick={() => setSelectedCategory('All')}
@@ -269,8 +234,8 @@ function NewsFeedContent() {
       </div>
 
       <div className="news-scroll-container">
-        {feedToDisplay.length > 0 && (
-          <div className="absolute top-16 left-0 right-0 z-30 px-4 pointer-events-none pr-32">
+        {feedToDisplay.length > 0 && !isMinimized && (
+          <div className="absolute top-16 left-0 right-0 z-30 px-4 pointer-events-none">
             {isFallbackActive ? (
               <div className="max-w-md bg-amber-50/90 border border-amber-200 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
                 <div className="bg-amber-500 p-2 rounded-xl shrink-0">
