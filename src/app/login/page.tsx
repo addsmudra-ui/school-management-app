@@ -445,7 +445,7 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <Label>నేను ఒక... (I am a...)</Label>
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
-                    <SelectTrigger className="h-11 rounded-xl" disabled={isAdminOrEditor}>
+                    <SelectTrigger className="h-11 rounded-xl">
                       <div className="flex items-center gap-2">
                         {isAdminOrEditor ? <ShieldCheck className="w-4 h-4 text-rose-500" /> : <UserIcon className="w-4 h-4 text-primary" />}
                         <SelectValue />
@@ -454,12 +454,8 @@ export default function LoginPage() {
                     <SelectContent>
                       <SelectItem value="user">సాధారణ పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">స్థానిక రిపోర్టర్ (Reporter)</SelectItem>
-                      {isAdminOrEditor && (
-                        <>
-                          <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
-                          <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
-                        </>
-                      )}
+                      <SelectItem value="admin">నిర్వాహకుడు (Admin)</SelectItem>
+                      <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
