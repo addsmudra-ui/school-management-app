@@ -64,8 +64,8 @@ export default function LoginPage() {
         } else {
           router.push('/profile');
         }
-      } else {
-        // Logged in but no profile doc? Go to details.
+      } else if (dbProfile === null) {
+        // Authenticated but definitely no profile doc found after loading? Go to details.
         setStep('details');
       }
     }
@@ -138,10 +138,17 @@ export default function LoginPage() {
           const formattedPhone = `+91${phone}`;
           const appVerifier = window.recaptchaVerifier;
           
-          const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-          setConfirmationResult(result);
-          setStep('otp');
-          toast({ title: "OTP Sent", description: "Please check your messages." });
+          try {
+            const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+            setConfirmationResult(result);
+            setStep('otp');
+            toast({ title: "OTP Sent", description: "Please check your messages." });
+          } catch (err: any) {
+            if (err.code === 'auth/too-many-requests') {
+              throw new Error("చాలా సార్లు ప్రయత్నించారు. దయచేసి కాసేపు ఆగి మళ్ళీ ప్రయత్నించండి. (Too many requests. Please try again later.)");
+            }
+            throw err;
+          }
         } else if (method === 'email') {
           if (!email || !password) {
             toast({ variant: "destructive", title: "Error", description: "Email and password are required." });
@@ -164,7 +171,7 @@ export default function LoginPage() {
               setStep('details');
             }
           } catch (error: any) {
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
               setStep('details');
             } else {
               throw error;
@@ -228,7 +235,7 @@ export default function LoginPage() {
         router.push(targetPath);
       }
     } catch (error: any) {
-      console.error("Login detail error:", error);
+      console.error("Login flow error:", error);
       toast({ 
         variant: "destructive", 
         title: "Login Error", 
@@ -261,7 +268,7 @@ export default function LoginPage() {
     return !!(name && state && district && mandal);
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-12 h-12 text-primary animate-spin" />
