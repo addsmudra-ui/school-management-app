@@ -42,7 +42,6 @@ function ReporterContent() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // AI States
   const [isGeneratingHeadlines, setIsGeneratingHeadlines] = useState(false);
   const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -50,13 +49,11 @@ function ReporterContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  // Real-time Profile & Branding
   const profileRef = useMemoFirebase(() => (firestore && user?.uid) ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
   const brandingRef = useMemoFirebase(() => firestore ? doc(firestore, 'config', 'admin') : null, [firestore]);
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
   const { data: branding } = useDoc(brandingRef);
 
-  // Recent Submissions Query
   const submissionsQuery = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return query(
@@ -68,7 +65,6 @@ function ReporterContent() {
   }, [firestore, user?.uid]);
   const { data: recentSubmissions } = useCollection<NewsPost>(submissionsQuery);
 
-  // Dynamic Metadata
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const catRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'categories') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
@@ -180,27 +176,27 @@ function ReporterContent() {
   };
 
   if (isUserLoading || isProfileLoading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
   }
 
   if (!profile || (profile.role !== 'reporter' && profile.role !== 'admin' && profile.role !== 'editor')) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
-        <h2 className="text-xl font-black">Access Restricted</h2>
-        <p className="text-sm text-muted-foreground mt-2 max-w-xs">This page is for authorized reporters only.</p>
-        <Button asChild className="mt-6 rounded-xl"><Link href="/profile">Back to Profile</Link></Button>
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
+        <AlertTriangle className="w-14 h-14 text-amber-500 mb-6" />
+        <h2 className="text-2xl font-black">Access Restricted</h2>
+        <p className="text-base text-muted-foreground mt-3 max-w-xs">This page is for authorized reporters only.</p>
+        <Button asChild className="mt-8 h-12 rounded-xl px-8"><Link href="/profile">Back to Profile</Link></Button>
       </div>
     );
   }
 
   if (profile.role === 'reporter' && profile.status !== 'approved') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <Clock className="w-12 h-12 text-blue-500 mb-4 animate-pulse" />
-        <h2 className="text-xl font-black">అప్రూవల్ పెండింగ్</h2>
-        <p className="text-sm text-muted-foreground mt-2 max-w-xs">మీ అకౌంట్ ఇంకా వెరిఫై చేయబడలేదు. అడ్మిన్ ఆమోదం పొందిన తర్వాత మీరు వార్తలను పంపవచ్చు.</p>
-        <Button asChild variant="outline" className="mt-6 rounded-xl"><Link href="/">Return Home</Link></Button>
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
+        <Clock className="w-14 h-14 text-blue-500 mb-6 animate-pulse" />
+        <h2 className="text-2xl font-black">అప్రూవల్ పెండింగ్</h2>
+        <p className="text-base text-muted-foreground mt-3 max-w-sm">మీ అకౌంట్ ఇంకా వెరిఫై చేయబడలేదు. అడ్మిన్ ఆమోదం పొందిన తర్వాత మీరు వార్తలను పంపవచ్చు.</p>
+        <Button asChild variant="outline" className="mt-8 h-12 rounded-xl px-8"><Link href="/">Return Home</Link></Button>
       </div>
     );
   }
@@ -208,93 +204,93 @@ function ReporterContent() {
   const getCategoryIcon = (val: string) => {
     const iconName = availableCategories.find((c: any) => c.value === val)?.icon;
     switch(iconName) {
-      case 'Home': return <HomeIcon className="w-3 h-3" />;
-      case 'Flag': return <Flag className="w-3 h-3" />;
-      case 'Globe': return <Globe className="w-3 h-3" />;
-      case 'Wallet': return <Wallet className="w-3 h-3" />;
-      case 'HeartPulse': return <HeartPulse className="w-3 h-3" />;
-      case 'Film': return <Film className="w-3 h-3" />;
-      case 'Trophy': return <Trophy className="w-3 h-3" />;
-      case 'Cpu': return <Cpu className="w-3 h-3" />;
-      default: return <Newspaper className="w-3 h-3" />;
+      case 'Home': return <HomeIcon className="w-4 h-4" />;
+      case 'Flag': return <Flag className="w-4 h-4" />;
+      case 'Globe': return <Globe className="w-4 h-4" />;
+      case 'Wallet': return <Wallet className="w-4 h-4" />;
+      case 'HeartPulse': return <HeartPulse className="w-4 h-4" />;
+      case 'Film': return <Film className="w-4 h-4" />;
+      case 'Trophy': return <Trophy className="w-4 h-4" />;
+      case 'Cpu': return <Cpu className="w-4 h-4" />;
+      default: return <Newspaper className="w-4 h-4" />;
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24 md:pt-20">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-4 pt-8 space-y-8">
+      <div className="max-w-4xl mx-auto px-5 pt-10 space-y-10">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 p-2.5 rounded-2xl">
-              <Newspaper className="w-6 h-6 text-primary" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/10 p-3 rounded-2xl">
+              <Newspaper className="w-8 h-8 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tight">రిపోర్టర్ డ్యాష్‌బోర్డ్</h1>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">Reporter: {profile.name}</p>
+              <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Reporter: {profile.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Link href="/guidelines">
-              <Button variant="outline" size="sm" className="h-9 text-[10px] font-bold rounded-xl border-primary/20">
-                <FileText className="w-3 h-3 mr-1.5" /> నిబంధనలు
+              <Button variant="outline" size="sm" className="h-10 text-[11px] font-bold rounded-xl border-primary/20 px-4">
+                <FileText className="w-4 h-4 mr-2" /> నిబంధనలు
               </Button>
             </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-              <CardHeader className="bg-primary/5 border-b border-primary/10 py-6 px-8">
-                <CardTitle className="text-lg font-black flex items-center gap-2">
-                  <Type className="w-5 h-5 text-primary" />
+          <div className="lg:col-span-2 space-y-8">
+            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
+              <CardHeader className="bg-primary/5 border-b border-primary/10 py-8 px-10">
+                <CardTitle className="text-xl font-black flex items-center gap-3">
+                  <Type className="w-6 h-6 text-primary" />
                   వార్తను రాయండి (Write News)
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 md:p-8 space-y-6">
+              <CardContent className="p-8 md:p-10 space-y-8">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">రాష్ట్రం (State)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">రాష్ట్రం (State)</Label>
                     <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
-                      <SelectTrigger className="h-10 text-xs rounded-xl"><SelectValue placeholder="State" /></SelectTrigger>
-                      <SelectContent>{availableStates.sort().map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-12 text-sm rounded-xl"><SelectValue placeholder="State" /></SelectTrigger>
+                      <SelectContent>{availableStates.sort().map(s => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">జిల్లా (District)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">జిల్లా (District)</Label>
                       <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
-                        <SelectTrigger className="h-10 text-xs rounded-xl"><SelectValue placeholder="District" /></SelectTrigger>
-                        <SelectContent>{state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-12 text-sm rounded-xl"><SelectValue placeholder="District" /></SelectTrigger>
+                        <SelectContent>{state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d} className="text-sm">{d}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">మండలం (Mandal)</Label>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">మండలం (Mandal)</Label>
                       <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                        <SelectTrigger className="h-10 text-xs rounded-xl"><SelectValue placeholder="Mandal" /></SelectTrigger>
-                        <SelectContent>{district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-12 text-sm rounded-xl"><SelectValue placeholder="Mandal" /></SelectTrigger>
+                        <SelectContent>{district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m} className="text-sm">{m}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">సెక్షన్ (Category)</Label>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">సెక్షన్ (Category)</Label>
                   <Select onValueChange={setCategory} value={category}>
-                    <SelectTrigger className="h-10 text-xs rounded-xl">
-                      <div className="flex items-center gap-2">{getCategoryIcon(category)}<SelectValue /></div>
+                    <SelectTrigger className="h-12 text-sm rounded-xl">
+                      <div className="flex items-center gap-3">{getCategoryIcon(category)}<SelectValue /></div>
                     </SelectTrigger>
                     <SelectContent>
                       {availableCategories.map((cat: any) => (
-                        <SelectItem key={cat.value} value={cat.value} className="text-xs">
-                          <div className="flex items-center gap-2">
+                        <SelectItem key={cat.value} value={cat.value} className="text-sm">
+                          <div className="flex items-center gap-3">
                             <span className="opacity-50">{cat.label}</span>
-                            <span className="text-[8px] font-black uppercase tracking-tighter">({cat.value})</span>
+                            <span className="text-[10px] font-black uppercase tracking-tighter">({cat.value})</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -302,28 +298,28 @@ function ReporterContent() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">ముఖ్యాంశం (Headline)</Label>
+                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">ముఖ్యాంశం (Headline)</Label>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-6 text-[8px] font-black text-primary uppercase gap-1"
+                      className="h-8 text-[10px] font-black text-primary uppercase gap-2"
                       onClick={handleAiHeadlines}
                       disabled={isGeneratingHeadlines}
                     >
-                      {isGeneratingHeadlines ? <Loader2 className="w-2 h-2 animate-spin" /> : <Sparkles className="w-2 h-2" />}
+                      {isGeneratingHeadlines ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                       Generate Catchy Headlines
                     </Button>
                   </div>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="వార్త ముఖ్యాంశం ఇక్కడ నమోదు చేయండి..." className="h-12 text-sm font-bold rounded-xl" />
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="వార్త ముఖ్యాంశం ఇక్కడ నమోదు చేయండి..." className="h-14 text-base font-bold rounded-xl" />
                   
                   {aiHeadlines.length > 0 && (
-                    <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
-                      <p className="text-[8px] font-black text-primary uppercase mb-1">AI Suggested Headlines (Tap to use):</p>
-                      <div className="flex flex-col gap-1.5">
+                    <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-3 animate-in slide-in-from-top-2">
+                      <p className="text-[10px] font-black text-primary uppercase mb-1">AI Suggested Headlines (Tap to use):</p>
+                      <div className="flex flex-col gap-2">
                         {aiHeadlines.map((h, i) => (
-                          <button key={i} onClick={() => setTitle(h)} className="text-[10px] text-left font-bold text-slate-700 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-white">
+                          <button key={i} onClick={() => setTitle(h)} className="text-xs text-left font-bold text-slate-700 hover:text-primary transition-colors p-2 rounded-lg hover:bg-white">
                             {h}
                           </button>
                         ))}
@@ -332,17 +328,17 @@ function ReporterContent() {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">వార్త వివరాలు (Content)</Label>
+                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">వార్త వివరాలు (Content)</Label>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-6 text-[8px] font-black text-primary uppercase gap-1"
+                      className="h-8 text-[10px] font-black text-primary uppercase gap-2"
                       onClick={handleAiSummarize}
                       disabled={isSummarizing}
                     >
-                      {isSummarizing ? <Loader2 className="w-2 h-2 animate-spin" /> : <FileText className="w-2 h-2" />}
+                      {isSummarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
                       Summarize Article
                     </Button>
                   </div>
@@ -350,50 +346,50 @@ function ReporterContent() {
                     value={content} 
                     onChange={(e) => setContent(e.target.value)} 
                     placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
-                    className="min-h-[250px] text-xs leading-relaxed rounded-xl p-4"
+                    className="min-h-[300px] text-sm leading-relaxed rounded-xl p-5"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">చిత్రం (Required Photo)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">చిత్రం (Required Photo)</Label>
                     {!imagePreview ? (
-                      <div onClick={() => fileInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 border-slate-200 transition-all group">
-                        <Upload className="w-6 h-6 text-slate-400 group-hover:text-primary mb-2" />
-                        <span className="text-[10px] font-bold text-slate-500">Upload Photo</span>
+                      <div onClick={() => fileInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 border-slate-200 transition-all group">
+                        <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary mb-3" />
+                        <span className="text-sm font-bold text-slate-500">Upload Photo</span>
                       </div>
                     ) : (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-md group">
+                      <div className="relative aspect-video rounded-3xl overflow-hidden shadow-md group">
                         <Image src={imagePreview} alt="Preview" fill className="object-cover" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Button variant="destructive" size="icon" className="h-8 w-8 rounded-full" onClick={() => setImagePreview(null)}><X className="w-4 h-4" /></Button>
+                          <Button variant="destructive" size="icon" className="h-10 w-10 rounded-full" onClick={() => setImagePreview(null)}><X className="w-5 h-5" /></Button>
                         </div>
                       </div>
                     )}
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">వీడియో (Optional Clip)</Label>
+                  <div className="space-y-3">
+                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">వీడియో (Optional Clip)</Label>
                     {!videoUrl ? (
-                      <div onClick={() => videoInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50/50 border-slate-200 transition-all group">
-                        <Video className="w-6 h-6 text-slate-400 group-hover:text-rose-500 mb-2" />
-                        <span className="text-[10px] font-bold text-slate-500">Upload Clip</span>
-                        <p className="text-[7px] text-muted-foreground mt-1">Max 10MB</p>
+                      <div onClick={() => videoInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50/50 border-slate-200 transition-all group">
+                        <Video className="w-8 h-8 text-slate-400 group-hover:text-rose-500 mb-3" />
+                        <span className="text-sm font-bold text-slate-500">Upload Clip</span>
+                        <p className="text-[10px] text-muted-foreground mt-1">Max 10MB</p>
                       </div>
                     ) : (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-md bg-black">
+                      <div className="relative aspect-video rounded-3xl overflow-hidden shadow-md bg-black">
                         <video src={videoUrl} className="w-full h-full object-contain" controls />
-                        <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full z-10" onClick={() => setVideoUrl(null)}><X className="w-4 h-4" /></Button>
+                        <Button variant="destructive" size="icon" className="absolute top-3 right-3 h-10 w-10 rounded-full z-10" onClick={() => setVideoUrl(null)}><X className="w-5 h-5" /></Button>
                       </div>
                     )}
                     <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoChange} />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <Button className="w-full h-14 text-sm font-black rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="animate-spin mr-2 w-4 h-4" /> : <Send className="mr-2 w-4 h-4" />}
+                <div className="pt-6 border-t">
+                  <Button className="w-full h-16 text-base font-black rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="animate-spin mr-3 w-5 h-5" /> : <Send className="mr-3 w-5 h-5" />}
                     రివ్యూ కోసం పంపండి (Submit for Review)
                   </Button>
                 </div>
@@ -402,11 +398,11 @@ function ReporterContent() {
           </div>
 
           {/* Sidebar: Status & History */}
-          <div className="space-y-6">
-            <Card className="border-none shadow-lg rounded-[1.5rem] bg-white overflow-hidden">
-              <CardHeader className="bg-slate-50 py-4 px-6 border-b">
-                <CardTitle className="text-sm font-black flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
+          <div className="space-y-8">
+            <Card className="border-none shadow-lg rounded-[2rem] bg-white overflow-hidden">
+              <CardHeader className="bg-slate-50 py-5 px-8 border-b">
+                <CardTitle className="text-base font-black flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-primary" />
                   ఇటీవలి సబ్మిషన్స్
                 </CardTitle>
               </CardHeader>
@@ -414,60 +410,60 @@ function ReporterContent() {
                 <div className="divide-y divide-slate-50">
                   {recentSubmissions && recentSubmissions.length > 0 ? (
                     recentSubmissions.map((post) => (
-                      <div key={post.id} className="p-4 hover:bg-slate-50/50 transition-colors">
-                        <div className="flex justify-between items-start mb-1.5">
-                          <Badge variant="secondary" className={`text-[8px] font-black uppercase tracking-tighter border-none px-1.5 h-4 ${
+                      <div key={post.id} className="p-5 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="secondary" className={`text-[9px] font-black uppercase tracking-tighter border-none px-2 h-5 ${
                             post.status === 'approved' ? 'bg-emerald-50 text-emerald-700' :
                             post.status === 'rejected' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
                           }`}>
                             {post.status}
                           </Badge>
-                          <span className="text-[8px] text-muted-foreground font-mono">ID: {post.unique_code}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">ID: {post.unique_code}</span>
                         </div>
-                        <h4 className="text-[11px] font-bold line-clamp-1 mb-1">{post.title}</h4>
-                        <p className="text-[9px] text-muted-foreground flex items-center gap-1">
-                          <MapPin className="w-2 h-2" /> {post.location.mandal} • 
+                        <h4 className="text-xs font-bold line-clamp-1 mb-1.5">{post.title}</h4>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                          <MapPin className="w-3 h-3" /> {post.location.mandal} • 
                           {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString() : 'Just now'}
                         </p>
                         {post.status === 'rejected' && post.rejection_reason && (
-                          <div className="mt-2 p-2 bg-rose-50 border border-rose-100 rounded-lg">
-                            <p className="text-[8px] font-black text-rose-900 uppercase mb-0.5">Feedback:</p>
-                            <p className="text-[9px] text-rose-800 italic leading-tight">{post.rejection_reason}</p>
+                          <div className="mt-3 p-3 bg-rose-50 border border-rose-100 rounded-xl">
+                            <p className="text-[10px] font-black text-rose-900 uppercase mb-1">Feedback:</p>
+                            <p className="text-xs text-rose-800 italic leading-tight">{post.rejection_reason}</p>
                           </div>
                         )}
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-16 px-6 opacity-40">
-                      <Clock className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-[10px] italic">ఇంకా వార్తలు ఏవీ పంపలేదు.</p>
+                    <div className="text-center py-20 px-8 opacity-40">
+                      <Clock className="w-10 h-10 mx-auto mb-3" />
+                      <p className="text-xs italic">ఇంకా వార్తలు ఏవీ పంపలేదు.</p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg rounded-[1.5rem] bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <CheckCircle2 className="w-6 h-6" />
+            <Card className="border-none shadow-lg rounded-[2rem] bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Your Status</p>
-                  <h3 className="text-sm font-black">Sr. Reporter</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Your Status</p>
+                  <h3 className="text-base font-black">Sr. Reporter</h3>
                 </div>
               </div>
-              <div className="space-y-3">
-                <div className="bg-white/10 p-3 rounded-xl border border-white/5">
-                  <div className="flex justify-between text-[10px] mb-1">
+              <div className="space-y-4">
+                <div className="bg-white/10 p-4 rounded-xl border border-white/5">
+                  <div className="flex justify-between text-xs mb-2">
                     <span className="font-bold opacity-80">Accuracy Rating</span>
                     <span className="font-black">4.8/5.0</span>
                   </div>
-                  <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
                     <div className="h-full bg-white w-[96%]" />
                   </div>
                 </div>
-                <p className="text-[9px] opacity-70 leading-relaxed italic">మీ వార్తల నాణ్యతను బట్టి మీ ర్యాంకింగ్ మరియు స్టార్ రేటింగ్ మెరుగుపడుతుంది.</p>
+                <p className="text-[10px] opacity-70 leading-relaxed italic">మీ వార్తల నాణ్యతను బట్టి మీ ర్యాంకింగ్ మరియు స్టార్ రేటింగ్ మెరుగుపడుతుంది.</p>
               </div>
             </Card>
           </div>
@@ -483,9 +479,9 @@ export default function ReporterPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="font-medium text-slate-500">లోడ్ అవుతోంది...</p>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+          <p className="text-lg font-medium text-slate-500">లోడ్ అవుతోంది...</p>
         </div>
       </div>
     }>

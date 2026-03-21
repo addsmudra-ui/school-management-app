@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRef, useState, useEffect, useMemo, Suspense } from "react";
@@ -31,7 +30,6 @@ function ProfileContent() {
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form State
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -39,12 +37,10 @@ function ProfileContent() {
   const [editDistrict, setEditDistrict] = useState("");
   const [editMandal, setEditMandal] = useState("");
 
-  // Fact Check State
   const [factCheckId, setFactCheckId] = useState("");
   const [factCheckResult, setFactCheckResult] = useState<NewsPost | null | 'not_found'>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Real-time Profile Data
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -172,86 +168,86 @@ function ProfileContent() {
   };
 
   if (isProfileLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
   }
 
   if (!user || user.isAnonymous || (!profile && !isProfileLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <div className="text-center space-y-4 max-w-xs animate-in zoom-in-95">
-          <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto"><User className="w-8 h-8 text-orange-600" /></div>
-          <h2 className="text-xl font-black">Dashboard Locked</h2>
-          <Button asChild className="w-full h-12 rounded-xl text-base font-bold shadow-xl shadow-orange-500/20"><Link href="/login">Login / Sign Up</Link></Button>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8">
+        <div className="text-center space-y-6 max-w-sm animate-in zoom-in-95">
+          <div className="w-20 h-20 bg-orange-100 rounded-3xl flex items-center justify-center mx-auto"><User className="w-10 h-10 text-orange-600" /></div>
+          <h2 className="text-2xl font-black">Dashboard Locked</h2>
+          <Button asChild className="w-full h-14 rounded-2xl text-lg font-bold shadow-xl shadow-orange-500/20"><Link href="/login">Login / Sign Up</Link></Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
+    <div className="max-w-xl mx-auto px-5 pt-8 space-y-6">
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-[1.5rem] p-6 text-white shadow-lg animate-in fade-in duration-500">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-2xl font-bold shadow-xl border-2 border-white/30 overflow-hidden group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+        <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-[2rem] p-8 text-white shadow-lg animate-in fade-in duration-500">
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-3xl font-bold shadow-xl border-2 border-white/30 overflow-hidden group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
               {profile.photo ? <Image src={profile.photo} alt={profile.name} fill className="object-cover" /> : profile.name?.[0] || 'U'}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
               </div>
             </div>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
-            <div className="text-center w-full px-2">
-              <h1 className="text-lg font-black tracking-tight leading-tight mb-1.5 line-clamp-2 break-words">
+            <div className="text-center w-full px-4">
+              <h1 className="text-2xl font-black tracking-tight leading-tight mb-2 line-clamp-2 break-words">
                 నమస్కారం, {profile.name}!
               </h1>
-              <p className="opacity-90 font-bold text-[10px] flex items-center justify-center gap-1">
-                <MapPin className="w-3 h-3" />
+              <p className="opacity-90 font-bold text-sm flex items-center justify-center gap-1.5">
+                <MapPin className="w-4 h-4" />
                 {profile.location ? `${profile.location.mandal}, ${profile.location.district}` : 'Location not set'}
               </p>
-              <div className="mt-3 flex justify-center gap-1.5">
-                <Badge className="bg-white/20 border-none text-white font-black text-[8px] uppercase tracking-widest px-2">{profile.role}</Badge>
-                {profile.status === 'approved' && <Badge className="bg-emerald-500 text-white border-none font-black text-[8px] uppercase tracking-widest px-2">Verified</Badge>}
+              <div className="mt-4 flex justify-center gap-2">
+                <Badge className="bg-white/20 border-none text-white font-black text-[11px] uppercase tracking-widest px-3 py-1">{profile.role}</Badge>
+                {profile.status === 'approved' && <Badge className="bg-emerald-500 text-white border-none font-black text-[11px] uppercase tracking-widest px-3 py-1">Verified</Badge>}
               </div>
             </div>
           </div>
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-3 gap-2.5">
-          <Card className="border-none shadow-sm rounded-xl bg-white"><CardContent className="p-3 flex flex-col items-center text-center"><div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mb-1"><Heart className="w-4 h-4 text-orange-600 fill-orange-600" /></div><p className="text-lg font-black text-slate-900">{likedPostIds.length}</p><p className="text-[8px] font-bold text-muted-foreground uppercase">Liked</p></CardContent></Card>
-          <Card className="border-none shadow-sm rounded-xl bg-white"><CardContent className="p-3 flex flex-col items-center text-center"><div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mb-1"><Zap className="w-4 h-4 text-yellow-600 fill-yellow-600" /></div><p className="text-lg font-black text-slate-900">{localNewsCount}</p><p className="text-[8px] font-bold text-muted-foreground uppercase">Local</p></CardContent></Card>
-          <Card className="border-none shadow-sm rounded-xl bg-white"><CardContent className="p-3 flex flex-col items-center text-center"><div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-1"><Shield className="w-4 h-4 text-blue-600 fill-blue-600" /></div><p className="text-lg font-black text-slate-900">Active</p><p className="text-[8px] font-bold text-muted-foreground uppercase">Status</p></CardContent></Card>
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="border-none shadow-sm rounded-2xl bg-white"><CardContent className="p-4 flex flex-col items-center text-center"><div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-2"><Heart className="w-5 h-5 text-orange-600 fill-orange-600" /></div><p className="text-2xl font-black text-slate-900">{likedPostIds.length}</p><p className="text-[11px] font-bold text-muted-foreground uppercase">Liked</p></CardContent></Card>
+          <Card className="border-none shadow-sm rounded-2xl bg-white"><CardContent className="p-4 flex flex-col items-center text-center"><div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center mb-2"><Zap className="w-5 h-5 text-yellow-600 fill-yellow-600" /></div><p className="text-2xl font-black text-slate-900">{localNewsCount}</p><p className="text-[11px] font-bold text-muted-foreground uppercase">Local</p></CardContent></Card>
+          <Card className="border-none shadow-sm rounded-2xl bg-white"><CardContent className="p-4 flex flex-col items-center text-center"><div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2"><Shield className="w-5 h-5 text-blue-600 fill-blue-600" /></div><p className="text-2xl font-black text-slate-900">Active</p><p className="text-[11px] font-bold text-muted-foreground uppercase">Status</p></CardContent></Card>
         </div>
 
         {/* Settings */}
-        <Card className="border-none shadow-md rounded-[1.5rem] overflow-hidden bg-white">
-          <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-3 px-5">
-            <CardTitle className="text-sm font-black flex items-center gap-2"><LayoutDashboard className="w-4 h-4 text-primary" /> Settings</CardTitle>
-            {!isEditing && <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold" onClick={() => setIsEditing(true)}><Edit2 className="w-3 h-3 mr-1" /> Edit</Button>}
+        <Card className="border-none shadow-md rounded-[2rem] overflow-hidden bg-white">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-4 px-6">
+            <CardTitle className="text-lg font-black flex items-center gap-2"><LayoutDashboard className="w-5 h-5 text-primary" /> Settings</CardTitle>
+            {!isEditing && <Button variant="ghost" size="sm" className="h-8 text-xs font-bold" onClick={() => setIsEditing(true)}><Edit2 className="w-4 h-4 mr-1.5" /> Edit</Button>}
           </CardHeader>
-          <CardContent className="p-5">
+          <CardContent className="p-6">
             {!isEditing ? (
-              <div className="space-y-4 animate-in fade-in duration-300">
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Full Name</Label><p className="text-sm font-bold text-slate-900">{profile.name}</p></div>
-                  <div><Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Contact</Label><p className="text-sm font-bold text-slate-900">{profile.phone || profile.email || 'Not set'}</p></div>
+              <div className="space-y-5 animate-in fade-in duration-300">
+                <div className="grid grid-cols-2 gap-6">
+                  <div><Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Full Name</Label><p className="text-base font-bold text-slate-900">{profile.name}</p></div>
+                  <div><Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">Contact</Label><p className="text-base font-bold text-slate-900">{profile.phone || profile.email || 'Not set'}</p></div>
                 </div>
-                <div className="pt-4 border-t flex flex-col gap-2">
-                  {profile.role === 'reporter' && <Button className="w-full h-11 rounded-xl text-xs font-black bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-600/20" asChild><Link href="/reporter"><Newspaper className="w-4 h-4 mr-2" /> వార్తలు పంపండి</Link></Button>}
-                  {(profile.role === 'admin' || profile.role === 'editor') && <Button className="w-full h-11 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-600/20" asChild><Link href="/admin"><Shield className="w-4 h-4 mr-2" /> అడ్మిన్ ప్యానెల్</Link></Button>}
-                  <Button variant="outline" className="w-full h-11 rounded-xl text-xs font-black text-destructive" onClick={handleLogout}><LogOut className="w-4 h-4 mr-2" /> Logout</Button>
+                <div className="pt-5 border-t flex flex-col gap-3">
+                  {profile.role === 'reporter' && <Button className="w-full h-12 rounded-xl text-base font-black bg-cyan-600 hover:bg-cyan-700 shadow-lg shadow-cyan-600/20" asChild><Link href="/reporter"><Newspaper className="w-5 h-5 mr-2" /> వార్తలు పంపండి</Link></Button>}
+                  {(profile.role === 'admin' || profile.role === 'editor') && <Button className="w-full h-12 rounded-xl text-base font-black bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-600/20" asChild><Link href="/admin"><Shield className="w-5 h-5 mr-2" /> అడ్మిన్ ప్యానెల్</Link></Button>}
+                  <Button variant="outline" className="w-full h-12 rounded-xl text-base font-black text-destructive" onClick={handleLogout}><LogOut className="w-5 h-5 mr-2" /> Logout</Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-3.5 animate-in slide-in-from-top-2 duration-300">
-                <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary">Full Name</Label><Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-9 text-sm" /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary">Phone</Label><Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-9 text-sm" /></div>
-                  <div className="space-y-1"><Label className="text-[9px] font-black uppercase text-primary">Email</Label><Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-9 text-sm" /></div>
+              <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
+                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Full Name</Label><Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-11 text-base" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Phone</Label><Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-11 text-base" /></div>
+                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email</Label><Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-11 text-base" /></div>
                 </div>
-                <div className="space-y-2 pt-1"><Label className="text-[9px] font-black uppercase text-primary">Location</Label><div className="grid grid-cols-3 gap-1.5"><Select value={editState} onValueChange={(v) => { setEditState(v); setEditDistrict(""); setEditMandal(""); }}><SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="State" /></SelectTrigger><SelectContent>{availableStates.map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent></Select><Select value={editDistrict} onValueChange={(v) => { setEditDistrict(v); setEditMandal(""); }} disabled={!editState}><SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="Dist" /></SelectTrigger><SelectContent>{editState && Object.keys(availableLocations[editState]).map(d => <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>)}</SelectContent></Select><Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}><SelectTrigger className="h-8 text-[10px]"><SelectValue placeholder="Mandal" /></SelectTrigger><SelectContent>{editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>)}</SelectContent></Select></div></div>
-                <div className="flex gap-2 pt-3">
-                  <Button variant="ghost" size="sm" className="flex-1 h-9 text-xs" onClick={() => setIsEditing(false)}>Cancel</Button>
-                  <Button size="sm" className="flex-1 h-9 text-xs font-bold" onClick={handleSaveChanges} disabled={isSaving || !editName}>{isSaving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />} Save</Button>
+                <div className="space-y-3 pt-2"><Label className="text-[11px] font-black uppercase text-primary">Location</Label><div className="grid grid-cols-3 gap-2"><Select value={editState} onValueChange={(v) => { setEditState(v); setEditDistrict(""); setEditMandal(""); }}><SelectTrigger className="h-10 text-sm"><SelectValue placeholder="State" /></SelectTrigger><SelectContent>{availableStates.map(s => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}</SelectContent></Select><Select value={editDistrict} onValueChange={(v) => { setEditDistrict(v); setEditMandal(""); }} disabled={!editState}><SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Dist" /></SelectTrigger><SelectContent>{editState && Object.keys(availableLocations[editState]).map(d => <SelectItem key={d} value={d} className="text-sm">{d}</SelectItem>)}</SelectContent></Select><Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}><SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Mandal" /></SelectTrigger><SelectContent>{editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m} className="text-sm">{m}</SelectItem>)}</SelectContent></Select></div></div>
+                <div className="flex gap-3 pt-4">
+                  <Button variant="ghost" size="sm" className="flex-1 h-11 text-sm" onClick={() => setIsEditing(false)}>Cancel</Button>
+                  <Button size="sm" className="flex-1 h-11 text-sm font-bold" onClick={handleSaveChanges} disabled={isSaving || !editName}>{isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save</Button>
                 </div>
               </div>
             )}
@@ -259,23 +255,23 @@ function ProfileContent() {
         </Card>
 
         {/* Fact Check */}
-        <Card className="border-none shadow-md rounded-[1.5rem] bg-white">
-          <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-3 px-5"><CardTitle className="text-sm font-bold flex items-center gap-2 text-emerald-700"><CheckCircle2 className="w-4 h-4" /> Fact Check</CardTitle></CardHeader>
-          <CardContent className="p-4 space-y-2.5">
-            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-tight">వార్త యొక్క 5 అంకెల ID ని నమోదు చేయండి.</p>
-            <div className="flex gap-2"><Input placeholder="News ID" value={factCheckId} onChange={(e) => setFactCheckId(e.target.value.replace(/\D/g, '').slice(0, 5))} className="h-9 text-sm text-center tracking-widest font-black" /><Button size="icon" className="h-9 w-9 shrink-0" onClick={handleFactCheck} disabled={isSearching || factCheckId.length < 5}>{isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}</Button></div>
-            {factCheckResult === 'not_found' && <div className="p-2 bg-rose-50 border border-rose-100 rounded-lg flex items-start gap-2 animate-in slide-in-from-top-1"><AlertTriangle className="w-3 h-3 text-rose-600 mt-0.5" /><div className="space-y-0.5"><p className="text-[10px] font-bold text-rose-900">కనుగొనబడలేదు!</p><p className="text-[8px] text-rose-800 leading-tight">నమోదు చేసిన ID ధృవీకరించబడలేదు.</p></div></div>}
-            {factCheckResult && typeof factCheckResult === 'object' && <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg space-y-1.5 animate-in slide-in-from-top-1"><div className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /><div className="space-y-0"><p className="text-[10px] font-bold text-emerald-900">Verified (ధృవీకరించబడింది)</p></div></div><p className="text-[10px] font-bold text-emerald-900 truncate">{factCheckResult.title}</p><Button size="sm" variant="link" className="text-emerald-700 h-auto p-0 text-[9px] font-black uppercase" asChild><Link href={`/?postId=${factCheckResult.id}`}>వార్తను చూడండి</Link></Button></div>}
+        <Card className="border-none shadow-md rounded-[2rem] bg-white">
+          <CardHeader className="bg-emerald-50/50 border-b border-emerald-100 py-4 px-6"><CardTitle className="text-lg font-bold flex items-center gap-2 text-emerald-700"><CheckCircle2 className="w-5 h-5" /> Fact Check</CardTitle></CardHeader>
+          <CardContent className="p-5 space-y-4">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">వార్త యొక్క 5 అంకెల ID ని నమోదు చేయండి.</p>
+            <div className="flex gap-3"><Input placeholder="News ID" value={factCheckId} onChange={(e) => setFactCheckId(e.target.value.replace(/\D/g, '').slice(0, 5))} className="h-11 text-base text-center tracking-widest font-black" /><Button size="icon" className="h-11 w-11 shrink-0" onClick={handleFactCheck} disabled={isSearching || factCheckId.length < 5}>{isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}</Button></div>
+            {factCheckResult === 'not_found' && <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-1"><AlertTriangle className="w-4 h-4 text-rose-600 mt-0.5" /><div className="space-y-1"><p className="text-xs font-bold text-rose-900">కనుగొనబడలేదు!</p><p className="text-xs text-rose-800 leading-tight">నమోదు చేసిన ID ధృవీకరించబడలేదు.</p></div></div>}
+            {factCheckResult && typeof factCheckResult === 'object' && <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2 animate-in slide-in-from-top-1"><div className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /><div className="space-y-0"><p className="text-xs font-bold text-emerald-900">Verified (ధృవీకరించబడింది)</p></div></div><p className="text-sm font-bold text-emerald-900 truncate">{factCheckResult.title}</p><Button size="sm" variant="link" className="text-emerald-700 h-auto p-0 text-[11px] font-black uppercase" asChild><Link href={`/?postId=${factCheckResult.id}`}>వార్తను చూడండి</Link></Button></div>}
           </CardContent>
         </Card>
 
         {/* Liked History */}
-        <div className="space-y-2 pb-6">
-          <div className="flex items-center justify-between px-1"><h2 className="text-xs font-black flex items-center gap-1.5 uppercase text-slate-700"><Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> మీకు నచ్చిన వార్తలు</h2><Badge variant="secondary" className="text-[9px] h-5">{likedNews.length}</Badge></div>
-          <div className="space-y-2">
+        <div className="space-y-3 pb-8">
+          <div className="flex items-center justify-between px-2"><h2 className="text-sm font-black flex items-center gap-2 uppercase text-slate-700"><Heart className="w-4 h-4 text-rose-500 fill-rose-500" /> మీకు నచ్చిన వార్తలు</h2><Badge variant="secondary" className="text-[11px] h-6 px-2">{likedNews.length}</Badge></div>
+          <div className="space-y-3">
             {likedNews.length > 0 ? likedNews.map((news) => (
-              <Link key={news.id} href={`/?postId=${news.id}`}><Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white hover:bg-slate-50 transition-all"><div className="flex p-1.5 gap-3"><div className="relative w-16 h-12 rounded-lg overflow-hidden shrink-0"><Image src={news.image_url} alt={news.title} fill className="object-cover" /></div><div className="flex-1 min-w-0 py-0.5"><div className="flex items-center gap-1 mb-0.5"><Badge className="text-[7px] h-3.5 font-bold bg-primary/10 text-primary border-none px-1">{news.location.mandal}</Badge><span className="text-[7px] text-muted-foreground font-mono">ID: {news.unique_code}</span></div><h3 className="text-[10px] font-bold text-slate-900 line-clamp-1 leading-tight">{news.title}</h3></div></div></Card></Link>
-            )) : <div className="text-center py-10 bg-white rounded-xl border-2 border-dashed border-muted"><Heart className="w-6 h-6 text-muted-foreground/20 mx-auto mb-2" /><p className="text-muted-foreground italic text-[9px]">ఇంకా వార్తలు లేవు.</p></div>}
+              <Link key={news.id} href={`/?postId=${news.id}`}><Card className="border-none shadow-sm rounded-2xl overflow-hidden bg-white hover:bg-slate-50 transition-all"><div className="flex p-2 gap-4"><div className="relative w-24 h-20 rounded-xl overflow-hidden shrink-0"><Image src={news.image_url} alt={news.title} fill className="object-cover" /></div><div className="flex-1 min-w-0 py-1"><div className="flex items-center gap-2 mb-1"><Badge className="text-[9px] h-4 font-bold bg-primary/10 text-primary border-none px-1.5">{news.location.mandal}</Badge><span className="text-[10px] text-muted-foreground font-mono">ID: {news.unique_code}</span></div><h3 className="text-sm font-bold text-slate-900 line-clamp-2 leading-tight">{news.title}</h3></div></div></Card></Link>
+            )) : <div className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-muted"><Heart className="w-8 h-8 text-muted-foreground/20 mx-auto mb-3" /><p className="text-muted-foreground italic text-sm">ఇంకా వార్తలు లేవు.</p></div>}
           </div>
         </div>
         
@@ -288,7 +284,7 @@ export default function ProfilePage() {
   const { isUserLoading } = useUser();
 
   if (isUserLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
   }
 
   return (
