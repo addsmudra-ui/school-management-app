@@ -54,9 +54,6 @@ service cloud.firestore {
     /**
      * @description Rules for User Profiles. Users can manage their own data; Admins/Editors can view.
      * @path /users/{userId}
-     * @allow Authenticated user (get) if userId matches auth.uid.
-     * @deny Unauthenticated user (create).
-     * @principle Path-based ownership and Role-Based Access Control.
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isStaff();
@@ -69,9 +66,6 @@ service cloud.firestore {
     /**
      * @description Rules for Approved News. Publicly readable; only Staff can modify content.
      * @path /approved_news_posts/{postId}
-     * @allow Any user (get, list).
-     * @deny Regular user (update) attempting to change title or content.
-     * @principle Structural segregation of public data.
      */
     match /approved_news_posts/{postId} {
       allow get, list: if true;
@@ -81,7 +75,6 @@ service cloud.firestore {
 
       /**
        * @description Comments on approved posts.
-       * @path /approved_news_posts/{postId}/comments/{commentId}
        */
       match /comments/{commentId} {
         allow read: if true;
@@ -91,25 +84,47 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for Pending News. This was the source of the reported error. 
-     * Reporters can create their own pending posts. Staff can review all.
+     * @description Rules for Pending News.
      * @path /pending_news_posts/{newsPostId}
-     * @allow Reporter (create) if author_id in data matches their UID.
-     * @deny Reporter (update) if they try to change the author_id.
-     * @principle Validates relational integrity and ownership during moderation.
      */
     match /pending_news_posts/{newsPostId} {
-      // Logic grouped by Reads and Writes
       allow get: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
       allow list: if isStaff();
-      
-      // Critical for the reported error: Allow authors to write their own pending posts
-      // and allow "Desk Incharge" (Staff) to perform moderation updates.
       allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
-      
       allow update: if resource != null && (isOwner(resource.data.author_id) || isStaff()) && (request.resource.data.author_id == resource.data.author_id);
-      
       allow delete: if resource != null && (isOwner(resource.data.author_id) || isAdmin());
+    }
+
+    /**
+     * @description Rules for Notifications.
+     */
+    match /notifications/{id} {
+      allow read: if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    /**
+     * @description Rules for Advertisements.
+     */
+    match /ads/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
+
+    /**
+     * @description Rules for App Configuration (Branding, System Status).
+     */
+    match /config/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /**
+     * @description Rules for Metadata (Locations, Categories).
+     */
+    match /metadata/{id} {
+      allow read: if true;
+      allow write: if isStaff();
     }
 
     // Default deny for any unmatched paths
