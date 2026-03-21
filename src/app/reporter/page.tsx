@@ -14,7 +14,7 @@ import {
   Newspaper, Send, Upload, X, Loader2, MapPin, Video, 
   Sparkles, Type, FileText, CheckCircle2, Clock, XCircle,
   AlertTriangle, ChevronRight, Home as HomeIcon, Flag, 
-  Globe, Wallet, HeartPulse, Trophy, Film, Cpu
+  Globe, Wallet, HeartPulse, Trophy, Film, Cpu, Image as ImageIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NEWS_CATEGORIES, NewsPost } from "@/lib/mock-data";
@@ -26,6 +26,7 @@ import { addWatermark } from "@/lib/watermark";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 function ReporterContent() {
   const firestore = useFirestore();
@@ -87,7 +88,9 @@ function ReporterContent() {
       const appName = branding?.appName || "News Pulse";
       const logo = branding?.appLogo;
       const watermarked = await addWatermark(base64, appName, logo);
+      
       setImagePreview(watermarked);
+      setVideoUrl(null); // Clear video when image is picked
     };
     reader.readAsDataURL(file);
   };
@@ -100,7 +103,10 @@ function ReporterContent() {
       return;
     }
     const reader = new FileReader();
-    reader.onloadend = () => setVideoUrl(reader.result as string);
+    reader.onloadend = () => {
+      setVideoUrl(reader.result as string);
+      setImagePreview(null); // Clear image when video is picked
+    };
     reader.readAsDataURL(file);
   };
 
@@ -141,8 +147,12 @@ function ReporterContent() {
     e.preventDefault();
     if (!firestore || !user || !profile) return;
 
-    if (!title || !content || !state || !district || !mandal || !imagePreview) {
-      toast({ title: "Error", description: "Please fill all mandatory fields and upload an image.", variant: "destructive" });
+    if (!title || !content || !state || !district || !mandal || (!imagePreview && !videoUrl)) {
+      toast({ 
+        title: "Error", 
+        description: "దయచేసి అన్ని ఖాళీలను పూరించండి మరియు ఒక చిత్రం లేదా వీడియోను ఎంచుకోండి.", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -153,7 +163,7 @@ function ReporterContent() {
         title,
         content,
         category: category as any,
-        image_url: imagePreview,
+        image_url: imagePreview || "", // Storage requires a string
         video_url: videoUrl || undefined,
         location: { state, district, mandal },
         status: 'pending',
@@ -229,12 +239,12 @@ function ReporterContent() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tight">రిపోర్టర్ డ్యాష్‌బోర్డ్</h1>
-              <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Reporter: {profile.name}</p>
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Reporter: {profile.name}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/guidelines">
-              <Button variant="outline" size="sm" className="h-10 text-[11px] font-bold rounded-xl border-primary/20 px-4">
+              <Button variant="outline" size="sm" className="h-10 text-xs font-bold rounded-xl border-primary/20 px-4">
                 <FileText className="w-4 h-4 mr-2" /> నిబంధనలు
               </Button>
             </Link>
@@ -255,39 +265,39 @@ function ReporterContent() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">రాష్ట్రం (State)</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">రాష్ట్రం (State)</Label>
                     <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
-                      <SelectTrigger className="h-12 text-sm rounded-xl"><SelectValue placeholder="State" /></SelectTrigger>
-                      <SelectContent>{availableStates.sort().map(s => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}</SelectContent>
+                      <SelectTrigger className="h-12 text-base rounded-xl"><SelectValue placeholder="State" /></SelectTrigger>
+                      <SelectContent>{availableStates.sort().map(s => <SelectItem key={s} value={s} className="text-base">{s}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">జిల్లా (District)</Label>
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">జిల్లా (District)</Label>
                       <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
-                        <SelectTrigger className="h-12 text-sm rounded-xl"><SelectValue placeholder="District" /></SelectTrigger>
-                        <SelectContent>{state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d} className="text-sm">{d}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-12 text-base rounded-xl"><SelectValue placeholder="District" /></SelectTrigger>
+                        <SelectContent>{state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">మండలం (Mandal)</Label>
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">మండలం (Mandal)</Label>
                       <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                        <SelectTrigger className="h-12 text-sm rounded-xl"><SelectValue placeholder="Mandal" /></SelectTrigger>
-                        <SelectContent>{district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m} className="text-sm">{m}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-12 text-base rounded-xl"><SelectValue placeholder="Mandal" /></SelectTrigger>
+                        <SelectContent>{district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m} className="text-base">{m}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">సెక్షన్ (Category)</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">సెక్షన్ (Category)</Label>
                   <Select onValueChange={setCategory} value={category}>
-                    <SelectTrigger className="h-12 text-sm rounded-xl">
+                    <SelectTrigger className="h-12 text-base rounded-xl">
                       <div className="flex items-center gap-3">{getCategoryIcon(category)}<SelectValue /></div>
                     </SelectTrigger>
                     <SelectContent>
                       {availableCategories.map((cat: any) => (
-                        <SelectItem key={cat.value} value={cat.value} className="text-sm">
+                        <SelectItem key={cat.value} value={cat.value} className="text-base">
                           <div className="flex items-center gap-3">
                             <span className="opacity-50">{cat.label}</span>
                             <span className="text-[10px] font-black uppercase tracking-tighter">({cat.value})</span>
@@ -300,7 +310,7 @@ function ReporterContent() {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">ముఖ్యాంశం (Headline)</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">ముఖ్యాంశం (Headline)</Label>
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -312,14 +322,14 @@ function ReporterContent() {
                       Generate Catchy Headlines
                     </Button>
                   </div>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="వార్త ముఖ్యాంశం ఇక్కడ నమోదు చేయండి..." className="h-14 text-base font-bold rounded-xl" />
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="వార్త ముఖ్యాంశం ఇక్కడ నమోదు చేయండి..." className="h-14 text-lg font-bold rounded-xl" />
                   
                   {aiHeadlines.length > 0 && (
                     <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 space-y-3 animate-in slide-in-from-top-2">
                       <p className="text-[10px] font-black text-primary uppercase mb-1">AI Suggested Headlines (Tap to use):</p>
                       <div className="flex flex-col gap-2">
                         {aiHeadlines.map((h, i) => (
-                          <button key={i} onClick={() => setTitle(h)} className="text-xs text-left font-bold text-slate-700 hover:text-primary transition-colors p-2 rounded-lg hover:bg-white">
+                          <button key={i} onClick={() => setTitle(h)} className="text-sm text-left font-bold text-slate-700 hover:text-primary transition-colors p-2 rounded-lg hover:bg-white">
                             {h}
                           </button>
                         ))}
@@ -330,7 +340,7 @@ function ReporterContent() {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">వార్త వివరాలు (Content)</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">వార్త వివరాలు (Content)</Label>
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -346,49 +356,65 @@ function ReporterContent() {
                     value={content} 
                     onChange={(e) => setContent(e.target.value)} 
                     placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
-                    className="min-h-[300px] text-sm leading-relaxed rounded-xl p-5"
+                    className="min-h-[300px] text-base leading-relaxed rounded-xl p-5"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">చిత్రం (Required Photo)</Label>
-                    {!imagePreview ? (
-                      <div onClick={() => fileInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 border-slate-200 transition-all group">
-                        <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary mb-3" />
-                        <span className="text-sm font-bold text-slate-500">Upload Photo</span>
-                      </div>
-                    ) : (
-                      <div className="relative aspect-video rounded-3xl overflow-hidden shadow-md group">
-                        <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Button variant="destructive" size="icon" className="h-10 w-10 rounded-full" onClick={() => setImagePreview(null)}><X className="w-5 h-5" /></Button>
-                        </div>
-                      </div>
-                    )}
-                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <Label className="text-xs font-black uppercase tracking-widest text-primary ml-1">మీడియా అప్‌లోడ్ (Media Upload)</Label>
+                    <Badge variant="secondary" className="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border-none">ఒకటి మాత్రమే (Any One)</Badge>
                   </div>
+                  <p className="text-[10px] text-muted-foreground italic">దయచేసి వార్త కోసం ఒక చిత్రం లేదా వీడియోను మాత్రమే ఎంచుకోండి.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                    {/* Image Upload Section */}
+                    <div className={cn("space-y-3 transition-all", videoUrl && "opacity-40 pointer-events-none grayscale")}>
+                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <ImageIcon className="w-3 h-3" />
+                        చిత్రం (Image)
+                      </Label>
+                      {!imagePreview ? (
+                        <div onClick={() => !videoUrl && fileInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 border-slate-200 transition-all group">
+                          <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary mb-3" />
+                          <span className="text-sm font-bold text-slate-500">Upload Photo</span>
+                        </div>
+                      ) : (
+                        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-md group">
+                          <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button variant="destructive" size="icon" className="h-10 w-10 rounded-full" onClick={() => setImagePreview(null)}><X className="w-5 h-5" /></Button>
+                          </div>
+                        </div>
+                      )}
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                    </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1">వీడియో (Optional Clip)</Label>
-                    {!videoUrl ? (
-                      <div onClick={() => videoInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50/50 border-slate-200 transition-all group">
-                        <Video className="w-8 h-8 text-slate-400 group-hover:text-rose-500 mb-3" />
-                        <span className="text-sm font-bold text-slate-500">Upload Clip</span>
-                        <p className="text-[10px] text-muted-foreground mt-1">Max 10MB</p>
-                      </div>
-                    ) : (
-                      <div className="relative aspect-video rounded-3xl overflow-hidden shadow-md bg-black">
-                        <video src={videoUrl} className="w-full h-full object-contain" controls />
-                        <Button variant="destructive" size="icon" className="absolute top-3 right-3 h-10 w-10 rounded-full z-10" onClick={() => setVideoUrl(null)}><X className="w-5 h-5" /></Button>
-                      </div>
-                    )}
-                    <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoChange} />
+                    {/* Video Upload Section */}
+                    <div className={cn("space-y-3 transition-all", imagePreview && "opacity-40 pointer-events-none grayscale")}>
+                      <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Video className="w-3 h-3 text-rose-500" />
+                        వీడియో (Video)
+                      </Label>
+                      {!videoUrl ? (
+                        <div onClick={() => !imagePreview && videoInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50/50 border-slate-200 transition-all group">
+                          <Video className="w-8 h-8 text-slate-400 group-hover:text-rose-500 mb-3" />
+                          <span className="text-sm font-bold text-slate-500">Upload Clip</span>
+                          <p className="text-[10px] text-muted-foreground mt-1">Max 10MB</p>
+                        </div>
+                      ) : (
+                        <div className="relative aspect-video rounded-3xl overflow-hidden shadow-md bg-black">
+                          <video src={videoUrl} className="w-full h-full object-contain" controls />
+                          <Button variant="destructive" size="icon" className="absolute top-3 right-3 h-10 w-10 rounded-full z-10" onClick={() => setVideoUrl(null)}><X className="w-5 h-5" /></Button>
+                        </div>
+                      )}
+                      <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoChange} />
+                    </div>
                   </div>
                 </div>
 
                 <div className="pt-6 border-t">
-                  <Button className="w-full h-16 text-base font-black rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleSubmit} disabled={isSubmitting}>
+                  <Button className="w-full h-16 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleSubmit} disabled={isSubmitting}>
                     {isSubmitting ? <Loader2 className="animate-spin mr-3 w-5 h-5" /> : <Send className="mr-3 w-5 h-5" />}
                     రివ్యూ కోసం పంపండి (Submit for Review)
                   </Button>
@@ -420,7 +446,7 @@ function ReporterContent() {
                           </Badge>
                           <span className="text-[10px] text-muted-foreground font-mono">ID: {post.unique_code}</span>
                         </div>
-                        <h4 className="text-xs font-bold line-clamp-1 mb-1.5">{post.title}</h4>
+                        <h4 className="text-sm font-bold line-clamp-1 mb-1.5">{post.title}</h4>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
                           <MapPin className="w-3 h-3" /> {post.location.mandal} • 
                           {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString() : 'Just now'}
@@ -436,7 +462,7 @@ function ReporterContent() {
                   ) : (
                     <div className="text-center py-20 px-8 opacity-40">
                       <Clock className="w-10 h-10 mx-auto mb-3" />
-                      <p className="text-xs italic">ఇంకా వార్తలు ఏవీ పంపలేదు.</p>
+                      <p className="text-sm italic">ఇంకా వార్తలు ఏవీ పంపలేదు.</p>
                     </div>
                   )}
                 </div>
