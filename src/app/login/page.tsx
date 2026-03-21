@@ -36,7 +36,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor'>("user");
-  const [staffCode, setStaffCode] = useState("");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
@@ -161,7 +160,7 @@ export default function LoginPage() {
           id: currentUser.uid,
           name,
           role,
-          status: (role === 'reporter' && staffCode !== 'NP2025') ? 'pending' : 'approved',
+          status: role === 'reporter' ? 'pending' : 'approved',
         };
 
         if (phone) newUser.phone = `+91${phone}`;
@@ -185,8 +184,6 @@ export default function LoginPage() {
     }
   };
 
-  const isStaff = staffCode === "NP2025";
-
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-12 h-12 text-primary animate-spin" /></div>;
   }
@@ -195,7 +192,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       <div id="recaptcha-container"></div>
       
-      <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden z-10 bg-white/95 backdrop-blur-sm">
+      <Card className="w-full max-md shadow-2xl border-none rounded-3xl overflow-hidden z-10 bg-white/95 backdrop-blur-sm">
         <CardHeader className="text-center relative bg-primary/5 pb-8">
           {step !== 'auth' && <button className="absolute left-4 top-4 p-2" onClick={() => setStep('auth')}><ChevronLeft className="w-5 h-5" /></button>}
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
@@ -254,16 +251,6 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">Staff Code <LockKeyhole className="w-3 h-3 text-muted-foreground" /></Label>
-                  <Input 
-                    placeholder="Optional (Only for Admin/Editor)" 
-                    className="h-11 bg-slate-50" 
-                    value={staffCode} 
-                    onChange={(e) => setStaffCode(e.target.value)} 
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label>నేను ఒక...</Label>
                   <Select onValueChange={(v: any) => setRole(v)} value={role}>
                     <SelectTrigger className="h-11">
@@ -272,8 +259,8 @@ export default function LoginPage() {
                     <SelectContent>
                       <SelectItem value="user">పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
-                      {isStaff && <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>}
-                      {isStaff && <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>}
+                      <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
+                      <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
