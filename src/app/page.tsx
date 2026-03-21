@@ -4,28 +4,13 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { NewsCard } from "@/components/news/NewsCard";
 import { AdCard } from "@/components/news/AdCard";
-import { useEffect, useState, Suspense, useMemo, useRef } from "react";
-import { MapPin, Loader2, Globe, AlertCircle, Info, Newspaper, Construction, Home as HomeIcon, Flag, Wallet, HeartPulse, Trophy, Film, Cpu, ChevronRight } from "lucide-react";
+import { useEffect, useState, Suspense, useMemo } from "react";
+import { MapPin, Loader2, Globe, AlertCircle, Info, Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
 import { collection, query, limit, doc, where } from "firebase/firestore";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { LOCATIONS as MOCK_LOCATIONS, NewsPost, NEWS_CATEGORIES, NewsCategory } from "@/lib/mock-data";
+import { LOCATIONS as MOCK_LOCATIONS, NewsPost, NewsCategory } from "@/lib/mock-data";
 import { AdPost } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +18,11 @@ function NewsFeedContent() {
   const firestore = useFirestore();
   const searchParams = useSearchParams();
   const targetPostId = searchParams.get('postId');
+  const categoryParam = searchParams.get('category') as NewsCategory | 'All' | null;
+  const selectedCategory = categoryParam || 'Home';
 
   const [selectedDistrict, setSelectedDistrict] = useState<string>("All");
   const [selectedMandal, setSelectedMandal] = useState<string>("All");
-  const [selectedCategory, setSelectedCategory] = useState<NewsCategory | 'All'>('Home');
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [forceGlobal, setForceGlobal] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
   // Real-time branding and system status
@@ -71,22 +55,18 @@ function NewsFeedContent() {
 
   useEffect(() => {
     if (targetPostId) {
-      setForceGlobal(true);
       setTimeout(() => {
         const element = document.getElementById(`post-${targetPostId}`);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
       }, 500);
-    } else {
-      setForceGlobal(false);
     }
   }, [targetPostId]);
 
   // Distraction-Free Interaction Logic
   useEffect(() => {
     const handleTouch = (e: any) => {
-      // Don't toggle if clicking a button or menu
       if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]') || e.target.closest('[role="menu"]')) return;
       setIsMinimized(prev => !prev);
     };
@@ -114,7 +94,6 @@ function NewsFeedContent() {
 
     if (news.length === 0 && ads.length === 0) return { feedToDisplay: [], isFallbackActive: false, localCount: 0 };
 
-    // Combine and sort by timestamp
     const combined: any[] = [
       ...news.map(n => ({ ...n, feedType: 'news' })),
       ...ads.map(a => ({ ...a, feedType: 'ad' }))
@@ -129,18 +108,17 @@ function NewsFeedContent() {
       return getTime(b) - getTime(a);
     });
 
-    // Category Filter
     let filtered = sorted;
     if (selectedCategory !== 'All') {
       filtered = sorted.filter(item => {
-        if (item.feedType === 'ad') return true; // Ads always show
+        if (item.feedType === 'ad') return true;
         return item.category === selectedCategory;
       });
     }
 
     const isGlobalFilter = selectedDistrict === "All";
 
-    if (forceGlobal || isGlobalFilter) {
+    if (isGlobalFilter) {
       return { feedToDisplay: filtered, isFallbackActive: false, localCount: filtered.length };
     }
 
@@ -155,17 +133,16 @@ function NewsFeedContent() {
 
     return {
       feedToDisplay: [...local, ...others],
-      isFallbackActive: local.length === 0 && selectedCategory === 'Home', // Only fallback if Home category
+      isFallbackActive: local.length === 0 && selectedCategory === 'Home',
       localCount: local.length
     };
-  }, [allNews, allAds, selectedDistrict, selectedMandal, forceGlobal, selectedCategory]);
+  }, [allNews, allAds, selectedDistrict, selectedMandal, selectedCategory]);
 
   const handleResetToGlobal = () => {
     setSelectedDistrict("All");
     setSelectedMandal("All");
     localStorage.setItem('teluguNewsPulse_district', "All");
     localStorage.setItem('teluguNewsPulse_mandal', "All");
-    setForceGlobal(false);
     window.dispatchEvent(new Event('teluguNewsPulse_locationChanged'));
   };
 
@@ -199,93 +176,61 @@ function NewsFeedContent() {
     );
   }
 
-  const isActuallyGlobal = forceGlobal || selectedDistrict === "All";
-
   return (
-    <>
-      {/* Dynamic Category Scroll Bar */}
-      <div className={cn(
-        "fixed top-4 left-4 right-4 z-40 transition-all duration-500",
-        isMinimized ? "-translate-y-20 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
-      )}>
-        <div className="bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-muted p-1 overflow-x-auto no-scrollbar flex items-center gap-1.5 px-2">
-          <button 
-            onClick={() => setSelectedCategory('All')}
-            className={cn(
-              "whitespace-nowrap px-3 py-1.5 rounded-full text-[9px] font-black uppercase transition-all shrink-0",
-              selectedCategory === 'All' ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"
-            )}
-          >
-            All
-          </button>
-          {NEWS_CATEGORIES.map((cat) => (
-            <button 
-              key={cat.value}
-              onClick={() => setSelectedCategory(cat.value)}
-              className={cn(
-                "whitespace-nowrap px-3 py-1.5 rounded-full text-[9px] font-black uppercase transition-all shrink-0 flex items-center gap-1.5",
-                selectedCategory === cat.value ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="news-scroll-container">
-        {feedToDisplay.length > 0 && !isMinimized && (
-          <div className="absolute top-16 left-0 right-0 z-30 px-4 pointer-events-none">
-            {isFallbackActive ? (
-              <div className="max-w-md bg-amber-50/90 border border-amber-200 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
-                <div className="bg-amber-500 p-2 rounded-xl shrink-0">
-                  <Globe className="w-3.5 h-3.5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[9px] font-black text-amber-900 leading-tight">మీ ప్రాంతంలో వార్తలు లేవు.</p>
-                  <p className="text-[8px] font-medium text-amber-800 opacity-80 mt-0.5">గ్లోబల్ వార్తలను చూస్తున్నారు.</p>
-                </div>
-                <Button variant="ghost" size="sm" className="h-7 rounded-lg text-[8px] font-black text-amber-900 pointer-events-auto hover:bg-amber-100 px-2" onClick={handleResetToGlobal}>
-                  Global
-                </Button>
+    <div className="news-scroll-container">
+      {feedToDisplay.length > 0 && !isMinimized && (
+        <div className="absolute top-16 left-0 right-0 z-30 px-4 pointer-events-none">
+          {isFallbackActive ? (
+            <div className="max-w-md bg-amber-50/90 border border-amber-200 p-2.5 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
+              <div className="bg-amber-500 p-2 rounded-xl shrink-0">
+                <Globe className="w-3.5 h-3.5 text-white" />
               </div>
-            ) : !isActuallyGlobal && localCount > 0 && (
-              <div className="max-w-md bg-emerald-50/80 border border-emerald-200 p-2 rounded-2xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
-                <div className="bg-emerald-500 p-1.5 rounded-lg shrink-0">
-                  <Info className="w-3 h-3 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[9px] font-black text-emerald-900 leading-tight">మీ ప్రాంతీయ వార్తలు పైన ఉన్నాయి.</p>
-                </div>
+              <div className="flex-1">
+                <p className="text-[9px] font-black text-amber-900 leading-tight">మీ ప్రాంతంలో వార్తలు లేవు.</p>
+                <p className="text-[8px] font-medium text-amber-800 opacity-80 mt-0.5">గ్లోబల్ వార్తలను చూస్తున్నారు.</p>
               </div>
-            )}
-          </div>
-        )}
-
-        {feedToDisplay.length > 0 ? (
-          feedToDisplay.map((item) => (
-            <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
-              {item.feedType === 'ad' ? (
-                <AdCard ad={item as AdPost} />
-              ) : (
-                <NewsCard news={item as NewsPost} />
-              )}
-            </section>
-          ))
-        ) : (
-          <div className="flex items-center justify-center h-full px-6 text-center">
-            <div className="max-w-xs animate-in zoom-in-95 duration-500">
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-                <AlertCircle className="w-10 h-10 text-slate-300" />
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">వార్తలు ఏవీ లేవు</h3>
-              <p className="text-muted-foreground mb-8 text-[10px] font-medium leading-relaxed">ప్రస్తుతానికి ఈ సెక్షన్‌లో వార్తలు అందుబాటులో లేవు.</p>
-              <Button className="w-full h-12 rounded-2xl text-xs font-bold shadow-xl shadow-primary/20" onClick={() => setSelectedCategory('All')}>అన్ని వార్తలు చూడండి</Button>
+              <Button variant="ghost" size="sm" className="h-7 rounded-lg text-[8px] font-black text-amber-900 pointer-events-auto hover:bg-amber-100 px-2" onClick={handleResetToGlobal}>
+                Global
+              </Button>
             </div>
+          ) : selectedDistrict !== "All" && localCount > 0 && (
+            <div className="max-w-md bg-emerald-50/80 border border-emerald-200 p-2 rounded-2xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-500 backdrop-blur-md opacity-95">
+              <div className="bg-emerald-500 p-1.5 rounded-lg shrink-0">
+                <Info className="w-3 h-3 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[9px] font-black text-emerald-900 leading-tight">మీ ప్రాంతీయ వార్తలు పైన ఉన్నాయి.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {feedToDisplay.length > 0 ? (
+        feedToDisplay.map((item) => (
+          <section key={item.id} id={`post-${item.id}`} className="news-card-snap">
+            {item.feedType === 'ad' ? (
+              <AdCard ad={item as AdPost} />
+            ) : (
+              <NewsCard news={item as NewsPost} />
+            )}
+          </section>
+        ))
+      ) : (
+        <div className="flex items-center justify-center h-full px-6 text-center">
+          <div className="max-w-xs animate-in zoom-in-95 duration-500">
+            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <AlertCircle className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2">వార్తలు ఏవీ లేవు</h3>
+            <p className="text-muted-foreground mb-8 text-[10px] font-medium leading-relaxed">ప్రస్తుతానికి ఈ సెక్షన్‌లో వార్తలు అందుబాటులో లేవు.</p>
+            <Button className="w-full h-12 rounded-2xl text-xs font-bold shadow-xl shadow-primary/20" asChild>
+              <a href="/?category=All">అన్ని వార్తలు చూడండి</a>
+            </Button>
           </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }
 

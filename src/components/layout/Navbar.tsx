@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { Newspaper, User, PlusCircle, LayoutDashboard, Bell, ChevronRight, MapPin, FileText, Shield, Info, AlertTriangle, ExternalLink } from "lucide-react";
+import { Newspaper, User, PlusCircle, LayoutDashboard, Bell, ChevronRight, MapPin, FileText, Shield, Info, AlertTriangle, ExternalLink, Home, Flag, Globe, Wallet, HeartPulse, Film, Trophy, Cpu } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { SentNotification } from "@/lib/storage";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -11,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from "@/firebase";
 import { collection, query, orderBy, limit, doc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,11 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LOCATIONS as MOCK_LOCATIONS } from "@/lib/mock-data";
+import { LOCATIONS as MOCK_LOCATIONS, NEWS_CATEGORIES, NewsCategory } from "@/lib/mock-data";
 
 export function Navbar() {
   const firestore = useFirestore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const [role, setRole] = useState<'user' | 'reporter' | 'admin' | 'editor' | null>(null);
@@ -45,10 +47,10 @@ export function Navbar() {
   const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   
-  // Navigation Visibility State
   const [isMinimized, setIsMinimized] = useState(false);
-  
   const lastToastedId = useRef<string | null>(null);
+
+  const selectedCategory = searchParams.get('category') || 'Home';
 
   // Real-time branding
   const brandingRef = useMemoFirebase(() => {
@@ -57,7 +59,7 @@ export function Navbar() {
   }, [firestore]);
   const { data: branding } = useDoc(brandingRef);
 
-  // Real-time Profile for fallback
+  // Real-time Profile
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -83,7 +85,6 @@ export function Navbar() {
     }, {});
   }, [locationsDoc]);
 
-  // Distraction-Free Interaction Logic
   useEffect(() => {
     const handleTouch = (e: any) => {
       if (e.target.closest('nav') || e.target.closest('button') || e.target.closest('[role="dialog"]') || e.target.closest('[role="menu"]')) return;
@@ -178,6 +179,11 @@ export function Navbar() {
     window.dispatchEvent(new Event('teluguNewsPulse_locationChanged'));
   };
 
+  const handleCategorySelect = (cat: string) => {
+    router.push(`/?category=${cat}`);
+    setIsLegalOpen(false);
+  };
+
   const canPost = role === 'admin' || role === 'editor' || (role === 'reporter' && userStatus === 'approved');
 
   const getRoleTheme = () => {
@@ -194,6 +200,20 @@ export function Navbar() {
 
   const theme = getRoleTheme();
 
+  const getCategoryIcon = (val: string) => {
+    switch(val) {
+      case 'Home': return <Home className="w-4 h-4" />;
+      case 'National': return <Flag className="w-4 h-4" />;
+      case 'International': return <Globe className="w-4 h-4" />;
+      case 'Financial': return <Wallet className="w-4 h-4" />;
+      case 'Health': return <HeartPulse className="w-4 h-4" />;
+      case 'Entertainment': return <Film className="w-4 h-4" />;
+      case 'Sports': return <Trophy className="w-4 h-4" />;
+      case 'Technology': return <Cpu className="w-4 h-4" />;
+      default: return <Newspaper className="w-4 h-4" />;
+    }
+  };
+
   return (
     <nav className={cn(
       "fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-muted transition-all duration-500 pb-safe md:top-0 md:bottom-auto md:border-t-0 md:border-b shadow-lg",
@@ -201,7 +221,6 @@ export function Navbar() {
     )}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         
-        {/* App Logo & Details Sheet */}
         <Sheet open={isLegalOpen} onOpenChange={setIsLegalOpen}>
           <SheetTrigger asChild>
             <button className={cn("flex items-center gap-1.5 font-bold text-lg shrink-0", theme.text)}>
@@ -235,7 +254,38 @@ export function Navbar() {
             </SheetHeader>
             
             <div className="flex flex-col h-full overflow-y-auto pb-32">
-              {/* User Details Section */}
+              {/* Sections / Categories */}
+              <div className="p-4 space-y-4 border-b">
+                <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-2 mb-2">Sections (న్యూస్ సెక్షన్స్)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => handleCategorySelect('All')}
+                    className={cn(
+                      "flex items-center gap-3 p-2.5 rounded-xl transition-all border",
+                      selectedCategory === 'All' ? "bg-primary text-white border-primary shadow-md" : "bg-slate-50 border-transparent hover:bg-slate-100"
+                    )}
+                  >
+                    <Globe className={cn("w-4 h-4", selectedCategory === 'All' ? "text-white" : "text-primary")} />
+                    <span className="text-[10px] font-bold">All (అన్నీ)</span>
+                  </button>
+                  {NEWS_CATEGORIES.map((cat) => (
+                    <button 
+                      key={cat.value}
+                      onClick={() => handleCategorySelect(cat.value)}
+                      className={cn(
+                        "flex items-center gap-3 p-2.5 rounded-xl transition-all border",
+                        selectedCategory === cat.value ? "bg-primary text-white border-primary shadow-md" : "bg-slate-50 border-transparent hover:bg-slate-100"
+                      )}
+                    >
+                      <div className={cn("shrink-0", selectedCategory === cat.value ? "text-white" : "text-primary")}>
+                        {getCategoryIcon(cat.value)}
+                      </div>
+                      <span className="text-[10px] font-bold truncate">{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {userName && (
                 <div className="p-4 border-b bg-slate-50/50">
                   <div className="flex items-center gap-3">
@@ -256,46 +306,33 @@ export function Navbar() {
                 </div>
               )}
 
-              {/* Menu Links */}
               <div className="p-4 space-y-4">
                 <div className="space-y-1">
                   <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-2 mb-2">Legal & Information</p>
-                  
                   <Link href="/privacy" onClick={() => setIsLegalOpen(false)} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
                     <Shield className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                     <span className="text-[11px] font-bold">Privacy Policy</span>
                     <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/50" />
                   </Link>
-
                   <Link href="/guidelines" onClick={() => setIsLegalOpen(false)} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
                     <FileText className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
                     <span className="text-[11px] font-bold">Terms & Conditions</span>
                     <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/50" />
                   </Link>
-
                   <div className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-100">
                     <div className="flex items-center gap-2 mb-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                       <span className="text-[10px] font-black uppercase tracking-tight text-amber-800">Disclaimer</span>
                     </div>
                     <p className="text-[9px] text-amber-900 leading-relaxed font-medium opacity-80">
-                      ఈ యాప్‌లో ప్రచురించబడే వార్తలు మరియు అభిప్రాయాలు సంబంధిత రిపోర్టర్లవే. ప్లాట్‌ఫారమ్ ఏవైనా వాస్తవాలకు లేదా వార్తా కంటెంట్‌కు బాధ్యత వహించదు. దయచేసి సమాచారాన్ని మీ విచక్షణతో గ్రహించగలరు.
+                      ఈ యాప్‌లో ప్రచురించబడే వార్తలు మరియు అభిప్రాయాలు సంబంధిత రిపోర్టర్లవే. ప్లాట్‌ఫారమ్ ఏవైనా వాస్తవాలకు లేదా వార్తా కంటెంట్‌కు బాధ్యత వహించదు.
                     </p>
                   </div>
-                </div>
-
-                <div className="pt-4 border-t space-y-1">
-                  <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest px-2 mb-2">Support</p>
-                  <a href="mailto:telugunewspulseinfo@gmail.com" className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors group">
-                    <Info className="w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
-                    <span className="text-[11px] font-bold">Contact Support</span>
-                    <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground/30" />
-                  </a>
                 </div>
               </div>
 
               <div className="mt-auto p-6 text-center">
-                <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Version 1.0.4 - Build 2025</p>
+                <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Version 1.0.5 - Build 2025</p>
               </div>
             </div>
           </SheetContent>
@@ -307,11 +344,10 @@ export function Navbar() {
             theme.hover,
             isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100"
           )}>
-            <Newspaper className="w-4 h-4" />
+            <Home className="w-4 h-4" />
             <span className="text-[9px] md:text-xs font-semibold">Home</span>
           </Link>
 
-          {/* New Location Selector in Navbar */}
           <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
             <DialogTrigger asChild>
               <button className={cn(
@@ -328,16 +364,11 @@ export function Navbar() {
               </button>
             </DialogTrigger>
             <DialogContent className="w-[92%] max-w-sm rounded-[2rem] p-8 border-none shadow-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-black text-center mb-4">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle className="text-xl font-black text-center mb-4">ప్రాంతాన్ని ఎంచుకోండి</DialogTitle></DialogHeader>
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-primary uppercase tracking-widest ml-1">జిల్లా (District)</label>
-                  <Select 
-                    value={location.district} 
-                    onValueChange={(val) => handleLocationUpdate(val, "All")}
-                  >
+                  <Select value={location.district} onValueChange={(val) => handleLocationUpdate(val, "All")}>
                     <SelectTrigger className="w-full h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold text-xs"><SelectValue placeholder="జిల్లాను ఎంచుకోండి" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">అన్ని జిల్లాలు (All Districts)</SelectItem>
@@ -348,21 +379,16 @@ export function Navbar() {
                 {location.district !== "All" && (
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-primary uppercase tracking-widest ml-1">మండలం (Mandal)</label>
-                    <Select 
-                      value={location.mandal} 
-                      onValueChange={(val) => handleLocationUpdate(location.district, val)}
-                    >
+                    <Select value={location.mandal} onValueChange={(val) => handleLocationUpdate(location.district, val)}>
                       <SelectTrigger className="w-full h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold text-xs"><SelectValue placeholder="మండలాన్ని ఎంచుకోండి" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="All">అన్ని మండలాలు</SelectItem>
-                        {dynamicLocations[location.district]?.map((m: string) => (
-                          <SelectItem key={m} value={m} className="font-bold text-xs">{m}</SelectItem>
-                        ))}
+                        {dynamicLocations[location.district]?.map((m: string) => <SelectItem key={m} value={m} className="font-bold text-xs">{m}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
-                <Button className="w-full h-12 text-sm font-bold rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={() => setIsLocationModalOpen(false)}>వార్తలు చూడండి</Button>
+                <Button className="w-full h-12 text-sm font-bold rounded-2xl shadow-xl shadow-primary/20" onClick={() => setIsLocationModalOpen(false)}>వార్తలు చూడండి</Button>
               </div>
             </DialogContent>
           </Dialog>
