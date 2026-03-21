@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Navbar } from "@/components/layout/Navbar";
@@ -73,7 +74,7 @@ export default function PrivacyPolicyPage() {
               <div className="flex items-center gap-2 pt-1">
                 <a 
                   href="mailto:telugunewspulseinfo@gmail.com" 
-                  className="text-base font-black text-primary hover:underline underline-offset-4"
+                  className="text-xs font-normal text-primary hover:underline underline-offset-4"
                 >
                   telugunewspulseinfo@gmail.com
                 </a>
