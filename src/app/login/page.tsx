@@ -25,6 +25,12 @@ import {
 import { doc } from "firebase/firestore";
 import Link from "next/link";
 
+declare global {
+  interface Window {
+    recaptchaVerifier: any;
+  }
+}
+
 export default function LoginPage() {
   const firestore = useFirestore();
   const auth = useAuth();
@@ -107,15 +113,22 @@ export default function LoginPage() {
 
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
-  // Initialize Recaptcha
+  // Initialize Recaptcha with robustness check
   useEffect(() => {
-    if (typeof window !== 'undefined' && auth && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {}
-      });
+    if (typeof window !== 'undefined' && auth && !isUserLoading && !window.recaptchaVerifier) {
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        try {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': () => {}
+          });
+        } catch (error) {
+          console.error("Recaptcha initialization failed:", error);
+        }
+      }
     }
-  }, [auth]);
+  }, [auth, isUserLoading]);
 
   const handleGoogleLogin = async () => {
     if (!firestore || !auth) return;
@@ -142,6 +155,13 @@ export default function LoginPage() {
             setIsLoading(false);
             return;
           }
+
+          if (!window.recaptchaVerifier) {
+            toast({ variant: "destructive", title: "System Error", description: "Recaptcha not ready. Please refresh the page." });
+            setIsLoading(false);
+            return;
+          }
+
           const formattedPhone = `+91${phone}`;
           const result = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
           setConfirmationResult(result);
