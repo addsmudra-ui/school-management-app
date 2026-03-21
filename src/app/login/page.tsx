@@ -51,20 +51,47 @@ export default function LoginPage() {
   }, [firestore, user?.uid, user?.isAnonymous]);
   const { data: dbProfile, isLoading: isProfileLoading } = useDoc(profileRef);
 
-  // Redirection Logic: Redirect existing users automatically
+  // Recognition and Redirection Logic
   useEffect(() => {
-    if (!isUserLoading && !isProfileLoading && user && !user.isAnonymous && dbProfile) {
-      if (dbProfile.role === 'admin' || dbProfile.role === 'editor') {
-        router.push('/admin');
-      } else if (dbProfile.role === 'reporter') {
-        router.push('/reporter');
+    const handleRecognition = async () => {
+      if (isUserLoading || isProfileLoading || !user || user.isAnonymous) return;
+
+      if (dbProfile) {
+        const targetPath = (dbProfile.role === 'admin' || dbProfile.role === 'editor') ? '/admin' : dbProfile.role === 'reporter' ? '/reporter' : '/profile';
+        router.push(targetPath);
       } else {
-        router.push('/profile');
+        // Recognition logic for pre-provisioned staff
+        setIsLoading(true);
+        try {
+          const userPhone = user.phoneNumber;
+          const userEmail = user.email;
+          let provisioned: any = null;
+
+          if (userPhone) {
+            provisioned = await UserService.getByPhone(firestore!, userPhone);
+          } else if (userEmail) {
+            provisioned = await UserService.getByEmail(firestore!, userEmail);
+          }
+
+          if (provisioned && provisioned.id.startsWith('MANUAL_')) {
+            // Claim the profile!
+            await UserService.claimProfile(firestore!, user.uid, provisioned);
+            toast({ title: "Staff recognized!", description: `Welcome back, ${provisioned.name}.` });
+            const targetPath = (provisioned.role === 'admin' || provisioned.role === 'editor') ? '/admin' : provisioned.role === 'reporter' ? '/reporter' : '/profile';
+            router.push(targetPath);
+          } else {
+            setStep('details');
+          }
+        } catch (e) {
+          setStep('details');
+        } finally {
+          setIsLoading(false);
+        }
       }
-    } else if (!isUserLoading && !isProfileLoading && user && !user.isAnonymous && dbProfile === null) {
-      setStep('details');
-    }
-  }, [user, isUserLoading, isProfileLoading, dbProfile, router]);
+    };
+
+    handleRecognition();
+  }, [user, isUserLoading, isProfileLoading, dbProfile, router, firestore, toast]);
 
   // Dynamic locations from Firestore
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
@@ -93,18 +120,8 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const googleUser = result.user;
-      
-      const existing = await UserService.getById(firestore, googleUser.uid);
-      if (existing) {
-        const targetPath = (existing.role === 'admin' || existing.role === 'editor') ? '/admin' : existing.role === 'reporter' ? '/reporter' : '/profile';
-        router.push(targetPath);
-      } else {
-        setName(googleUser.displayName || "");
-        setEmail(googleUser.email || "");
-        setStep('details');
-      }
+      await signInWithPopup(auth, provider);
+      // Recognition logic in useEffect will handle the rest
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
@@ -191,7 +208,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
       <div id="recaptcha-container"></div>
       
-      <Card className="w-full max-md shadow-2xl border-none rounded-3xl overflow-hidden z-10 bg-white/95 backdrop-blur-sm">
+      <Card className="w-full max-w-md shadow-2xl border-none rounded-3xl overflow-hidden z-10 bg-white/95 backdrop-blur-sm">
         <CardHeader className="text-center relative bg-primary/5 pb-8">
           {step !== 'auth' && <button className="absolute left-4 top-4 p-2" onClick={() => setStep('auth')}><ChevronLeft className="w-5 h-5" /></button>}
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 mt-4">
@@ -258,7 +275,6 @@ export default function LoginPage() {
                     <SelectContent>
                       <SelectItem value="user">పాఠకుడు (Reader)</SelectItem>
                       <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
-                      {/* Admin and Editor roles are hidden from public registration */}
                     </SelectContent>
                   </Select>
                 </div>

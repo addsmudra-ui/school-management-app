@@ -321,6 +321,42 @@ export const UserService = {
     deleteDocumentNonBlocking(doc(db, 'roles_admins', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_reporters', userId));
     deleteDocumentNonBlocking(doc(db, 'roles_editors', userId));
+  },
+
+  claimProfile: async (db: Firestore, realUid: string, provisionedProfile: UserProfile) => {
+    const batch = writeBatch(db);
+    
+    // Create new doc with real UID
+    const newRef = doc(db, 'users', realUid);
+    const oldRef = doc(db, 'users', provisionedProfile.id);
+    
+    const updatedData = {
+      ...provisionedProfile,
+      id: realUid,
+      timestamp: serverTimestamp()
+    };
+    
+    batch.set(newRef, updatedData);
+    batch.delete(oldRef);
+    
+    // Also update role markers
+    const roleCollectionMap = {
+      'admin': 'roles_admins',
+      'reporter': 'roles_reporters',
+      'editor': 'roles_editors',
+      'user': null
+    };
+    const roleKey = provisionedProfile.role as keyof typeof roleCollectionMap;
+    const collectionName = roleCollectionMap[roleKey];
+    if (collectionName) {
+      const oldRoleRef = doc(db, collectionName, provisionedProfile.id);
+      const newRoleRef = doc(db, collectionName, realUid);
+      batch.delete(oldRoleRef);
+      batch.set(newRoleRef, { active: true, updatedAt: serverTimestamp() });
+    }
+    
+    await batch.commit();
+    return updatedData;
   }
 };
 

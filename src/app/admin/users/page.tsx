@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -46,6 +45,7 @@ export default function AdminUsers() {
 
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newState, setNewState] = useState("");
   const [newDistrict, setNewDistrict] = useState("");
   const [newMandal, setNewMandal] = useState("");
@@ -75,8 +75,8 @@ export default function AdminUsers() {
   };
 
   const handleAddUser = async () => {
-    if (!firestore || !newName || !newPhone || !newState || !newDistrict || !newMandal) {
-      toast({ title: "Validation Error", description: "Please fill all required fields.", variant: "destructive" });
+    if (!firestore || !newName || (!newPhone && !newEmail) || !newState || !newDistrict || !newMandal) {
+      toast({ title: "Validation Error", description: "Please fill name, contact, and location.", variant: "destructive" });
       return;
     }
 
@@ -84,7 +84,8 @@ export default function AdminUsers() {
     const newUser: UserProfile = {
       id: "MANUAL_" + Date.now(),
       name: newName,
-      phone: newPhone,
+      phone: newPhone ? (newPhone.startsWith('+') ? newPhone : `+91${newPhone}`) : undefined,
+      email: newEmail || undefined,
       role: newRole,
       status: 'approved',
       location: { state: newState, district: newDistrict, mandal: newMandal }
@@ -93,8 +94,8 @@ export default function AdminUsers() {
     try {
       await UserService.create(firestore, newUser);
       setIsAddDialogOpen(false);
-      toast({ title: "వినియోగదారు చేర్చబడ్డారు", description: `Successfully created ${newRole} account.` });
-      setNewName(""); setNewPhone(""); setNewState(""); setNewDistrict(""); setNewMandal("");
+      toast({ title: "Provisioned", description: `Provisioned ${newRole} account for ${newName}. Recognition will happen on first login.` });
+      setNewName(""); setNewPhone(""); setNewEmail(""); setNewState(""); setNewDistrict(""); setNewMandal("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -123,27 +124,36 @@ export default function AdminUsers() {
               సిబ్బందిని చేర్చండి (Add Staff)
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md rounded-3xl">
+          <DialogContent className="max-w-md rounded-3xl overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">కొత్త వినియోగదారు</DialogTitle>
+              <DialogTitle className="text-xl font-bold">కొత్త సిబ్బందిని చేర్చండి</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
               <div className="space-y-2">
-                <Label>పేరు (Name)</Label>
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="పూర్తి పేరు" className="rounded-xl" />
+                <Label>పూర్తి పేరు (Full Name)</Label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" className="rounded-xl" />
               </div>
-              <div className="space-y-2">
-                <Label>ఫోన్ నంబర్</Label>
-                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="10 అంకెల నంబర్" className="rounded-xl" />
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-2">
+                  <Label>ఫోన్ నంబర్ (Recognized Phone)</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-muted-foreground text-xs">+91</span>
+                    <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="10 digits" className="rounded-xl pl-10" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>ఈమెయిల్ (Optional Email)</Label>
+                  <Input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@example.com" className="rounded-xl" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>పాత్ర (Role)</Label>
                 <Select onValueChange={(v: any) => setNewRole(v)} value={newRole}>
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
                     <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
                     <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
+                    <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
                     <SelectItem value="user">పాఠకుడు (User)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -176,11 +186,11 @@ export default function AdminUsers() {
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="bg-slate-50 p-4 -m-6 mt-4">
               <Button variant="outline" className="rounded-xl" onClick={() => setIsAddDialogOpen(false)}>రద్దు</Button>
-              <Button className="rounded-xl" onClick={handleAddUser} disabled={isCreating}>
+              <Button className="rounded-xl px-8" onClick={handleAddUser} disabled={isCreating}>
                 {isCreating ? <Loader2 className="animate-spin mr-2" /> : null}
-                సృష్టించు
+                ఖాతాను సృష్టించండి
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -190,7 +200,7 @@ export default function AdminUsers() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input 
-          placeholder="రిపోర్టర్ పేరు లేదా ఫోన్ నంబర్ ద్వారా వెతకండి..." 
+          placeholder="పేరు, పాత్ర లేదా ఫోన్ ద్వారా వెతకండి..." 
           className="pl-10 h-12 bg-white rounded-xl border-muted shadow-sm"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -221,7 +231,10 @@ export default function AdminUsers() {
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
                           {user.name[0]}
                         </div>
-                        <span className="font-bold text-slate-900 truncate">{user.name}</span>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900 truncate">{user.name}</span>
+                          {user.id.startsWith('MANUAL_') && <span className="text-[8px] font-black text-rose-500 uppercase tracking-tighter">Pre-Provisioned</span>}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -237,9 +250,9 @@ export default function AdminUsers() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-[11px] font-medium flex items-center gap-1.5 text-muted-foreground">
-                        <Phone className="w-3.5 h-3.5" />
-                        {user.phone}
+                      <span className="text-[11px] font-medium flex flex-col gap-0.5 text-muted-foreground">
+                        <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {user.phone || '-'}</span>
+                        <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email || '-'}</span>
                       </span>
                     </TableCell>
                     <TableCell>
