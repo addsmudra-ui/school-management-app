@@ -4,7 +4,10 @@ import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, Search, MapPin, Loader2, ShieldCheck, ShieldAlert, Phone, UserCog } from "lucide-react";
+import { 
+  UserPlus, Trash2, Search, MapPin, Loader2, 
+  ShieldCheck, ShieldAlert, Phone, UserCog, Mail // <-- ఇక్కడ Mail యాడ్ చేయబడింది
+} from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile, STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
@@ -24,14 +27,15 @@ export default function AdminUsers() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  // Firestore Query
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
+    // గమనిక: ఒకవేళ ఇక్కడ 400 Error వస్తే, కన్సోల్ లోని లింక్ క్లిక్ చేసి 'Index' క్రియేట్ చేయండి.
     return query(collection(firestore, 'users'), orderBy('name', 'asc'), limit(500));
   }, [firestore]);
 
   const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
 
-  // Dynamic locations for add user form
   const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
   const { data: locationsDoc } = useDoc(locRef);
   
@@ -94,7 +98,7 @@ export default function AdminUsers() {
     try {
       await UserService.create(firestore, newUser);
       setIsAddDialogOpen(false);
-      toast({ title: "Provisioned", description: `Provisioned ${newRole} account for ${newName}. Recognition will happen on first login.` });
+      toast({ title: "Provisioned", description: `Provisioned ${newRole} account for ${newName}.` });
       setNewName(""); setNewPhone(""); setNewEmail(""); setNewState(""); setNewDistrict(""); setNewMandal("");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
