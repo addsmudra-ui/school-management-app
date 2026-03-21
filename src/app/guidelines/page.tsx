@@ -1,5 +1,6 @@
 "use client";
 
+import React, { Suspense } from "react"; // Suspense ఇంపోర్ట్ చేసాము
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,8 @@ import { FileCheck, AlertCircle, CheckCircle2, ArrowLeft, PenTool } from "lucide
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function GuidelinesPage() {
+// అసలు కంటెంట్‌ను విడిగా ఒక కాంపోనెంట్‌గా మార్చాము
+function GuidelinesContent() {
   return (
     <main className="min-h-screen bg-slate-50/50 pb-24 md:pt-20">
       <Navbar />
@@ -80,5 +82,14 @@ export default function GuidelinesPage() {
         <Footer />
       </div>
     </main>
+  );
+}
+
+// ప్రధాన పేజీని Suspense లో ఉంచాము
+export default function GuidelinesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <GuidelinesContent />
+    </Suspense>
   );
 }

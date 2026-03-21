@@ -1,511 +1,495 @@
-
 'use client';
 
-import { useState, useRef, useMemo, useEffect } from "react";
+import React, { useState, useRef, useMemo, Suspense } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Newspaper, Send, Upload, X, Loader2, MapPin, Video, 
+  Sparkles, Type, FileText, CheckCircle2, Clock, XCircle,
+  AlertTriangle, ChevronRight, Home as HomeIcon, Flag, 
+  Globe, Wallet, HeartPulse, Trophy, Film, Cpu
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NewsPost } from "@/lib/mock-data";
+import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NEWS_CATEGORIES, NewsPost } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
-import { Sparkles, Loader2, Send, Upload, X, FileText, Briefcase, MapPin, Star, Clock, CheckCircle2, AlertCircle, Wand2, Heart, MessageCircle, ChevronRight, Newspaper, Edit2, Save, Pencil } from "lucide-react";
+import { useFirestore, useUser, useDoc, useCollection, useMemoFirebase } from "@/firebase";
 import Image from "next/image";
-import Link from "next/link";
-import { useFirestore, useUser, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, where, doc, limit } from "firebase/firestore";
+import { doc, collection, query, where, orderBy, limit } from "firebase/firestore";
+import { addWatermark } from "@/lib/watermark";
 import { generateHeadlines } from "@/ai/flows/reporter-ai-headline-generation";
 import { summarizeArticleForReporter } from "@/ai/flows/reporter-ai-content-summarization";
-import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { addWatermark } from "@/lib/watermark";
+import Link from "next/link";
 
-export default function ReporterPage() {
+function ReporterContent() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
-
-  const [activeTab, setActiveTab] = useState("submit");
+  
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [category, setCategory] = useState<string>("Home");
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  
+  // AI States
+  const [isGeneratingHeadlines, setIsGeneratingHeadlines] = useState(false);
   const [aiHeadlines, setAiHeadlines] = useState<string[]>([]);
-  
-  const [editingPost, setEditingPost] = useState<any>(null);
-  const [isEditModalOpen, setIsEditOpen] = useState(false);
-  
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const locDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
-  const { data: locationsDoc } = useDoc(locDocRef);
+  // Real-time Profile & Branding
+  const profileRef = useMemoFirebase(() => (firestore && user?.uid) ? doc(firestore, 'users', user.uid) : null, [firestore, user?.uid]);
+  const brandingRef = useMemoFirebase(() => firestore ? doc(firestore, 'config', 'admin') : null, [firestore]);
+  const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
+  const { data: branding } = useDoc(brandingRef);
 
+  // Recent Submissions Query
+  const submissionsQuery = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return query(
+      collection(firestore, 'pending_news_posts'),
+      where('author_id', '==', user.uid),
+      orderBy('timestamp', 'desc'),
+      limit(5)
+    );
+  }, [firestore, user?.uid]);
+  const { data: recentSubmissions } = useCollection<NewsPost>(submissionsQuery);
+
+  // Dynamic Metadata
+  const locRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'locations') : null, [firestore]);
+  const catRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'categories') : null, [firestore]);
+  const { data: locationsDoc } = useDoc(locRef);
+  const { data: categoriesDoc } = useDoc(catRef);
+
+  const availableCategories = useMemo(() => categoriesDoc?.items || NEWS_CATEGORIES, [categoriesDoc]);
   const availableLocations = useMemo(() => {
     if (!locationsDoc) return MOCK_LOCATIONS;
     const { id, ...statesOnly } = locationsDoc as any;
     return statesOnly;
   }, [locationsDoc]);
-
   const availableStates = Object.keys(availableLocations).length > 0 ? Object.keys(availableLocations) : MOCK_STATES;
 
-  const brandingRef = useMemoFirebase(() => firestore ? doc(firestore, 'config', 'admin') : null, [firestore]);
-  const { data: branding } = useDoc(brandingRef);
-
-  const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user?.uid]);
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userDocRef);
-
-  const pendingNewsQuery = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return query(
-      collection(firestore, 'pending_news_posts'),
-      where('author_id', '==', user.uid)
-    );
-  }, [firestore, user?.uid]);
-
-  const approvedNewsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    const authorId = user?.uid || "";
-    return query(
-      collection(firestore, 'approved_news_posts'),
-      where('author_id', '==', authorId)
-    );
-  }, [firestore, user?.uid]);
-
-  const { data: rawPendingNews } = useCollection(pendingNewsQuery);
-  const { data: rawApprovedNews } = useCollection(approvedNewsQuery);
-
-  const pendingNews = useMemo(() => {
-    if (!rawPendingNews) return [];
-    return [...rawPendingNews].sort((a, b) => {
-      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
-      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
-      return timeB - timeA;
-    });
-  }, [rawPendingNews]);
-
-  const approvedNews = useMemo(() => {
-    if (!rawApprovedNews) return [];
-    return [...rawApprovedNews].sort((a, b) => {
-      const timeA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0;
-      const timeB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0;
-      return timeB - timeA;
-    });
-  }, [rawApprovedNews]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, target: 'submit' | 'edit') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64 = reader.result as string;
-      const appName = branding?.appName || "Telugu News Pulse";
+      const appName = branding?.appName || "News Pulse";
       const logo = branding?.appLogo;
       const watermarked = await addWatermark(base64, appName, logo);
-      
-      if (target === 'submit') setImagePreview(watermarked);
-      else setEditingPost({ ...editingPost, image_url: watermarked });
+      setImagePreview(watermarked);
     };
     reader.readAsDataURL(file);
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "Video too large", description: "Max 10MB clips allowed." });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => setVideoUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleAiHeadlines = async () => {
-    if (!content) return;
-    setIsGeneratingAI(true);
+    if (!content || content.length < 50) {
+      toast({ variant: "destructive", title: "Content Required", description: "Please write some content first." });
+      return;
+    }
+    setIsGeneratingHeadlines(true);
     try {
       const result = await generateHeadlines({ articleContent: content });
       setAiHeadlines(result.headlines);
-    } catch (error) {
-      toast({ title: "AI Error", variant: "destructive" });
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI Error", description: "Could not generate headlines." });
     } finally {
-      setIsGeneratingAI(false);
+      setIsGeneratingHeadlines(false);
     }
   };
 
   const handleAiSummarize = async () => {
-    if (!content) return;
-    setIsGeneratingAI(true);
+    if (!content || content.length < 100) {
+      toast({ variant: "destructive", title: "Content Required", description: "Need at least 100 words to summarize." });
+      return;
+    }
+    setIsSummarizing(true);
     try {
       const result = await summarizeArticleForReporter({ detailedArticle: content });
       setContent(result.summary);
+      toast({ title: "Summarized!", description: "Article has been condensed." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "AI Error", description: "Summarization failed." });
     } finally {
-      setIsGeneratingAI(false);
+      setIsSummarizing(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!userProfile && !isProfileLoading) {
-      toast({ title: "Error", description: "Profile not found. Please log in again.", variant: "destructive" });
-      return;
-    }
-
-    if (userProfile?.status === 'rejected') {
-      toast({ title: "Access Denied", description: "Your reporter account has been rejected.", variant: "destructive" });
-      return;
-    }
+    if (!firestore || !user || !profile) return;
 
     if (!title || !content || !state || !district || !mandal || !imagePreview) {
-      toast({ title: "Missing Info", description: "Please fill all fields and upload an image.", variant: "destructive" });
+      toast({ title: "Error", description: "Please fill all mandatory fields and upload an image.", variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const postData = {
+      NewsService.add(firestore, {
         unique_code: Math.floor(10000 + Math.random() * 90000).toString(),
         title,
         content,
+        category: category as any,
         image_url: imagePreview,
+        video_url: videoUrl || undefined,
         location: { state, district, mandal },
-        status: 'pending' as const,
-        author_id: user?.uid || "",
-        author_name: userProfile?.name || "Reporter",
-        author_role: (userProfile as any)?.author_role || "Reporter",
-        author_stars: (userProfile as any)?.author_stars || 0,
+        status: 'pending',
+        author_id: user.uid,
+        author_name: profile.name,
+        author_role: (profile.role === 'admin' || profile.role === 'editor') ? 'Desk Incharge' : 'Reporter',
+        author_stars: 3,
         likes: 0,
         commentsCount: 0
-      };
+      });
+
+      toast({ title: "వార్త పంపబడింది", description: "మీ వార్త రివ్యూ కోసం పంపబడింది. ఆమోదం పొందాక లైవ్ అవుతుంది." });
       
-      NewsService.add(firestore!, postData);
-      
-      toast({ title: "సమర్పించబడింది", description: "వార్త అడ్మిన్ ఆమోదం కోసం పంపబడింది." });
-      setTitle(""); setContent(""); setState(""); setDistrict(""); setMandal(""); setImagePreview(null);
-      setActiveTab("portfolio");
+      setTitle(""); setContent(""); setCategory("Home"); setState(""); setDistrict(""); setMandal(""); setImagePreview(null); setVideoUrl(null); setAiHeadlines([]);
     } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "Could not submit news.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to submit news.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSaveEdit = async () => {
-    if (!firestore || !editingPost) return;
-    setIsSubmitting(true);
-    try {
-      await NewsService.update(firestore, editingPost.id, { ...editingPost, status: 'pending' });
-      setIsEditOpen(false);
-      toast({ title: "నవీకరించబడింది", description: "మార్పులు మళ్ళీ సమీక్ష కోసం పంపబడ్డాయి." });
-    } finally {
-      setIsSubmitting(false);
+  if (isUserLoading || isProfileLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+  }
+
+  if (!profile || (profile.role !== 'reporter' && profile.role !== 'admin' && profile.role !== 'editor')) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mb-4" />
+        <h2 className="text-xl font-black">Access Restricted</h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-xs">This page is for authorized reporters only.</p>
+        <Button asChild className="mt-6 rounded-xl"><Link href="/profile">Back to Profile</Link></Button>
+      </div>
+    );
+  }
+
+  if (profile.role === 'reporter' && profile.status !== 'approved') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <Clock className="w-12 h-12 text-blue-500 mb-4 animate-pulse" />
+        <h2 className="text-xl font-black">అప్రూవల్ పెండింగ్</h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-xs">మీ అకౌంట్ ఇంకా వెరిఫై చేయబడలేదు. అడ్మిన్ ఆమోదం పొందిన తర్వాత మీరు వార్తలను పంపవచ్చు.</p>
+        <Button asChild variant="outline" className="mt-6 rounded-xl"><Link href="/">Return Home</Link></Button>
+      </div>
+    );
+  }
+
+  const getCategoryIcon = (val: string) => {
+    const iconName = availableCategories.find((c: any) => c.value === val)?.icon;
+    switch(iconName) {
+      case 'Home': return <HomeIcon className="w-3 h-3" />;
+      case 'Flag': return <Flag className="w-3 h-3" />;
+      case 'Globe': return <Globe className="w-3 h-3" />;
+      case 'Wallet': return <Wallet className="w-3 h-3" />;
+      case 'HeartPulse': return <HeartPulse className="w-3 h-3" />;
+      case 'Film': return <Film className="w-3 h-3" />;
+      case 'Trophy': return <Trophy className="w-3 h-3" />;
+      case 'Cpu': return <Cpu className="w-3 h-3" />;
+      default: return <Newspaper className="w-3 h-3" />;
     }
   };
-
-  if (isProfileLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-      </div>
-    );
-  }
-
-  // If technically logged in but no profile document found
-  if (!user || user.isAnonymous || (!userProfile && !isProfileLoading)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <Navbar />
-        <div className="text-center space-y-6 max-w-sm animate-in zoom-in-95 duration-500">
-          <div className="w-20 h-20 bg-cyan-100 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
-            <Briefcase className="w-10 h-10 text-cyan-600" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-slate-900">Reporter Access Required</h2>
-            <p className="text-muted-foreground font-medium leading-relaxed">
-              రిపోర్టర్ డాష్‌బోర్డ్ చూడటానికి దయచేసి రిపోర్టర్‌గా లాగిన్ అవ్వండి.
-            </p>
-          </div>
-          <Button asChild className="w-full h-14 rounded-2xl text-lg font-bold shadow-xl shadow-cyan-500/20 bg-cyan-600 hover:bg-cyan-700">
-            <Link href="/login">Login as Reporter</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col">
+    <div className="min-h-screen bg-slate-50/50 pb-24 md:pt-20">
       <Navbar />
-      <main className="flex-1 pt-20 pb-24 px-4 max-w-4xl mx-auto w-full">
-        {userProfile && (
-          <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white mb-6 border-b-4 border-cyan-500/20">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-5">
-                <div className="relative w-16 h-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 text-xl font-bold shadow-sm border-2 border-white overflow-hidden shrink-0">
-                  {userProfile.photo ? (
-                    <Image src={userProfile.photo} alt={userProfile.name} fill className="object-cover" />
-                  ) : (
-                    userProfile.name?.[0] || 'R'
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-black text-slate-900 truncate leading-none mb-1.5">{userProfile.name}</h2>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-cyan-50 text-cyan-700 border-cyan-100 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-tighter">
-                      {userProfile.role}
-                    </Badge>
-                    {(userProfile as any).author_stars && (
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: (userProfile as any).author_stars }).map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" asChild className="rounded-xl h-10 px-4 font-bold text-xs gap-1.5 border-slate-200">
-                  <Link href="/profile">
-                    <Edit2 className="w-3 h-3 text-cyan-600" />
-                    Profile
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      <div className="max-w-4xl mx-auto px-4 pt-8 space-y-8">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 p-2.5 rounded-2xl">
+              <Newspaper className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold font-headline tracking-tight">రిపోర్టర్ డ్యాష్‌బోర్డ్</h1>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">Reporter: {profile.name}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/guidelines">
+              <Button variant="outline" size="sm" className="h-9 text-[10px] font-bold rounded-xl border-primary/20">
+                <FileText className="w-3 h-3 mr-1.5" /> నిబంధనలు
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-2 bg-white rounded-2xl border p-1 h-12 shadow-sm">
-            <TabsTrigger value="submit" className="rounded-xl"><Pencil className="w-4 h-4 mr-2" /> వార్త రాయండి</TabsTrigger>
-            <TabsTrigger value="portfolio" className="rounded-xl"><Briefcase className="w-4 h-4 mr-2" /> నా వార్తలు</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="submit" className="animate-in fade-in duration-500">
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-              <CardHeader className="bg-primary/5 border-b py-8">
-                <CardTitle className="text-2xl font-bold font-headline">వార్తను సమర్పించండి</CardTitle>
-                <CardDescription>స్థానిక వార్తలను ప్రజలకు తెలియజేయండి.</CardDescription>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+              <CardHeader className="bg-primary/5 border-b border-primary/10 py-6 px-8">
+                <CardTitle className="text-lg font-black flex items-center gap-2">
+                  <Type className="w-5 h-5 text-primary" />
+                  వార్తను రాయండి (Write News)
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-6 md:p-8 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
-                    <SelectContent>{availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="జిల్లా" /></SelectTrigger>
-                    <SelectContent>
-                      {state && availableLocations[state] && Object.keys(availableLocations[state]).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select onValueChange={setMandal} value={mandal} disabled={!district}>
-                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="మండలం" /></SelectTrigger>
-                    <SelectContent>
-                      {district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Textarea 
-                      className="min-h-[250px] rounded-2xl p-6 text-lg border-muted focus:ring-primary" 
-                      value={content} 
-                      onChange={(e) => setContent(e.target.value)} 
-                      placeholder="వార్త పూర్తి వివరాలు..." 
-                    />
-                    <Button 
-                      type="button"
-                      variant="secondary" 
-                      className="absolute bottom-4 right-4 rounded-full gap-2"
-                      onClick={handleAiSummarize}
-                      disabled={isGeneratingAI || !content}
-                    >
-                      {isGeneratingAI ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                      AI సారాంశం
-                    </Button>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">రాష్ట్రం (State)</Label>
+                    <Select onValueChange={(v) => { setState(v); setDistrict(""); setMandal(""); }} value={state}>
+                      <SelectTrigger className="h-10 text-xs rounded-xl"><SelectValue placeholder="State" /></SelectTrigger>
+                      <SelectContent>{availableStates.sort().map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
-
-                  <div className="flex gap-3">
-                    <Input 
-                      value={title} 
-                      onChange={(e) => setTitle(e.target.value)} 
-                      placeholder="ముఖ్యాంశం (Headline)..." 
-                      className="h-14 rounded-xl font-bold text-xl"
-                    />
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      className="h-14 rounded-xl px-6"
-                      onClick={handleAiHeadlines}
-                      disabled={isGeneratingAI || !content}
-                    >
-                      {isGeneratingAI ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {!imagePreview ? (
-                    <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-16 text-center cursor-pointer hover:bg-muted/50 border-muted group">
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      <p className="font-bold text-lg">చిత్రాన్ని అప్‌లోడ్ చేయండి</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">జిల్లా (District)</Label>
+                      <Select onValueChange={(v) => { setDistrict(v); setMandal(""); }} value={district} disabled={!state}>
+                        <SelectTrigger className="h-10 text-xs rounded-xl"><SelectValue placeholder="District" /></SelectTrigger>
+                        <SelectContent>{state && availableLocations[state] && Object.keys(availableLocations[state]).sort().map(d => <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>)}</SelectContent>
+                      </Select>
                     </div>
-                  ) : (
-                    <div className="relative aspect-video rounded-3xl overflow-hidden shadow-lg group">
-                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-4 right-4 rounded-full" 
-                        onClick={() => setImagePreview(null)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">మండలం (Mandal)</Label>
+                      <Select onValueChange={setMandal} value={mandal} disabled={!district}>
+                        <SelectTrigger className="h-10 text-xs rounded-xl"><SelectValue placeholder="Mandal" /></SelectTrigger>
+                        <SelectContent>{district && availableLocations[state]?.[district]?.map((m: string) => <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">సెక్షన్ (Category)</Label>
+                  <Select onValueChange={setCategory} value={category}>
+                    <SelectTrigger className="h-10 text-xs rounded-xl">
+                      <div className="flex items-center gap-2">{getCategoryIcon(category)}<SelectValue /></div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCategories.map((cat: any) => (
+                        <SelectItem key={cat.value} value={cat.value} className="text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="opacity-50">{cat.label}</span>
+                            <span className="text-[8px] font-black uppercase tracking-tighter">({cat.value})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">ముఖ్యాంశం (Headline)</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-[8px] font-black text-primary uppercase gap-1"
+                      onClick={handleAiHeadlines}
+                      disabled={isGeneratingHeadlines}
+                    >
+                      {isGeneratingHeadlines ? <Loader2 className="w-2 h-2 animate-spin" /> : <Sparkles className="w-2 h-2" />}
+                      Generate Catchy Headlines
+                    </Button>
+                  </div>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="వార్త ముఖ్యాంశం ఇక్కడ నమోదు చేయండి..." className="h-12 text-sm font-bold rounded-xl" />
+                  
+                  {aiHeadlines.length > 0 && (
+                    <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 space-y-2 animate-in slide-in-from-top-2">
+                      <p className="text-[8px] font-black text-primary uppercase mb-1">AI Suggested Headlines (Tap to use):</p>
+                      <div className="flex flex-col gap-1.5">
+                        {aiHeadlines.map((h, i) => (
+                          <button key={i} onClick={() => setTitle(h)} className="text-[10px] text-left font-bold text-slate-700 hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-white">
+                            {h}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg" onChange={(e) => handleFileChange(e, 'submit')} />
                 </div>
 
-                <Button className="w-full h-16 text-2xl font-bold rounded-2xl shadow-xl" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : <Send className="mr-2" />}
-                  సమర్పించు
-                </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">వార్త వివరాలు (Content)</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-[8px] font-black text-primary uppercase gap-1"
+                      onClick={handleAiSummarize}
+                      disabled={isSummarizing}
+                    >
+                      {isSummarizing ? <Loader2 className="w-2 h-2 animate-spin" /> : <FileText className="w-2 h-2" />}
+                      Summarize Article
+                    </Button>
+                  </div>
+                  <Textarea 
+                    value={content} 
+                    onChange={(e) => setContent(e.target.value)} 
+                    placeholder="వార్త పూర్తి వివరాలు ఇక్కడ రాయండి..." 
+                    className="min-h-[250px] text-xs leading-relaxed rounded-xl p-4"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">చిత్రం (Required Photo)</Label>
+                    {!imagePreview ? (
+                      <div onClick={() => fileInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 border-slate-200 transition-all group">
+                        <Upload className="w-6 h-6 text-slate-400 group-hover:text-primary mb-2" />
+                        <span className="text-[10px] font-bold text-slate-500">Upload Photo</span>
+                      </div>
+                    ) : (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-md group">
+                        <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button variant="destructive" size="icon" className="h-8 w-8 rounded-full" onClick={() => setImagePreview(null)}><X className="w-4 h-4" /></Button>
+                        </div>
+                      </div>
+                    )}
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground ml-1">వీడియో (Optional Clip)</Label>
+                    {!videoUrl ? (
+                      <div onClick={() => videoInputRef.current?.click()} className="aspect-video border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50/50 border-slate-200 transition-all group">
+                        <Video className="w-6 h-6 text-slate-400 group-hover:text-rose-500 mb-2" />
+                        <span className="text-[10px] font-bold text-slate-500">Upload Clip</span>
+                        <p className="text-[7px] text-muted-foreground mt-1">Max 10MB</p>
+                      </div>
+                    ) : (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-md bg-black">
+                        <video src={videoUrl} className="w-full h-full object-contain" controls />
+                        <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full z-10" onClick={() => setVideoUrl(null)}><X className="w-4 h-4" /></Button>
+                      </div>
+                    )}
+                    <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoChange} />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Button className="w-full h-14 text-sm font-black rounded-2xl shadow-xl shadow-primary/20 transition-transform active:scale-95" onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="animate-spin mr-2 w-4 h-4" /> : <Send className="mr-2 w-4 h-4" />}
+                    రివ్యూ కోసం పంపండి (Submit for Review)
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="portfolio" className="space-y-8">
-            <div className="grid gap-6">
-              {pendingNews.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    పరిశీలనలో (Reviewing)
-                  </h3>
-                  {pendingNews.map(post => <PortfolioCard key={post.id} post={post} onEdit={() => { setEditingPost({...post}); setIsEditOpen(true); }} />)}
-                </div>
-              )}
-              {approvedNews.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-emerald-600 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    ప్రచురించబడినవి (Live)
-                  </h3>
-                  {approvedNews.map(post => <PortfolioCard key={post.id} post={post} isPublished />)}
-                </div>
-              )}
-              {pendingNews.length === 0 && approvedNews.length === 0 && (
-                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-muted">
-                  <FileText className="w-12 h-12 mx-auto opacity-20 mb-4" />
-                  <p className="text-muted-foreground">మీరు ఇంకా ఎటువంటి వార్తలను సమర్పించలేదు.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-        <Footer />
-      </main>
-
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-3xl rounded-3xl p-0 overflow-hidden">
-          <DialogHeader className="p-6 bg-slate-50 border-b">
-            <DialogTitle className="text-2xl font-bold">వార్తను సవరించండి</DialogTitle>
-          </DialogHeader>
-          <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-            {editingPost && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Select value={editingPost.location.state} onValueChange={v => setEditingPost({...editingPost, location: {...editingPost.location, state: v}})}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>{availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={editingPost.location.district} onValueChange={v => setEditingPost({...editingPost, location: {...editingPost.location, district: v}})}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>{editingPost.location.state && Object.keys(availableLocations[editingPost.location.state] || {}).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={editingPost.location.mandal} onValueChange={v => setEditingPost({...editingPost, location: {...editingPost.location, mandal: v}})}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>{editingPost.location.district && (availableLocations[editingPost.location.state]?.[editingPost.location.district] as string[])?.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <Input value={editingPost.title} onChange={e => setEditingPost({...editingPost, title: e.target.value})} className="h-12 rounded-xl font-bold" />
-                <Textarea value={editingPost.content} onChange={e => setEditingPost({...editingPost, content: e.target.value})} className="min-h-[200px] rounded-xl" />
-              </>
-            )}
           </div>
-          <DialogFooter className="p-6 bg-slate-50 border-t">
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>రద్దు</Button>
-            <Button className="px-8 font-bold" onClick={handleSaveEdit} disabled={isSubmitting}>
-              సేవ్ చేయండి
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {/* Sidebar: Status & History */}
+          <div className="space-y-6">
+            <Card className="border-none shadow-lg rounded-[1.5rem] bg-white overflow-hidden">
+              <CardHeader className="bg-slate-50 py-4 px-6 border-b">
+                <CardTitle className="text-sm font-black flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  ఇటీవలి సబ్మిషన్స్
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-slate-50">
+                  {recentSubmissions && recentSubmissions.length > 0 ? (
+                    recentSubmissions.map((post) => (
+                      <div key={post.id} className="p-4 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex justify-between items-start mb-1.5">
+                          <Badge variant="secondary" className={`text-[8px] font-black uppercase tracking-tighter border-none px-1.5 h-4 ${
+                            post.status === 'approved' ? 'bg-emerald-50 text-emerald-700' :
+                            post.status === 'rejected' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+                          }`}>
+                            {post.status}
+                          </Badge>
+                          <span className="text-[8px] text-muted-foreground font-mono">ID: {post.unique_code}</span>
+                        </div>
+                        <h4 className="text-[11px] font-bold line-clamp-1 mb-1">{post.title}</h4>
+                        <p className="text-[9px] text-muted-foreground flex items-center gap-1">
+                          <MapPin className="w-2 h-2" /> {post.location.mandal} • 
+                          {post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString() : 'Just now'}
+                        </p>
+                        {post.status === 'rejected' && post.rejection_reason && (
+                          <div className="mt-2 p-2 bg-rose-50 border border-rose-100 rounded-lg">
+                            <p className="text-[8px] font-black text-rose-900 uppercase mb-0.5">Feedback:</p>
+                            <p className="text-[9px] text-rose-800 italic leading-tight">{post.rejection_reason}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-16 px-6 opacity-40">
+                      <Clock className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-[10px] italic">ఇంకా వార్తలు ఏవీ పంపలేదు.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-lg rounded-[1.5rem] bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Your Status</p>
+                  <h3 className="text-sm font-black">Sr. Reporter</h3>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-white/10 p-3 rounded-xl border border-white/5">
+                  <div className="flex justify-between text-[10px] mb-1">
+                    <span className="font-bold opacity-80">Accuracy Rating</span>
+                    <span className="font-black">4.8/5.0</span>
+                  </div>
+                  <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white w-[96%]" />
+                  </div>
+                </div>
+                <p className="text-[9px] opacity-70 leading-relaxed italic">మీ వార్తల నాణ్యతను బట్టి మీ ర్యాంకింగ్ మరియు స్టార్ రేటింగ్ మెరుగుపడుతుంది.</p>
+              </div>
+            </Card>
+          </div>
+        </div>
+        
+        <Footer />
+      </div>
     </div>
   );
 }
 
-function PortfolioCard({ post, isPublished, onEdit }: { post: any, isPublished?: boolean, onEdit?: () => void }) {
-  const statusConfig = {
-    pending: { color: "bg-amber-50 text-amber-700", icon: Clock, label: "పరిశీలనలో" },
-    approved: { color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2, label: "ప్రచురించబడింది" },
-    rejected: { color: "bg-rose-50 text-rose-700", icon: AlertCircle, label: "తిరస్కరించబడింది" }
-  };
-
-  const config = statusConfig[post.status as keyof typeof statusConfig] || statusConfig.pending;
-
+export default function ReporterPage() {
   return (
-    <Card className="overflow-hidden border-none shadow-md rounded-3xl bg-white group">
-      <div className="flex flex-col sm:flex-row">
-        <div className="relative w-full sm:w-48 h-40 shrink-0">
-          <Image src={post.image_url} alt={post.title} fill className="object-cover" />
-          <div className="absolute top-2 left-2">
-            <Badge className={cn("rounded-full border-none px-2 py-0.5 text-[9px] font-bold uppercase shadow-lg", config.color)}>
-              <config.icon className="w-2.5 h-2.5 mr-1" />
-              {config.label}
-            </Badge>
-          </div>
-        </div>
-        <div className="p-5 flex-1 min-w-0">
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-[9px] font-mono font-bold bg-muted px-2 py-0.5 rounded">ID: {post.unique_code}</span>
-            <span className="text-[10px] text-muted-foreground">{post.timestamp?.toDate ? post.timestamp.toDate().toLocaleDateString() : "Today"}</span>
-          </div>
-          <h3 className="font-bold text-lg line-clamp-1 mb-1">{post.title}</h3>
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-4">{post.content}</p>
-          
-          {post.status === 'rejected' && post.rejection_reason && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-100 rounded-xl">
-              <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1">తిరస్కరణ కారణం (Reason):</p>
-              <p className="text-xs font-bold text-rose-800">{post.rejection_reason}</p>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center border-t pt-3">
-            <div className="flex gap-3 text-muted-foreground">
-              <span className="text-[10px] font-bold flex items-center gap-1"><Heart className="w-3 h-3" /> {post.likes || 0}</span>
-              <span className="text-[10px] font-bold flex items-center gap-1"><MessageCircle className="w-3 h-3" /> {post.commentsCount || 0}</span>
-            </div>
-            <div className="flex gap-2">
-              {(post.status === 'pending' || post.status === 'rejected') && onEdit && (
-                <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs font-bold text-primary rounded-full hover:bg-primary/5" onClick={onEdit}>
-                  <Edit2 className="w-3 h-3" /> సవరించండి
-                </Button>
-              )}
-              {isPublished && (
-                <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs font-bold text-primary rounded-full" asChild>
-                  <Link href={`/?postId=${post.id}`}>View Live</Link>
-                </Button>
-              )}
-            </div>
-          </div>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="font-medium text-slate-500">లోడ్ అవుతోంది...</p>
         </div>
       </div>
-    </Card>
+    }>
+      <ReporterContent />
+    </Suspense>
   );
 }

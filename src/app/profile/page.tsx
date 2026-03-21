@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo, Suspense } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,8 +20,8 @@ import { doc, collection } from "firebase/firestore";
 import { UserService, NewsService } from "@/lib/storage";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
-export default function ProfilePage() {
-  const { user, isUserLoading } = useUser();
+function ProfileContent() {
+  const { user } = useUser();
   const firestore = useFirestore();
   const auth = useAuth();
   const { toast } = useToast();
@@ -171,14 +171,13 @@ export default function ProfilePage() {
     } catch (err) { console.error(err); }
   };
 
-  if (isUserLoading || isProfileLoading) {
+  if (isProfileLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
   }
 
   if (!user || user.isAnonymous || (!profile && !isProfileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <Navbar />
         <div className="text-center space-y-4 max-w-xs animate-in zoom-in-95">
           <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto"><User className="w-8 h-8 text-orange-600" /></div>
           <h2 className="text-xl font-black">Dashboard Locked</h2>
@@ -189,9 +188,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/50 pb-24 md:pt-16">
-      <Navbar />
-      <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
+    <div className="max-w-xl mx-auto px-4 pt-6 space-y-4">
         {/* Profile Header */}
         <div className="bg-gradient-to-r from-orange-500 to-yellow-400 rounded-[1.5rem] p-6 text-white shadow-lg animate-in fade-in duration-500">
           <div className="flex flex-col items-center gap-4">
@@ -284,6 +281,22 @@ export default function ProfilePage() {
         
         <Footer />
       </div>
+  );
+}
+
+export default function ProfilePage() {
+  const { isUserLoading } = useUser();
+
+  if (isUserLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>;
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50/50 pb-24 md:pt-16">
+      <Suspense fallback={<div>Loading...</div>}>
+        <Navbar />
+      </Suspense>
+      <ProfileContent />
     </main>
   );
 }
