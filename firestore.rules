@@ -3,16 +3,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper: Is the user the Master Admin?
-    // Exclusively tied to the specific email for total security.
+    // This is the primary gatekeeper for the whole system.
     function isAdmin() {
       return request.auth != null && request.auth.token.email == 'admin@telugunewspulse.com';
     }
 
-    // Helper: Is the user an Editor or the Admin?
+    // Helper: Is the user an Editor, Reporter or the Admin?
     function isStaff() {
-      return isAdmin() || (
-        request.auth != null && 
-        exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid))
+      if (isAdmin()) { return true; }
+      return request.auth != null && (
+        exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid)) ||
+        exists(/databases/$(database)/documents/roles_reporters/$(request.auth.uid))
       );
     }
 
@@ -24,13 +25,17 @@ service cloud.firestore {
 
     // 2. User Profiles
     match /users/{userId} {
-      // Admin can manage all. Users can read/write their own.
-      allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+      // Admin can list/get all profiles. Users can only get their own.
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+      
+      // Admin can create/update all. Users can manage their own non-admin profile.
       allow create, update: if isAdmin() || (
         request.auth != null && 
         request.auth.uid == userId && 
-        request.resource.data.role != 'admin' // Only rules can grant admin via email check
+        request.resource.data.role != 'admin'
       );
+      
       allow delete: if isAdmin();
     }
 
@@ -72,6 +77,7 @@ service cloud.firestore {
     }
 
     // 8. Internal Role tracking
+    // These documents are created when staff are provisioned.
     match /roles_editors/{id} { allow read: if isStaff(); allow write: if isAdmin(); }
     match /roles_reporters/{id} { allow read: if isStaff(); allow write: if isAdmin(); }
     match /roles_admins/{id} { allow read, write: if isAdmin(); }

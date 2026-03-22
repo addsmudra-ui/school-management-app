@@ -1,4 +1,3 @@
-
 'use client';
 
 import { 
@@ -93,6 +92,7 @@ export const AdminService = {
   seedDemoNews: async (db: Firestore) => {
     const batch = writeBatch(db);
     
+    // 1. Seed News
     MOCK_NEWS.forEach((news) => {
       const docRef = doc(db, 'approved_news_posts', news.id);
       batch.set(docRef, {
@@ -102,14 +102,22 @@ export const AdminService = {
       });
     });
 
+    // 2. Admin Config
     const adminRef = doc(db, 'config', 'admin');
-    batch.set(adminRef, { password: 'admin123', appName: 'Telugu News Pulse', systemStatus: 'online' }, { merge: true });
+    batch.set(adminRef, { 
+      password: 'admin123', 
+      appName: 'Telugu News Pulse', 
+      systemStatus: 'online',
+      updatedAt: serverTimestamp()
+    }, { merge: true });
 
+    // 3. Locations Metadata
     const locRef = doc(db, 'metadata', 'locations');
     batch.set(locRef, {
       ...LOCATIONS_BY_STATE
     }, { merge: true });
 
+    // 4. Categories Metadata
     const catRef = doc(db, 'metadata', 'categories');
     batch.set(catRef, {
       items: NEWS_CATEGORIES
