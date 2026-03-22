@@ -25,6 +25,8 @@ export default function AdminLayout({
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(userDocRef);
 
+  const isAdminEmail = user?.email === 'admin@telugunewspulse.com';
+
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
@@ -32,10 +34,17 @@ export default function AdminLayout({
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (!isProfileLoading && profile && profile.role !== 'admin' && profile.role !== 'editor') {
-      router.push('/');
+    if (!isUserLoading && !isProfileLoading) {
+      if (!user) return;
+
+      // Authorized if Master Admin Email OR profile has editor role
+      const isAuthorized = isAdminEmail || (profile && (profile.role === 'editor' || profile.role === 'admin'));
+      
+      if (!isAuthorized) {
+        router.push('/');
+      }
     }
-  }, [profile, isProfileLoading, router]);
+  }, [profile, isProfileLoading, router, isAdminEmail, isUserLoading, user]);
 
   if (isUserLoading || isProfileLoading) {
     return (
@@ -45,7 +54,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'editor')) {
+  if (!user || (!isAdminEmail && (!profile || (profile.role !== 'editor' && profile.role !== 'admin')))) {
     return null;
   }
 

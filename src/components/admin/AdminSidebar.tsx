@@ -66,6 +66,8 @@ export function AdminSidebar() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPass, setNewPass] = useState("");
 
+  const isAdminEmail = user?.email === 'admin@telugunewspulse.com';
+
   const brandingRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return doc(firestore, 'config', 'admin');
@@ -106,11 +108,13 @@ export function AdminSidebar() {
   };
 
   const filteredNavItems = useMemo(() => {
+    if (isAdminEmail) return navItems;
     if (!profile) return [];
-    if (profile.role === 'admin') return navItems;
+    
+    // Non-admins (Editors) only see a subset of tools
     const editorAllowed = ["Dashboard", "New Post", "Approvals", "Sections"];
     return navItems.filter(item => editorAllowed.includes(item.name));
-  }, [profile]);
+  }, [profile, isAdminEmail]);
 
   return (
     <>
@@ -160,7 +164,7 @@ export function AdminSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {profile?.role === 'admin' && (
+          {isAdminEmail && (
             <SidebarGroup className="mt-2">
               <SidebarGroupLabel className="px-4 text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
                 Settings
