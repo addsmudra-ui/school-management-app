@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   UserPlus, Trash2, Search, MapPin, Loader2, 
-  ShieldCheck, ShieldAlert, Phone, UserCog, Mail // <-- ఇక్కడ Mail యాడ్ చేయబడింది
+  ShieldCheck, ShieldAlert, Phone, UserCog, Mail
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -30,7 +30,6 @@ export default function AdminUsers() {
   // Firestore Query
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // గమనిక: ఒకవేళ ఇక్కడ 400 Error వస్తే, కన్సోల్ లోని లింక్ క్లిక్ చేసి 'Index' క్రియేట్ చేయండి.
     return query(collection(firestore, 'users'), orderBy('name', 'asc'), limit(500));
   }, [firestore]);
 
@@ -53,7 +52,7 @@ export default function AdminUsers() {
   const [newState, setNewState] = useState("");
   const [newDistrict, setNewDistrict] = useState("");
   const [newMandal, setNewMandal] = useState("");
-  const [newRole, setNewRole] = useState<'reporter' | 'admin' | 'user' | 'editor'>('reporter');
+  const [newRole, setNewRole] = useState<'reporter' | 'user' | 'editor'>('reporter');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleToggleStatus = (id: string, currentStatus: string) => {
@@ -90,7 +89,7 @@ export default function AdminUsers() {
       name: newName,
       phone: newPhone ? (newPhone.startsWith('+') ? newPhone : `+91${newPhone}`) : undefined,
       email: newEmail || undefined,
-      role: newRole,
+      role: newRole as any,
       status: 'approved',
       location: { state: newState, district: newDistrict, mandal: newMandal }
     };
@@ -156,7 +155,6 @@ export default function AdminUsers() {
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="editor">ఎడిటర్ (Editor)</SelectItem>
-                    <SelectItem value="admin">అడ్మిన్ (Admin)</SelectItem>
                     <SelectItem value="reporter">రిపోర్టర్ (Reporter)</SelectItem>
                     <SelectItem value="user">పాఠకుడు (User)</SelectItem>
                   </SelectContent>
@@ -288,6 +286,7 @@ export default function AdminUsers() {
                           <Switch 
                             checked={user.status === 'approved'} 
                             onCheckedChange={() => handleToggleStatus(user.id, user.status)}
+                            disabled={user.email === 'admin@telugunewspulse.com'}
                           />
                         </div>
                         <Button 
@@ -295,6 +294,7 @@ export default function AdminUsers() {
                           size="icon" 
                           className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-full"
                           onClick={() => handleDeleteUser(user.id, user.name)}
+                          disabled={user.email === 'admin@telugunewspulse.com'}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

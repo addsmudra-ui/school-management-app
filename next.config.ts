@@ -1,4 +1,4 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  experimental: {
+    // Firebase Studio (Cloud Workstations) లో క్రాస్-ఆరిజిన్ ఎర్రర్స్ రాకుండా ఇది సహాయపడుతుంది
+    allowedDevOrigins: [
+      '*.cloudworkstations.dev',
+      '*.google.com',
+    ],
   },
   images: {
     unoptimized: true,
@@ -31,6 +38,7 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // ఒకవేళ మీరు Firebase Storage ఇమేజెస్ వాడుతుంటే వాటి హోస్ట్ నేమ్ కూడా ఇక్కడ యాడ్ చేయండి
     ],
   },
 };

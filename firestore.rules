@@ -1,138 +1,97 @@
-/**
- * Core Philosophy: This ruleset implements a strict Role-Based Access Control (RBAC) and 
- * User-Ownership model. Access is bifurcated based on the lifecycle of content: 
- * unmoderated/private data (pending posts) vs. moderated/public data (approved posts).
- *
- * Data Structure: 
- * - User profiles are stored at `/users/{userId}`.
- * - Approved content is in `/approved_news_posts/{postId}` (Publicly readable).
- * - Moderation queue is in `/pending_news_posts/{postId}` (Restricted).
- * - Sub-resources like comments are nested under approved posts.
- *
- * Key Security Decisions:
- * - Authorization Independence: We use denormalized fields like `author_id` and `location` 
- *   within documents to perform localized security checks, minimizing costly `get()` calls.
- * - Role Resolution: A helper function `getRole()` is used to fetch user permissions 
- *   directly from the Firestore user document.
- * - Resilience: Helper functions check for document existence before attempting to read data
- *   to prevent rule crashes when a user profile is not yet provisioned.
- */
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- HELPER FUNCTIONS ---
 
-    /** @description Checks if the requester is authenticated. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Checks if the user is accessing their own record. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** @description Safely fetches the role of the current authenticated user. */
-    function getRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
-    /** @description Verifies if the user has a profile document. */
-    function hasProfile() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    /** @description Verifies if the user has administrative or editorial privileges. */
-    function isStaff() {
-      return hasProfile() && (getRole() == 'admin' || getRole() == 'editor' || getRole() == 'Desk Incharge');
-    }
-
-    /** @description Verifies if the user has administrative privileges. */
+    // Master Admin check based on specific email
     function isAdmin() {
-      return hasProfile() && getRole() == 'admin';
+      return isSignedIn() && request.auth.token.email == 'admin@telugunewspulse.com';
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isEditor() {
+      return isSignedIn() && (getUserData().role == 'editor' || isAdmin());
+    }
+
+    function isStaff() {
+      return isSignedIn() && (getUserData().role in ['admin', 'editor', 'Desk Incharge'] || isAdmin());
     }
 
     // --- COLLECTION RULES ---
 
-    /**
-     * @description Rules for User Profiles. Users can manage their own data; Admins/Editors can view.
-     * @path /users/{userId}
-     */
     match /users/{userId} {
+      // Users can only be created as non-admins unless it's the master email
+      allow create: if isSignedIn() && (request.resource.data.role != 'admin' || request.auth.token.email == 'admin@telugunewspulse.com');
+      
+      // Only master admin can change roles or delete users
       allow get: if isOwner(userId) || isStaff();
       allow list: if isStaff();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    /**
-     * @description Rules for Approved News. Publicly readable; only Staff can modify content.
-     * @path /approved_news_posts/{postId}
-     */
-    match /approved_news_posts/{postId} {
-      allow get, list: if true;
-      allow create: if isStaff();
-      allow update: if isStaff() || (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'engagement']));
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isAdmin();
 
-      /**
-       * @description Comments on approved posts.
-       */
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+      match /private/likes {
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
 
-    /**
-     * @description Rules for Pending News.
-     * @path /pending_news_posts/{newsPostId}
-     */
+    match /approved_news_posts/{postId} {
+      allow read: if true; 
+      allow create: if isStaff();
+      allow update: if isStaff() || 
+                   (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount']));
+      allow delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn();
+        allow update, delete: if isSignedIn() && (isOwner(resource.data.authorId) || isAdmin());
+      }
+    }
+
     match /pending_news_posts/{newsPostId} {
       allow get: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
       allow list: if isStaff();
-      allow create: if isSignedIn() && request.resource.data.author_id == request.auth.uid;
-      allow update: if resource != null && (isOwner(resource.data.author_id) || isStaff()) && (request.resource.data.author_id == resource.data.author_id);
-      allow delete: if resource != null && (isOwner(resource.data.author_id) || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
+      allow delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin());
     }
 
-    /**
-     * @description Rules for Notifications.
-     */
     match /notifications/{id} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isStaff();
     }
 
-    /**
-     * @description Rules for Advertisements.
-     */
     match /ads/{id} {
       allow read: if true;
       allow write: if isStaff();
     }
 
-    /**
-     * @description Rules for App Configuration (Branding, System Status).
-     */
     match /config/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    /**
-     * @description Rules for Metadata (Locations, Categories).
-     */
     match /metadata/{id} {
       allow read: if true;
       allow write: if isStaff();
     }
 
-    // Default deny for any unmatched paths
+    match /roles_admins/{uid} { allow read, write: if isAdmin(); }
+    match /roles_editors/{uid} { allow read, write: if isAdmin(); }
+    match /roles_reporters/{uid} { allow read, write: if isStaff(); }
+
     match /{path=**} {
       allow read, write: if false;
     }

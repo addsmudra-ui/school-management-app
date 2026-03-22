@@ -3,23 +3,26 @@
 {pkgs}: {
   # Which nixpkgs channel to use.
   channel = "stable-24.11"; # or "unstable"
+  
   # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
+    pkgs.lsof      # పోర్ట్ చెక్ చేయడానికి (lsof కమాండ్ కోసం)
+    pkgs.psmisc    # పోర్ట్ క్లియర్ చేయడానికి (fuser కమాండ్ కోసం)
   ];
+
   # Sets environment variables in the workspace
   env = {};
-  # This adds a file watcher to startup the firebase emulators. The emulators will only start if
-  # a firebase.json file is written into the user's directory
+
+  # This adds a file watcher to startup the firebase emulators.
   services.firebase.emulators = {
-    # Disabling because we are using prod backends right now
     detect = false;
     projectId = "demo-app";
     services = ["auth" "firestore"];
   };
+
   idx = {
-    # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
       # "vscodevim.vim"
     ];
@@ -30,11 +33,14 @@
         ];
       };
     };
-    # Enable previews and customize configuration
+
+    # Preview settings
     previews = {
       enable = true;
       previews = {
         web = {
+          # ఇక్కడ $PORT బదులు నేరుగా ఒక పోర్ట్ ఇవ్వడం కంటే, 
+          # సిస్టమ్ ఇచ్చే డైనమిక్ పోర్ట్ వాడటం మంచిది.
           command = ["npm" "run" "dev" "--" "--port" "$PORT" "--hostname" "0.0.0.0"];
           manager = "web";
         };
