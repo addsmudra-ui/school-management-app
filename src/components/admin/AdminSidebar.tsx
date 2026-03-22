@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -11,8 +12,7 @@ import {
   Newspaper,
   KeyRound,
   Palette,
-  Megaphone,
-  LayoutGrid
+  Megaphone
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -49,7 +49,6 @@ const navItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/admin", label: "డాష్‌బోర్డ్" },
   { name: "New Post", icon: PlusCircle, href: "/admin/new-post", label: "కొత్త వార్త" },
   { name: "Approvals", icon: CheckSquare, href: "/admin/approvals", label: "ఆమోదాలు" },
-  { name: "Sections", icon: LayoutGrid, href: "/admin/categories", label: "సెక్షన్లు" },
   { name: "Ads", icon: Megaphone, href: "/admin/ads", label: "ప్రకటనలు" },
   { name: "Locations", icon: MapPin, href: "/admin/locations", label: "ప్రాంతాలు" },
   { name: "Users", icon: Users, href: "/admin/users", label: "వినియోగదారులు" },
@@ -112,7 +111,7 @@ export function AdminSidebar() {
     if (!profile) return [];
     
     // Non-admins (Editors) only see a subset of tools
-    const editorAllowed = ["Dashboard", "New Post", "Approvals", "Sections"];
+    const editorAllowed = ["Dashboard", "New Post", "Approvals"];
     return navItems.filter(item => editorAllowed.includes(item.name));
   }, [profile, isAdminEmail]);
 
