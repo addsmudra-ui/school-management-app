@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from "next/image";
@@ -183,7 +184,7 @@ export function NewsCard({ news }: NewsCardProps) {
       {/* Media Section */}
       <div 
         className="relative h-[40%] md:h-[45%] w-full overflow-hidden bg-black flex-shrink-0 cursor-zoom-in group/image"
-        onClick={() => !news.video_url && setIsImagePreviewOpen(true)}
+        onClick={() => (!news.video_url && news.image_url) && setIsImagePreviewOpen(true)}
       >
         {news.video_url ? (
           <div className="relative w-full h-full" onClick={toggleVideo}>
@@ -209,7 +210,7 @@ export function NewsCard({ news }: NewsCardProps) {
               </div>
             </div>
           </div>
-        ) : (
+        ) : news.image_url ? (
           <Image
             src={news.image_url}
             alt={news.title}
@@ -218,6 +219,10 @@ export function NewsCard({ news }: NewsCardProps) {
             sizes="(max-width: 768px) 100vw, 600px"
             className="object-cover transition-transform duration-700 group-hover/image:scale-105"
           />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-900">
+            <Newspaper className="w-12 h-12 text-white/20" />
+          </div>
         )}
         
         {/* Large Logo Watermark Overlay */}
@@ -372,7 +377,7 @@ export function NewsCard({ news }: NewsCardProps) {
       </div>
 
       {/* Image Preview Dialog */}
-      {!news.video_url && (
+      {!news.video_url && news.image_url && (
         <Dialog open={isImagePreviewOpen} onOpenChange={setIsImagePreviewOpen}>
           <DialogContent className="max-w-[95vw] w-full h-[80vh] p-0 border-none bg-black/95 flex items-center justify-center rounded-[2rem] overflow-hidden z-[110] shadow-2xl">
             <DialogHeader className="sr-only">

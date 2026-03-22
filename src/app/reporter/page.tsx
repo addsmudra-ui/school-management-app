@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useRef, useMemo, Suspense } from "react";
@@ -163,7 +164,7 @@ function ReporterContent() {
         title,
         content,
         category: category as any,
-        image_url: imagePreview || "", // Storage requires a string
+        image_url: imagePreview || "",
         video_url: videoUrl || undefined,
         location: { state, district, mandal },
         status: 'pending',

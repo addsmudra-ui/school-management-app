@@ -1,3 +1,4 @@
+
 'use client';
 
 import { 
@@ -201,7 +202,7 @@ export const NewsService = {
         body: `${post.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
         target: 'All Users',
         postId: postId,
-        imageUrl: post.image_url,
+        imageUrl: post.image_url || undefined,
         topic: 'breaking_news'
       });
     }
@@ -231,7 +232,7 @@ export const NewsService = {
       body: `${postData.location.mandal} ప్రాంతంలో తాజా వార్తలు. ఇప్పుడే చూడండి!`,
       target: 'All Users',
       postId: postId,
-      imageUrl: postData.image_url,
+      imageUrl: postData.image_url || undefined,
       topic: 'breaking_news'
     });
   },

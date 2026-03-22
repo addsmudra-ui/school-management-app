@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useMemo } from "react";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, Send, Upload, X, Loader2, MapPin, Video, VideoOff, Globe, Flag, Wallet, HeartPulse, Trophy, Film, Home as HomeIcon, Cpu } from "lucide-react";
+import { Newspaper, Send, Upload, X, Loader2, MapPin, Video, VideoOff, Globe, Flag, Wallet, HeartPulse, Trophy, Film, Home as HomeIcon, Cpu, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS, NEWS_CATEGORIES } from "@/lib/mock-data";
 import { NewsService } from "@/lib/storage";
@@ -15,6 +16,7 @@ import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
 import Image from "next/image";
 import { doc } from "firebase/firestore";
 import { addWatermark } from "@/lib/watermark";
+import { cn } from "@/lib/utils";
 
 export default function AdminNewPost() {
   const firestore = useFirestore();
@@ -68,6 +70,7 @@ export default function AdminNewPost() {
       
       const watermarked = await addWatermark(base64, appName, logo);
       setImagePreview(watermarked);
+      setVideoUrl(null); // Enforcement: only one media type
     };
     reader.readAsDataURL(file);
   };
@@ -84,6 +87,7 @@ export default function AdminNewPost() {
     const reader = new FileReader();
     reader.onloadend = () => {
       setVideoUrl(reader.result as string);
+      setImagePreview(null); // Enforcement: only one media type
     };
     reader.readAsDataURL(file);
   };
@@ -92,8 +96,8 @@ export default function AdminNewPost() {
     e.preventDefault();
     if (!firestore || !user) return;
 
-    if (!title || !content || !state || !district || !mandal || !imagePreview) {
-      toast({ title: "Error", description: "All fields except video are required.", variant: "destructive" });
+    if (!title || !content || !state || !district || !mandal || (!imagePreview && !videoUrl)) {
+      toast({ title: "Error", description: "All fields are required. Please provide either an image or a video.", variant: "destructive" });
       return;
     }
 
@@ -105,7 +109,7 @@ export default function AdminNewPost() {
         title,
         content,
         category: category as any,
-        image_url: imagePreview,
+        image_url: imagePreview || "",
         video_url: videoUrl || undefined,
         location: { state, district, mandal },
         status: 'approved',
@@ -229,13 +233,13 @@ export default function AdminNewPost() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
+            <div className={cn("space-y-3 transition-all", videoUrl && "opacity-40 pointer-events-none grayscale")}>
               <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
-                <Upload className="w-3 h-3" />
+                <ImageIcon className="w-3 h-3" />
                 చిత్రం (Image)
               </Label>
               {!imagePreview ? (
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
+                <div onClick={() => !videoUrl && fileInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
                   <Upload className="w-8 h-8 text-slate-400 group-hover:text-primary mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-500">Upload Image</p>
                 </div>
@@ -250,13 +254,13 @@ export default function AdminNewPost() {
               <input type="file" ref={fileInputRef} className="hidden" accept=".jpg,.jpeg,.png" onChange={handleFileChange} />
             </div>
 
-            <div className="space-y-3">
+            <div className={cn("space-y-3 transition-all", imagePreview && "opacity-40 pointer-events-none grayscale")}>
               <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
                 <Video className="w-3 h-3 text-rose-500" />
                 వీడియో (Video - Optional)
               </Label>
               {!videoUrl ? (
-                <div onClick={() => videoInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-rose-50/50 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
+                <div onClick={() => !imagePreview && videoInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-rose-50/50 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
                   <Video className="w-8 h-8 text-slate-400 group-hover:text-rose-500 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-500">Upload Short Clip</p>
                   <p className="text-[8px] text-muted-foreground mt-1">Max 10MB</p>
