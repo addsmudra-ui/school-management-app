@@ -4,182 +4,147 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user profile within the MandalPulse news application, storing identity, role, and location details.",
+      "description": "Represents a user profile within the News Pulse application.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the UserProfile entity."
         },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
         "phone": {
           "type": "string",
-          "description": "The user's phone number, used for OTP authentication.",
-          "format": "phone-number"
+          "description": "The user's phone number."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address."
         },
         "role": {
           "type": "string",
-          "description": "The assigned role of the user (e.g., user, reporter, editor, admin).",
-          "items": {
-            "type": "string"
+          "enum": ["user", "reporter", "editor", "admin"],
+          "description": "The assigned role of the user."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "The verification status of the user."
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "state": { "type": "string" },
+            "district": { "type": "string" },
+            "mandal": { "type": "string" }
           }
         },
-        "mandal": {
+        "photo": {
           "type": "string",
-          "description": "The administrative sub-district associated with the user for localized content."
-        },
-        "district": {
-          "type": "string",
-          "description": "The district associated with the user for content filtering."
+          "description": "Base64 encoded string or URL of the user's profile photo."
         }
       },
-      "required": [
-        "id",
-        "phone",
-        "role",
-        "mandal",
-        "district"
-      ]
+      "required": ["id", "name", "role", "status"]
     },
     "NewsPost": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "NewsPost",
       "type": "object",
-      "description": "Represents a news article, including content, media, location, status, and author details, for the MandalPulse application feed. This entity accommodates both pending submissions and approved posts.",
+      "description": "Represents a news article in the application.",
       "properties": {
         "id": {
+          "type": "string"
+        },
+        "unique_code": {
           "type": "string",
-          "description": "Unique identifier for the NewsPost entity."
+          "description": "5-digit unique code for fact checking."
         },
         "title": {
-          "type": "string",
-          "description": "The short headline or title of the news article."
+          "type": "string"
         },
         "content": {
-          "type": "string",
-          "description": "The concise main body content of the news article (max 70-100 words)."
+          "type": "string"
         },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL to the primary image associated with the news article, hosted on Firebase Storage.",
-          "format": "uri"
+        "image_url": {
+          "type": "string"
         },
-        "videoUrl": {
-          "type": "string",
-          "description": "URL to a video associated with the news article.",
-          "format": "uri"
+        "video_url": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
         },
         "location": {
-          "type": "array",
-          "description": "Geographical location details for the news post.",
-          "items": {
-            "type": "string"
+          "type": "object",
+          "properties": {
+            "state": { "type": "string" },
+            "district": { "type": "string" },
+            "mandal": { "type": "string" }
           }
         },
         "status": {
           "type": "string",
-          "description": "The current moderation status of the news post.",
-          "items": {
-            "type": "string"
-          }
+          "enum": ["pending", "approved", "rejected"]
         },
-        "authorId": {
+        "visibility": {
           "type": "string",
-          "description": "Reference to the UserProfile of the reporter who authored the post. (Relationship: UserProfile 1:N NewsPost)"
+          "enum": ["live", "hidden"]
         },
-        "authorName": {
-          "type": "string",
-          "description": "The name of the reporter who submitted the post."
+        "author_id": {
+          "type": "string"
         },
-        "authorRole": {
-          "type": "string",
-          "description": "The role of the author at the time of submission (e.g., Reporter, Desk Incharge)."
+        "author_name": {
+          "type": "string"
         },
-        "authorStars": {
-          "type": "number",
-          "description": "A rating or star count associated with the author."
+        "author_role": {
+          "type": "string"
         },
-        "uniqueCode": {
-          "type": "string",
-          "description": "A unique identification code for the news post, likely for internal tracking."
-        },
-        "category": {
-          "type": "string",
-          "description": "The category to which the news post belongs (e.g., Home, Sports, Politics)."
+        "author_stars": {
+          "type": "number"
         },
         "timestamp": {
-          "type": "string",
-          "description": "Timestamp indicating when the news post was created or last updated, used for sorting.",
-          "format": "date-time"
-        },
-        "engagement": {
-          "type": "array",
-          "description": "An object containing engagement metrics for the news post.",
-          "items": {
-            "type": "string"
-          }
+          "type": "object",
+          "description": "Firestore server timestamp."
         },
         "likes": {
-          "type": "number",
-          "description": "The number of likes the news post has received."
+          "type": "number"
         },
         "commentsCount": {
-          "type": "number",
-          "description": "The total count of comments on the news post."
+          "type": "number"
         }
       },
-      "required": [
-        "id",
-        "title",
-        "content",
-        "imageUrl",
-        "location",
-        "status",
-        "authorId",
-        "timestamp",
-        "engagement"
-      ]
+      "required": ["title", "content", "category", "location", "status", "author_id"]
     },
     "Comment": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Comment",
       "type": "object",
-      "description": "Represents a comment made by a user on a specific news post.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Comment entity."
-        },
-        "newsPostId": {
-          "type": "string",
-          "description": "Reference to the NewsPost this comment belongs to. (Relationship: NewsPost 1:N Comment)"
-        },
-        "authorId": {
-          "type": "string",
-          "description": "Reference to the UserProfile who authored this comment. (Relationship: UserProfile 1:N Comment)"
-        },
-        "content": {
-          "type": "string",
-          "description": "The textual content of the comment."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp indicating when the comment was created.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "object" }
       },
-      "required": [
-        "id",
-        "newsPostId",
-        "authorId",
-        "content",
-        "timestamp"
-      ]
+      "required": ["userName", "text"]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "target": { "type": "string" },
+        "postId": { "type": "string" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["title", "body", "target"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "google", "phone"]
   },
   "firestore": {
     "structure": [
@@ -187,65 +152,63 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profiles with authentication details, roles, and location for content filtering. Access is primarily restricted to the user themselves, and administrators/editors based on DBAC model."
+          "schema": { "$ref": "#/backend/entities/UserProfile" },
+          "description": "Stores user profiles."
         }
       },
       {
         "path": "/approved_news_posts/{newsPostId}",
         "definition": {
           "entityName": "NewsPost",
-          "schema": {
-            "$ref": "#/backend/entities/NewsPost"
-          },
-          "description": "Contains news posts that have been approved by moderators. These posts are publicly viewable by all users and include denormalized 'authorId', 'authorName', 'authorRole', 'location.mandal', 'location.district', and 'status: approved' fields for authorization independence and efficient querying.",
-          "params": [
-            {
-              "name": "newsPostId",
-              "description": "Unique identifier for the approved news post."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/NewsPost" },
+          "description": "Publicly viewable approved news posts."
         }
       },
       {
         "path": "/pending_news_posts/{newsPostId}",
         "definition": {
           "entityName": "NewsPost",
-          "schema": {
-            "$ref": "#/backend/entities/NewsPost"
-          },
-          "description": "Contains news posts submitted by reporters that are awaiting moderation. These posts are not publicly viewable. Access is restricted to the 'authorId' (for creation and limited updates) and 'admin'/'editor' roles for review and status changes. Includes denormalized 'authorId', 'authorName', 'authorRole', 'location.mandal', 'location.district', and 'status: pending'.",
-          "params": [
-            {
-              "name": "newsPostId",
-              "description": "Unique identifier for the pending news post."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/NewsPost" },
+          "description": "News posts awaiting moderation."
         }
       },
       {
         "path": "/approved_news_posts/{newsPostId}/comments/{commentId}",
         "definition": {
           "entityName": "Comment",
-          "schema": {
-            "$ref": "#/backend/entities/Comment"
-          },
-          "description": "Stores user comments associated with specific approved news posts. Includes denormalized 'newsPostId' and 'authorId' for authorization independence.",
-          "params": [
-            {
-              "name": "newsPostId",
-              "description": "Unique identifier of the parent news post."
-            },
-            {
-              "name": "commentId",
-              "description": "Unique identifier for the comment."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/Comment" },
+          "description": "User comments on news posts."
+        }
+      },
+      {
+        "path": "/notifications/{id}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": { "$ref": "#/backend/entities/Notification" },
+          "description": "Sent notifications history."
+        }
+      },
+      {
+        "path": "/ads/{id}",
+        "definition": {
+          "entityName": "Ad",
+          "description": "Hyperlocal advertisements."
+        }
+      },
+      {
+        "path": "/config/admin",
+        "definition": {
+          "entityName": "Config",
+          "description": "Application configuration including branding and system status."
+        }
+      },
+      {
+        "path": "/metadata/{id}",
+        "definition": {
+          "entityName": "Metadata",
+          "description": "Global metadata like locations and categories."
         }
       }
-    ],
-    "reasoning": "The recommended Firestore structure prioritizes Authorization Independence and Structural Segregation to ensure security, scalability, and simplified security rules. The core issue identified in the NextJS error log was an attempt to write to `/pending_news_posts` while the provided security rules only explicitly covered `/news_posts`. This highlights the need for clear structural segregation based on security posture.\n\n**Authorization Independence via Denormalization (Mandate A & Principle 1):**\nEach `NewsPost` document (whether in `/approved_news_posts` or `/pending_news_posts`) now includes denormalized authorization context: `authorId`, `authorName`, `authorRole`, `location.mandal`, and `location.district`. This is crucial because it eliminates the need for expensive and complex `get()` calls within security rules to check the author's profile or the post's geographical context during a read or write operation. For instance, when a reporter submits a post, the rule can directly verify `request.resource.data.authorId == request.auth.uid` without querying `/users`. Similarly, when an editor approves a post, the rule checks `getRole()` (which performs a single `get()` on the user's *own* profile) and then directly processes the `update` on the `NewsPost` document. `Comment` documents also denormalize `newsPostId` and `authorId` for similar reasons, ensuring comment rules don't need to traverse parent documents.\n\n**Structural Segregation (Mandate B & Principle 2):**\nThe `NewsPost` entity has been split into two top-level collections: `/approved_news_posts` and `/pending_news_posts`. This directly addresses the principle of homogeneous security posture.\n*   `/approved_news_posts`: Documents here are intended for public consumption. Their security rules will primarily grant read access to all authenticated users, while write access is restricted to `admin` or `editor` roles for moderation. This collection supports **QAPs** by allowing `list` queries filtered by `location.mandal` or `location.district` (as seen in the Flutter code example) and by implicitly ensuring all returned documents have `status: \"approved\"` due to the rule. Users can also update specific `engagement` fields (like `likes`) as allowed by separate rules.\n*   `/pending_news_posts`: Documents here are in a moderation queue. Security rules for this collection will be much tighter: reporters can `create` documents (setting `status` to `pending` and `authorId` to their own UID), while `admin` and `editor` roles have read/write access to review and change the `status`. Regular users have no access to this collection, preventing exposure of unmoderated content. This setup simplifies rules logic by avoiding complex `if/else` statements based on a `status` field within a single collection.\n\n**Access Modeling (Mandate C):**\n*   **Private Data:** The `/users/{userId}` collection uses path-based ownership for user profiles, making it simple to secure (only the user can read/write their own profile, with broader read for admins/editors). Roles are stored here (DBAC model).\n*   **User-Owned Data:** Reporters' submitted posts in `/pending_news_posts` are effectively owned by the submitting reporter for creation and initial updates, with moderator oversight.\n*   **Global Roles (DBAC):** Roles are explicitly stored in the `/users/{userId}.role` field. The `getRole()` helper function in security rules efficiently fetches this role using `request.auth.uid`, adhering to the DBAC principle without custom claims.\n\n**Data Clarity and Predictability (Mandate D):**\n*   **Explicit State Modeling:** The `status` field (`pending`, `approved`, `rejected`) clearly defines the lifecycle of a news post. Its value is critical for routing to the correct collection.\n*   **Predictable Schema:** The `location` field in `NewsPost` is now an object `{\"state\": string, \"district\": string, \"mandal\": string}` as seen in the user's error data, providing clear, static keys for geographical filtering. The `engagement` metrics (`likes`, `commentsCount`) are direct numerical properties in `NewsPost`, simplifying updates (e.g., `increment()`).\n\nBy following these principles and mandates, the proposed Firestore structure significantly enhances security, simplifies rule writing, and supports efficient, location-aware queries for the MandalPulse application."
+    ]
   }
 }

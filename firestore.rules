@@ -13,9 +13,9 @@
  * - Authorization Independence: We use denormalized fields like `author_id` and `location` 
  *   within documents to perform localized security checks, minimizing costly `get()` calls.
  * - Role Resolution: A helper function `getRole()` is used to fetch user permissions 
- *   directly from the Firestore user document, supporting the "Desk Incharge" and "Admin" roles.
- * - Structural Segregation: By separating pending and approved posts into different 
- *   collections, we prevent accidental leakage of unmoderated content via open queries.
+ *   directly from the Firestore user document.
+ * - Resilience: Helper functions check for document existence before attempting to read data
+ *   to prevent rule crashes when a user profile is not yet provisioned.
  */
 
 rules_version = '2';
@@ -34,19 +34,24 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** @description Fetches the role of the current authenticated user. */
+    /** @description Safely fetches the role of the current authenticated user. */
     function getRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
+    /** @description Verifies if the user has a profile document. */
+    function hasProfile() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     /** @description Verifies if the user has administrative or editorial privileges. */
     function isStaff() {
-      return isSignedIn() && (getRole() == 'admin' || getRole() == 'editor' || getRole() == 'Desk Incharge');
+      return hasProfile() && (getRole() == 'admin' || getRole() == 'editor' || getRole() == 'Desk Incharge');
     }
 
     /** @description Verifies if the user has administrative privileges. */
     function isAdmin() {
-      return isSignedIn() && getRole() == 'admin';
+      return hasProfile() && getRole() == 'admin';
     }
 
     // --- COLLECTION RULES ---
