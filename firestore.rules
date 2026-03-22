@@ -16,13 +16,11 @@ service cloud.firestore {
 
     // Staff check: Master Admin OR authorized role in Firestore
     function isStaff() {
-      if (isAdmin()) {
-        return true;
-      }
-      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && 
-             exists(userPath) && 
-             get(userPath).data.role in ['editor', 'Desk Incharge'];
+      return isAdmin() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor'
+      );
     }
 
     // --- COLLECTION RULES ---
@@ -30,8 +28,8 @@ service cloud.firestore {
     match /users/{userId} {
       // Prevent anyone from creating or assuming an 'admin' role in the DB.
       allow create: if isSignedIn() && request.resource.data.role != 'admin';
-      allow get: if request.auth.uid == userId || isStaff();
-      allow list: if isStaff();
+      allow get: if request.auth.uid == userId || isAdmin() || isStaff();
+      allow list: if isAdmin() || isStaff();
       // Owners can update themselves but cannot change their role to admin.
       allow update: if (request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isAdmin();
@@ -43,8 +41,8 @@ service cloud.firestore {
 
     match /approved_news_posts/{postId} {
       allow read: if true; 
-      allow create: if isStaff();
-      allow update: if isStaff() || 
+      allow create: if isAdmin() || isStaff();
+      allow update: if isAdmin() || isStaff() || 
                    (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount']));
       allow delete: if isAdmin();
 
@@ -56,21 +54,21 @@ service cloud.firestore {
     }
 
     match /pending_news_posts/{newsPostId} {
-      allow get: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
-      allow list: if isStaff();
+      allow get: if isAdmin() || isStaff() || (isSignedIn() && resource.data.author_id == request.auth.uid);
+      allow list: if isAdmin() || isStaff();
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.author_id == request.auth.uid || isStaff());
-      allow delete: if isSignedIn() && (resource.data.author_id == request.auth.uid || isAdmin());
+      allow update: if isAdmin() || isStaff() || (isSignedIn() && resource.data.author_id == request.auth.uid);
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.author_id == request.auth.uid);
     }
 
     match /notifications/{id} {
       allow read: if true;
-      allow write: if isStaff();
+      allow write: if isAdmin() || isStaff();
     }
 
     match /ads/{id} {
       allow read: if true;
-      allow write: if isStaff();
+      allow write: if isAdmin() || isStaff();
     }
 
     match /config/{id} {
@@ -80,13 +78,12 @@ service cloud.firestore {
 
     match /metadata/{id} {
       allow read: if true;
-      allow write: if isStaff();
+      allow write: if isAdmin();
     }
 
-    // Legacy role tracking collections
-    match /roles_admins/{uid} { allow read, write: if isAdmin(); }
+    // Role tracking collections
     match /roles_editors/{uid} { allow read, write: if isAdmin(); }
-    match /roles_reporters/{uid} { allow read, write: if isStaff(); }
+    match /roles_reporters/{uid} { allow read, write: if isAdmin() || isStaff(); }
 
     match /{path=**} {
       allow read, write: if false;
