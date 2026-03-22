@@ -12,7 +12,9 @@ import {
   Newspaper,
   KeyRound,
   Palette,
-  Megaphone
+  Megaphone,
+  UserRoundPen,
+  UserRoundCog
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,7 +53,8 @@ const navItems = [
   { name: "Approvals", icon: CheckSquare, href: "/admin/approvals", label: "ఆమోదాలు" },
   { name: "Ads", icon: Megaphone, href: "/admin/ads", label: "ప్రకటనలు" },
   { name: "Locations", icon: MapPin, href: "/admin/locations", label: "ప్రాంతాలు" },
-  { name: "Users", icon: Users, href: "/admin/users", label: "వినియోగదారులు" },
+  { name: "Reporters", icon: UserRoundPen, href: "/admin/reporters", label: "రిపోర్టర్లు" },
+  { name: "Editors", icon: UserRoundCog, href: "/admin/editors", label: "ఎడిటర్లు" },
   { name: "Notifications", icon: Bell, href: "/admin/notifications", label: "నోటిఫికేషన్లు" },
   { name: "Branding", icon: Palette, href: "/admin/branding", label: "బ్రాండింగ్" },
 ];

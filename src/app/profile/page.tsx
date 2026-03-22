@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRef, useState, useEffect, useMemo, Suspense } from "react";
@@ -47,6 +48,8 @@ function ProfileContent() {
   }, [firestore, user?.uid]);
   
   const { data: profile, isLoading: isProfileLoading } = useDoc(user?.uid ? profileRef : null);
+
+  const isEditor = profile?.role === 'editor';
 
   useEffect(() => {
     if (profile) {
@@ -134,6 +137,13 @@ function ProfileContent() {
       if (editState && editDistrict && editMandal) {
         updates.location = { state: editState, district: editDistrict, mandal: editMandal };
       }
+      
+      // If editor, prevent name and email changes just in case they bypassed UI
+      if (isEditor) {
+        delete updates.name;
+        delete updates.email;
+      }
+
       await UserService.update(firestore, user.uid, updates);
       setIsEditing(false);
       toast({ title: "Profile Updated" });
@@ -239,10 +249,28 @@ function ProfileContent() {
               </div>
             ) : (
               <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
-                <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Full Name</Label><Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-11 text-base" /></div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-black uppercase text-primary">Full Name</Label>
+                  <Input 
+                    value={editName} 
+                    onChange={(e) => setEditName(e.target.value)} 
+                    className="h-11 text-base" 
+                    disabled={isEditor} // Editors cannot change name
+                  />
+                  {isEditor && <p className="text-[9px] text-muted-foreground italic">Editors cannot change their profile name.</p>}
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Phone</Label><Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-11 text-base" /></div>
-                  <div className="space-y-2"><Label className="text-[11px] font-black uppercase text-primary">Email</Label><Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-11 text-base" /></div>
+                  <div className="space-y-2">
+                    <Label className="text-[11px] font-black uppercase text-primary">Email (User ID)</Label>
+                    <Input 
+                      value={editEmail} 
+                      onChange={(e) => setEditEmail(e.target.value)} 
+                      className="h-11 text-base" 
+                      disabled={isEditor} // Editors cannot change email/ID
+                    />
+                    {isEditor && <p className="text-[9px] text-muted-foreground italic">Editors cannot change their User ID.</p>}
+                  </div>
                 </div>
                 <div className="space-y-3 pt-2"><Label className="text-[11px] font-black uppercase text-primary">Location</Label><div className="grid grid-cols-3 gap-2"><Select value={editState} onValueChange={(v) => { setEditState(v); setEditDistrict(""); setEditMandal(""); }}><SelectTrigger className="h-10 text-sm"><SelectValue placeholder="State" /></SelectTrigger><SelectContent>{availableStates.map(s => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}</SelectContent></Select><Select value={editDistrict} onValueChange={(v) => { setEditDistrict(v); setEditMandal(""); }} disabled={!editState}><SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Dist" /></SelectTrigger><SelectContent>{editState && Object.keys(availableLocations[editState]).map(d => <SelectItem key={d} value={d} className="text-sm">{d}</SelectItem>)}</SelectContent></Select><Select value={editMandal} onValueChange={setEditMandal} disabled={!editDistrict}><SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Mandal" /></SelectTrigger><SelectContent>{editDistrict && availableLocations[editState]?.[editDistrict]?.map((m: string) => <SelectItem key={m} value={m} className="text-sm">{m}</SelectItem>)}</SelectContent></Select></div></div>
                 <div className="flex gap-3 pt-4">
