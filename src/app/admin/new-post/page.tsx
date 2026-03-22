@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useMemo } from "react";
@@ -35,12 +34,21 @@ export default function AdminNewPost() {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const isAdminEmail = user?.email === 'admin@telugunewspulse.com';
+
   // Real-time branding for watermark
   const brandingRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return doc(firestore, 'config', 'admin');
   }, [firestore]);
   const { data: branding } = useDoc(brandingRef);
+
+  // Real-time Profile
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
+  const { data: profile } = useDoc(profileRef);
 
   // Dynamic Categories
   const catRef = useMemoFirebase(() => firestore ? doc(firestore, 'metadata', 'categories') : null, [firestore]);
@@ -114,7 +122,7 @@ export default function AdminNewPost() {
         location: { state, district, mandal },
         status: 'approved',
         author_id: user.uid,
-        author_name: user.displayName || "Admin Office",
+        author_name: profile?.name || user.displayName || (isAdminEmail ? "Master Admin" : "Admin Office"),
         author_role: "Desk Incharge",
         likes: 0,
         commentsCount: 0

@@ -49,6 +49,7 @@ export function Navbar() {
   const [isMinimized, setIsMinimized] = useState(false);
   const lastToastedId = useRef<string | null>(null);
 
+  const isAdminEmail = user?.email === 'admin@telugunewspulse.com';
   const selectedCategory = searchParams.get('category') || 'Home';
 
   // Real-time branding
@@ -111,11 +112,11 @@ export function Navbar() {
     } else {
       if (typeof window === 'undefined') return;
       setRole(localStorage.getItem('teluguNewsPulse_role') as any);
-      setUserName(localStorage.getItem('teluguNewsPulse_userName') || "");
+      setUserName(localStorage.getItem('teluguNewsPulse_userName') || (isAdminEmail ? "Master Admin" : ""));
       setUserStatus(localStorage.getItem('teluguNewsPulse_userStatus') || "");
       setUserPhoto(localStorage.getItem('teluguNewsPulse_userPhoto') || null);
     }
-  }, [profile]);
+  }, [profile, isAdminEmail]);
 
   useEffect(() => {
     updateAuthState(); updateLocationState();
@@ -167,10 +168,11 @@ export function Navbar() {
     setIsLegalOpen(false);
   };
 
-  const canPost = role === 'admin' || role === 'editor' || (role === 'reporter' && userStatus === 'approved');
+  const canPost = isAdminEmail || role === 'editor' || (role === 'reporter' && userStatus === 'approved');
+  const postPath = (isAdminEmail || role === 'editor') ? '/admin/new-post' : '/reporter';
 
   const getRoleTheme = () => {
-    if (role === 'admin' || role === 'editor') return { text: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", icon: "text-rose-500", hover: "hover:text-rose-700" };
+    if (isAdminEmail || role === 'admin' || role === 'editor') return { text: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200", icon: "text-rose-500", hover: "hover:text-rose-700" };
     if (role === 'reporter') return { text: "text-cyan-600", bg: "bg-cyan-50", border: "border-cyan-200", icon: "text-cyan-500", hover: "hover:text-cyan-700" };
     return { text: "text-primary", bg: "bg-primary/5", border: "border-primary/10", icon: "text-primary", hover: "hover:text-primary" };
   };
@@ -245,7 +247,7 @@ export function Navbar() {
                     <div className="flex flex-col min-w-0">
                       <span className="text-base font-black truncate">{userName}</span>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-[10px] font-bold uppercase border-muted-foreground/20 px-1.5 h-5">{role}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-bold uppercase border-muted-foreground/20 px-1.5 h-5">{isAdminEmail ? 'admin' : role}</Badge>
                         <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1"><MapPin className="w-3 h-3" />{location.mandal}, {location.district}</span>
                       </div>
                     </div>
@@ -298,7 +300,7 @@ export function Navbar() {
           </Dialog>
 
           <Sheet open={isNotifOpen} onOpenChange={(open) => { setIsNotifOpen(open); if (open) markAsRead(); }}>
-            <SheetTrigger asChild><button className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300 relative px-4", theme.hover, isMinimized ? "scale-110" : "scale-100")}><div className="relative"><Bell className={cn("w-5 h-5", hasNewNotif && "animate-bell", hasNewNotif && theme.text)} />{hasNewNotif && <span className={cn("absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white animate-pulse", role === 'admin' ? "bg-rose-500" : "bg-primary")} />}</div>{!isMinimized && <span className="text-[11px] md:text-sm font-semibold">Alerts</span>}</button></SheetTrigger>
+            <SheetTrigger asChild><button className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300 relative px-4", theme.hover, isMinimized ? "scale-110" : "scale-100")}><div className="relative"><Bell className={cn("w-5 h-5", hasNewNotif && "animate-bell", hasNewNotif && theme.text)} />{hasNewNotif && <span className={cn("absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white animate-pulse", role === 'admin' || isAdminEmail ? "bg-rose-500" : "bg-primary")} />}</div>{!isMinimized && <span className="text-[11px] md:text-sm font-semibold">Alerts</span>}</button></SheetTrigger>
             <SheetContent side="right" className="w-[85%] sm:max-w-sm p-0 z-[100] border-none shadow-2xl">
               <SheetHeader className={cn("p-5 border-b", theme.bg)}><SheetTitle className="flex items-center gap-3 text-lg"><Bell className={cn("w-5 h-5", theme.icon)} />నోటిఫికేషన్లు</SheetTitle></SheetHeader>
               <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4 pb-32">
@@ -313,8 +315,8 @@ export function Navbar() {
             </SheetContent>
           </Sheet>
 
-          {canPost && <Link href="/reporter" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300", theme.hover, isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100")}><PlusCircle className="w-5 h-5" /><span className="text-[11px] md:text-sm font-semibold">Post</span></Link>}
-          {(role === 'admin' || role === 'editor') && <Link href="/admin" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300", theme.hover, isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100")}><LayoutDashboard className="w-5 h-5" /><span className="text-[11px] md:text-sm font-semibold">Moderate</span></Link>}
+          {canPost && <Link href={postPath} className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300", theme.hover, isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100")}><PlusCircle className="w-5 h-5" /><span className="text-[11px] md:text-sm font-semibold">Post</span></Link>}
+          {(isAdminEmail || role === 'admin' || role === 'editor') && <Link href="/admin" className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300", theme.hover, isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100")}><LayoutDashboard className="w-5 h-5" /><span className="text-[11px] md:text-sm font-semibold">Moderate</span></Link>}
           <Link href={userName ? "/profile" : "/login"} className={cn("flex flex-col md:flex-row items-center gap-1 text-muted-foreground transition-all duration-300", theme.hover, isMinimized ? "opacity-0 translate-y-4 pointer-events-none w-0" : "opacity-100")}>{userPhoto ? <div className={cn("relative w-6 h-6 rounded-full overflow-hidden border", theme.border)}><Image src={userPhoto} alt={userName} fill className="object-cover" /></div> : <User className={cn("w-5 h-5", theme.icon)} />}<span className="text-[11px] md:text-sm font-semibold truncate max-w-[60px] md:max-w-none">{userName || "Profile"}</span></Link>
         </div>
       </div>
