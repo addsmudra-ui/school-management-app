@@ -2,91 +2,93 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- HELPER FUNCTIONS ---
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Master Admin check based on specific email - HIGH PRIORITY
-    // This is the SOLE source of truth for admin powers.
+    // Helper: Is the user the Master Admin?
+    // We anchor this to the specific email address for absolute security.
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'admin@telugunewspulse.com';
+      return request.auth != null && request.auth.token.email == 'admin@telugunewspulse.com';
     }
 
-    // Staff check: Master Admin OR authorized role in Firestore
+    // Helper: Is the user an Editor or the Admin?
     function isStaff() {
       return isAdmin() || (
-        isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor'
+        request.auth != null && 
+        exists(/databases/$(database)/documents/roles_editors/$(request.auth.uid))
       );
     }
 
-    // --- COLLECTION RULES ---
-
-    match /users/{userId} {
-      // Prevent anyone from creating or assuming an 'admin' role in the DB.
-      allow create: if isSignedIn() && request.resource.data.role != 'admin';
-      allow get: if request.auth.uid == userId || isAdmin() || isStaff();
-      allow list: if isAdmin() || isStaff();
-      // Owners can update themselves but cannot change their role to admin.
-      allow update: if (request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin();
-      allow delete: if isAdmin();
-
-      match /private/likes {
-        allow read, write: if request.auth.uid == userId || isAdmin();
-      }
-    }
-
-    match /approved_news_posts/{postId} {
-      allow read: if true; 
-      allow create: if isAdmin() || isStaff();
-      allow update: if isAdmin() || isStaff() || 
-                   (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount']));
-      allow delete: if isAdmin();
-
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if isSignedIn();
-        allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
-      }
-    }
-
-    match /pending_news_posts/{newsPostId} {
-      allow get: if isAdmin() || isStaff() || (isSignedIn() && resource.data.author_id == request.auth.uid);
-      allow list: if isAdmin() || isStaff();
-      allow create: if isSignedIn();
-      allow update: if isAdmin() || isStaff() || (isSignedIn() && resource.data.author_id == request.auth.uid);
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.author_id == request.auth.uid);
-    }
-
-    match /notifications/{id} {
-      allow read: if true;
-      allow write: if isAdmin() || isStaff();
-    }
-
-    match /ads/{id} {
-      allow read: if true;
-      allow write: if isAdmin() || isStaff();
-    }
-
+    // 1. Branding & App Config
     match /config/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // 2. User Profiles
+    match /users/{userId} {
+      // Master Admin can list and read all users.
+      // Staff (Editors) can read user list for management.
+      // Users can read their own profile.
+      allow get: if isAdmin() || isStaff() || (request.auth != null && request.auth.uid == userId);
+      allow list: if isAdmin() || isStaff();
+      
+      // Admin can provision or delete. Users can update their own profile.
+      // Note: We prevent users from changing their own role to 'admin'.
+      allow create, update: if isAdmin() || (
+        request.auth != null && 
+        request.auth.uid == userId && 
+        request.resource.data.role != 'admin'
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 3. News Posts (Approved)
+    match /approved_news_posts/{id} {
+      allow read: if true;
+      // Only staff (Admin/Editors) can publish or edit live news.
+      allow write: if isStaff();
+      
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if isStaff() || (request.auth != null && resource.data.userId == request.auth.uid);
+      }
+    }
+
+    // 4. News Posts (Pending)
+    match /pending_news_posts/{id} {
+      // Staff can see all pending. Authors can see their own.
+      allow read: if isStaff() || (request.auth != null && resource.data.author_id == request.auth.uid);
+      // Anyone can submit a post, but they must be themselves.
+      allow create: if request.auth != null && request.resource.data.author_id == request.auth.uid;
+      // Staff can update/delete (for review). Authors can only update/delete if it's theirs.
+      allow update, delete: if isStaff() || (request.auth != null && resource.data.author_id == request.auth.uid);
+    }
+
+    // 5. Advertisements
+    match /ads/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 6. Notifications
+    match /notifications/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 7. Metadata (Locations, Categories)
     match /metadata/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Role tracking collections
-    match /roles_editors/{uid} { allow read, write: if isAdmin(); }
-    match /roles_reporters/{uid} { allow read, write: if isAdmin() || isStaff(); }
+    // 8. Role assignments (Internal collections)
+    match /roles_editors/{id} { allow read, write: if isAdmin(); }
+    match /roles_reporters/{id} { allow read, write: if isAdmin(); }
+    match /roles_admins/{id} { allow read, write: if isAdmin(); }
 
+    // Fallback: Default to admin-only for any unspecified paths
     match /{path=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
   }
 }
