@@ -34,16 +34,26 @@ export default function StaffLoginPage() {
 
   // Automatic redirection if already logged in as staff
   useEffect(() => {
-    if (!isUserLoading && !isProfileLoading && dbProfile) {
-      if (dbProfile.role === 'admin' || dbProfile.role === 'editor') {
+    if (!isUserLoading && !isProfileLoading) {
+      if (!user) return;
+
+      // CRITICAL: Master Admin check by email
+      if (user.email === 'admin@telugunewspulse.com') {
         router.push('/admin');
-      } else if (dbProfile.role === 'reporter') {
-        router.push('/reporter');
-      } else {
-        router.push('/profile');
+        return;
+      }
+
+      if (dbProfile) {
+        if (dbProfile.role === 'admin' || dbProfile.role === 'editor') {
+          router.push('/admin');
+        } else if (dbProfile.role === 'reporter') {
+          router.push('/reporter');
+        } else {
+          router.push('/profile');
+        }
       }
     }
-  }, [dbProfile, isUserLoading, isProfileLoading, router]);
+  }, [dbProfile, isUserLoading, isProfileLoading, router, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

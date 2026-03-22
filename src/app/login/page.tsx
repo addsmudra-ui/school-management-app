@@ -62,6 +62,13 @@ export default function LoginPage() {
     const handleRecognition = async () => {
       if (isUserLoading || isProfileLoading || !user || user.isAnonymous) return;
 
+      // CRITICAL: Master Admin check by email always comes first
+      const isAdminEmail = user.email === 'admin@telugunewspulse.com';
+      if (isAdminEmail) {
+        router.push('/admin');
+        return;
+      }
+
       if (dbProfile) {
         const targetPath = (dbProfile.role === 'admin' || dbProfile.role === 'editor') ? '/admin' : dbProfile.role === 'reporter' ? '/reporter' : '/profile';
         router.push(targetPath);

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -34,20 +35,26 @@ export default function AdminLayout({
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (!isUserLoading && !isProfileLoading) {
+    // Wait for user to be definitely known
+    if (!isUserLoading) {
       if (!user) return;
 
-      // Authorized if Master Admin Email OR profile has editor role
-      // We check email first as the source of absolute truth
-      const isAuthorized = isAdminEmail || (profile && profile.role === 'editor');
-      
-      if (!isAuthorized) {
-        router.push('/');
+      // Master Admin is ALWAYS authorized by email alone
+      if (isAdminEmail) return;
+
+      // For others, we wait for profile to confirm 'editor' role
+      if (!isProfileLoading) {
+        const isAuthorized = profile && profile.role === 'editor';
+        if (!isAuthorized) {
+          router.push('/');
+        }
       }
     }
   }, [profile, isProfileLoading, router, isAdminEmail, isUserLoading, user]);
 
-  if (isUserLoading || isProfileLoading) {
+  // Loading state: Only show loader for Master Admin if user object itself is loading.
+  // For others, wait for profile loading too.
+  if (isUserLoading || (isProfileLoading && !isAdminEmail)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -55,7 +62,10 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || (!isAdminEmail && (!profile || profile.role !== 'editor'))) {
+  // Final authorization check for rendering
+  const canRender = user && (isAdminEmail || (profile && profile.role === 'editor'));
+
+  if (!canRender) {
     return null;
   }
 
