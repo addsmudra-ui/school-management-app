@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -20,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
-import { collection, query, limit, orderBy, where } from "firebase/firestore";
+import { collection, query, limit, orderBy, where, doc } from "firebase/firestore";
 
 export default function AdminReporters() {
   const firestore = useFirestore();
