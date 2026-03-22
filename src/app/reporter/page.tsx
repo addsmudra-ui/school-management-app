@@ -148,10 +148,10 @@ function ReporterContent() {
     e.preventDefault();
     if (!firestore || !user || !profile) return;
 
-    if (!title || !content || !state || !district || !mandal || (!imagePreview && !videoUrl)) {
+    if (!title || !content || !state || !district || !mandal) {
       toast({ 
         title: "Error", 
-        description: "దయచేసి అన్ని ఖాళీలను పూరించండి మరియు ఒక చిత్రం లేదా వీడియోను ఎంచుకోండి.", 
+        description: "దయచేసి ముఖ్యాంశం, వివరాలు మరియు ప్రాంతాన్ని నమోదు చేయండి.", 
         variant: "destructive" 
       });
       return;
@@ -363,10 +363,10 @@ function ReporterContent() {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b pb-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-primary ml-1">మీడియా అప్‌లోడ్ (Media Upload)</Label>
+                    <Label className="text-xs font-black uppercase tracking-widest text-primary ml-1">మీడియా అప్‌లోడ్ (Media - Optional)</Label>
                     <Badge variant="secondary" className="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border-none">ఒకటి మాత్రమే (Any One)</Badge>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic">దయచేసి వార్త కోసం ఒక చిత్రం లేదా వీడియోను మాత్రమే ఎంచుకోండి.</p>
+                  <p className="text-[10px] text-muted-foreground italic">మీరు కావాలనుకుంటే ఒక చిత్రం లేదా వీడియోను ఎంచుకోవచ్చు.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
                     {/* Image Upload Section */}

@@ -96,8 +96,8 @@ export default function AdminNewPost() {
     e.preventDefault();
     if (!firestore || !user) return;
 
-    if (!title || !content || !state || !district || !mandal || (!imagePreview && !videoUrl)) {
-      toast({ title: "Error", description: "All fields are required. Please provide either an image or a video.", variant: "destructive" });
+    if (!title || !content || !state || !district || !mandal) {
+      toast({ title: "Error", description: "All text fields are required.", variant: "destructive" });
       return;
     }
 
@@ -236,7 +236,7 @@ export default function AdminNewPost() {
             <div className={cn("space-y-3 transition-all", videoUrl && "opacity-40 pointer-events-none grayscale")}>
               <Label className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
                 <ImageIcon className="w-3 h-3" />
-                చిత్రం (Image)
+                చిత్రం (Image - Optional)
               </Label>
               {!imagePreview ? (
                 <div onClick={() => !videoUrl && fileInputRef.current?.click()} className="border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer hover:bg-primary/5 transition-all border-slate-200 group h-[200px] flex flex-col justify-center">
