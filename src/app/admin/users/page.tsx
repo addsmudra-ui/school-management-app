@@ -162,7 +162,7 @@ export default function AdminUsers() {
               </div>
               <div className="space-y-2">
                 <Label>రాష్ట్రం</Label>
-                <Select onValueChange={(v) => { setNewState(v); setNewDistrict(""); setNewMandal(""); }} value={newState}>
+                <Select onValueChange={(v) => { setState(v); setNewDistrict(""); setNewMandal(""); }} value={newState}>
                   <SelectTrigger className="rounded-xl"><SelectValue placeholder="రాష్ట్రం" /></SelectTrigger>
                   <SelectContent>{availableStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
@@ -241,14 +241,16 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        {user.role === 'admin' ? (
+                        {user.email === 'admin@telugunewspulse.com' ? (
                           <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
                         ) : user.role === 'editor' ? (
                           <UserCog className="w-3.5 h-3.5 text-amber-500" />
                         ) : (
                           <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                         )}
-                        <Badge variant="outline" className="capitalize text-[10px] font-bold border-muted-foreground/20">{user.role}</Badge>
+                        <Badge variant="outline" className="capitalize text-[10px] font-bold border-muted-foreground/20">
+                          {user.email === 'admin@telugunewspulse.com' ? 'Admin' : user.role}
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell>

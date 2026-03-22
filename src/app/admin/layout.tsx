@@ -38,7 +38,7 @@ export default function AdminLayout({
       if (!user) return;
 
       // Authorized if Master Admin Email OR profile has editor role
-      const isAuthorized = isAdminEmail || (profile && (profile.role === 'editor' || profile.role === 'admin'));
+      const isAuthorized = isAdminEmail || (profile && profile.role === 'editor');
       
       if (!isAuthorized) {
         router.push('/');
@@ -54,7 +54,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || (!isAdminEmail && (!profile || (profile.role !== 'editor' && profile.role !== 'admin')))) {
+  if (!user || (!isAdminEmail && (!profile || profile.role !== 'editor'))) {
     return null;
   }
 

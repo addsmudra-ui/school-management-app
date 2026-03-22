@@ -251,7 +251,7 @@ export const NewsService = {
     commentDoc.id && setDocumentNonBlocking(commentDoc, commentData, { merge: true });
     
     const postRef = doc(db, 'approved_news_posts', postId);
-    updateDocumentNonBlocking(postRef, { commentsCount: increment(1) });
+    updateDocumentNonBlocking(postRef, { likes: increment(0), commentsCount: increment(1) });
   },
 
   getByCode: async (db: Firestore, code: string): Promise<NewsPost | null> => {
@@ -314,7 +314,6 @@ export const UserService = {
     }, { merge: true });
 
     const roleCollectionMap = {
-      'admin': 'roles_admins',
       'reporter': 'roles_reporters',
       'editor': 'roles_editors',
       'user': null
@@ -356,7 +355,6 @@ export const UserService = {
     batch.delete(oldRef);
     
     const roleCollectionMap = {
-      'admin': 'roles_admins',
       'reporter': 'roles_reporters',
       'editor': 'roles_editors',
       'user': null

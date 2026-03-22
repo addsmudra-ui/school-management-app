@@ -8,45 +8,36 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     // Master Admin check based on specific email - HIGH PRIORITY
     // This is the SOLE source of truth for admin powers.
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'admin@telugunewspulse.com';
     }
 
-    // Safely fetch user data
-    function getUserData() {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(path) ? get(path).data : null;
-    }
-
     // Staff check: Master Admin OR authorized role in Firestore
     function isStaff() {
-      return isAdmin() || (
-        isSignedIn() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['editor', 'Desk Incharge']
-      );
+      if (isAdmin()) {
+        return true;
+      }
+      let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isSignedIn() && 
+             exists(userPath) && 
+             get(userPath).data.role in ['editor', 'Desk Incharge'];
     }
 
     // --- COLLECTION RULES ---
 
     match /users/{userId} {
-      // Prevent anyone from creating an 'admin' role in the DB.
-      // Master Admin power is email-based, not role-string based.
+      // Prevent anyone from creating or assuming an 'admin' role in the DB.
       allow create: if isSignedIn() && request.resource.data.role != 'admin';
-      allow get: if isOwner(userId) || isStaff();
+      allow get: if request.auth.uid == userId || isStaff();
       allow list: if isStaff();
-      // Owners can update themselves but cannot change their role. Master Admin can do anything.
-      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      // Owners can update themselves but cannot change their role to admin.
+      allow update: if (request.auth.uid == userId && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isAdmin();
 
       match /private/likes {
-        allow read, write: if isOwner(userId) || isAdmin();
+        allow read, write: if request.auth.uid == userId || isAdmin();
       }
     }
 
@@ -60,7 +51,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if true;
         allow create: if isSignedIn();
-        allow update, delete: if isSignedIn() && (isOwner(resource.data.authorId) || isAdmin());
+        allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
       }
     }
 
@@ -92,7 +83,7 @@ service cloud.firestore {
       allow write: if isStaff();
     }
 
-    // Legacy role tracking collections - restricted to Admin/Staff
+    // Legacy role tracking collections
     match /roles_admins/{uid} { allow read, write: if isAdmin(); }
     match /roles_editors/{uid} { allow read, write: if isAdmin(); }
     match /roles_reporters/{uid} { allow read, write: if isStaff(); }
