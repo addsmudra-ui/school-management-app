@@ -75,15 +75,16 @@ export const AdminService = {
         return {
           appLogo: snapshot.data().appLogo || null,
           appName: snapshot.data().appName || 'Telugu News Pulse',
-          systemStatus: snapshot.data().systemStatus || 'online'
+          systemStatus: snapshot.data().systemStatus || 'online',
+          password: snapshot.data().password || 'admin123'
         };
       }
-      return { appLogo: null, appName: 'Telugu News Pulse', systemStatus: 'online' };
+      return { appLogo: null, appName: 'Telugu News Pulse', systemStatus: 'online', password: 'admin123' };
     } catch (e) {
-      return { appLogo: null, appName: 'Telugu News Pulse', systemStatus: 'online' };
+      return { appLogo: null, appName: 'Telugu News Pulse', systemStatus: 'online', password: 'admin123' };
     }
   },
-  updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string }) => {
+  updateBranding: (db: Firestore, data: { appLogo?: string; appName?: string; password?: string }) => {
     const configRef = doc(db, 'config', 'admin');
     const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
     setDocumentNonBlocking(configRef, { ...cleanData, updatedAt: serverTimestamp() }, { merge: true });
