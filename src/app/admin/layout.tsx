@@ -38,6 +38,7 @@ export default function AdminLayout({
       if (!user) return;
 
       // Authorized if Master Admin Email OR profile has editor role
+      // We check email first as the source of absolute truth
       const isAuthorized = isAdminEmail || (profile && profile.role === 'editor');
       
       if (!isAuthorized) {

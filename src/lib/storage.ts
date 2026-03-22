@@ -123,7 +123,8 @@ export const AdminService = {
       'ads',
       'notifications',
       'roles_editors',
-      'roles_reporters'
+      'roles_reporters',
+      'roles_admins'
     ];
 
     for (const colName of collectionsToClear) {
@@ -131,7 +132,6 @@ export const AdminService = {
       const snapshot = await getDocs(colRef);
       const batch = writeBatch(db);
       snapshot.forEach((doc) => {
-        // We preserve the master admin record if possible, but they can just login again.
         batch.delete(doc.ref);
       });
       await batch.commit();
@@ -338,6 +338,7 @@ export const UserService = {
     const roleCollectionMap = {
       'reporter': 'roles_reporters',
       'editor': 'roles_editors',
+      'admin': 'roles_admins',
       'user': null
     };
 
@@ -379,6 +380,7 @@ export const UserService = {
     const roleCollectionMap = {
       'reporter': 'roles_reporters',
       'editor': 'roles_editors',
+      'admin': 'roles_admins',
       'user': null
     };
     const roleKey = provisionedProfile.role as keyof typeof roleCollectionMap;

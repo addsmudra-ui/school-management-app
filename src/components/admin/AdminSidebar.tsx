@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -86,11 +85,7 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      localStorage.removeItem('teluguNewsPulse_role');
-      localStorage.removeItem('teluguNewsPulse_userName');
-      localStorage.removeItem('teluguNewsPulse_userPhone');
-      localStorage.removeItem('teluguNewsPulse_userStatus');
-      localStorage.removeItem('teluguNewsPulse_userPhoto');
+      localStorage.clear();
       window.location.href = '/login';
     } catch (err) {
       console.error("Logout failed:", err);
