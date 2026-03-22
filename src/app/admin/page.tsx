@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database, Activity, ToggleLeft, ToggleRight } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck, TrendingUp, Users, Newspaper, Bell, Database, Activity, ToggleLeft, ToggleRight, Trash2, AlertTriangle } from "lucide-react";
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -11,11 +11,22 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useCollection, useDoc, useMemoFirebase, useUser } from "@/firebase";
 import { collection, query, orderBy, limit, doc } from "firebase/firestore";
 import { AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const chartData = [
   { name: "Mon", posts: 4 },
@@ -29,8 +40,12 @@ const chartData = [
 
 export default function AdminDashboard() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isResetting, setIsResetSystem] = useState(false);
+
+  const isMasterAdmin = user?.email === 'admin@telugunewspulse.com';
 
   // Real-time config for system status
   const configRef = useMemoFirebase(() => {
@@ -56,10 +71,10 @@ export default function AdminDashboard() {
 
   const { data: pendingNews } = useCollection(pendingQuery);
   const { data: recentApprovals } = useCollection(approvedQuery);
-  const { data: users } = useCollection(usersQuery);
+  const { data: allUsers } = useCollection(usersQuery);
 
   const pendingCount = pendingNews?.filter(n => n.status === 'pending').length || 0;
-  const reportersCount = users?.filter(u => u.role === 'reporter').length || 0;
+  const reportersCount = allUsers?.filter(u => u.role === 'reporter').length || 0;
 
   const handleSeedData = async () => {
     if (!firestore) return;
@@ -81,6 +96,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleResetSystem = async () => {
+    if (!firestore || !isMasterAdmin) return;
+    setIsResetSystem(true);
+    try {
+      await AdminService.resetSystem(firestore);
+      toast({
+        title: "System Reset",
+        description: "All application data has been cleared. You can now seed fresh data."
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reset system data."
+      });
+    } finally {
+      setIsResetSystem(false);
+    }
+  };
+
   const toggleStatus = () => {
     if (!firestore) return;
     const current = config?.systemStatus || 'online';
@@ -99,13 +134,47 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight">నిర్వాహక డాష్‌బోర్డ్</h1>
-          <p className="text-muted-foreground mt-1">Telugu News Pulse ప్లాట్‌ఫారమ్ గణాంకాలను ఇక్కడ చూడవచ్చు.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Telugu News Pulse ప్లాట్‌ఫారమ్ గణాంకాలను ఇక్కడ చూడవచ్చు.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {isMasterAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="rounded-xl h-11 px-6 shadow-sm font-bold uppercase text-[10px] tracking-widest"
+                  disabled={isResetting}
+                >
+                  <Trash2 className={cn("w-4 h-4 mr-2", isResetting && "animate-spin")} />
+                  Reset System
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-3xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-rose-600">
+                    <AlertTriangle className="w-6 h-6" />
+                    Are you absolutely sure?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-sm">
+                    This action will permanently delete all users, news posts, ads, and notifications from the database. 
+                    This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetSystem} className="rounded-xl bg-rose-600 hover:bg-rose-700">
+                    Yes, Clear Everything
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+
           <Button 
             variant="outline" 
             size="sm" 
-            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-11 px-6 shadow-sm"
+            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-11 px-6 shadow-sm font-bold uppercase text-[10px] tracking-widest"
             onClick={handleSeedData}
             disabled={isSeeding}
           >
@@ -156,7 +225,7 @@ export default function AdminDashboard() {
         />
         <StatsCard 
           title="మొత్తం వినియోగదారులు" 
-          value={users?.length || 0} 
+          value={allUsers?.length || 0} 
           icon={Activity} 
           color="text-rose-500" 
           bgColor="bg-rose-500/10"
@@ -173,7 +242,7 @@ export default function AdminDashboard() {
                   <TrendingUp className="w-5 h-5 text-primary" />
                   వార్తల ట్రెండ్ (Weekly Posts)
                 </CardTitle>
-                <CardDescription>వారపు వార్తా ప్రచురణల విశ్లేషణ</CardDescription>
+                <CardDescription className="text-xs">వారపు వార్తా ప్రచురణల విశ్లేషణ</CardDescription>
               </div>
               <Badge variant="secondary" className="bg-primary/5 text-primary font-bold">LIVE</Badge>
             </div>
@@ -211,7 +280,7 @@ export default function AdminDashboard() {
         <Card className="border-none shadow-xl rounded-2xl bg-white overflow-hidden">
           <CardHeader className="border-b border-slate-50">
             <CardTitle className="text-lg font-bold">ఇటీవలి ఆమోదాలు</CardTitle>
-            <CardDescription>చివరిగా లైవ్ చేసిన 10 వార్తలు</CardDescription>
+            <CardDescription className="text-xs">చివరిగా లైవ్ చేసిన 10 వార్తలు</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-50">
@@ -222,7 +291,7 @@ export default function AdminDashboard() {
                       <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold truncate text-slate-900">{post.title}</p>
+                      <p className="text-sm font-bold truncate text-slate-900 leading-tight">{post.title}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{post.author_name}</span>
                         <div className="w-1 h-1 bg-slate-300 rounded-full" />
@@ -234,7 +303,7 @@ export default function AdminDashboard() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-24 text-center space-y-3 opacity-40">
                   <Database className="w-12 h-12 text-slate-300" />
-                  <p className="text-sm italic">ఇంకా ఆమోదాలు ఏవీ లేవు.</p>
+                  <p className="text-sm italic font-medium">ఇంకా ఆమోదాలు ఏవీ లేవు.</p>
                 </div>
               )}
             </div>
@@ -256,11 +325,11 @@ function StatsCard({ title, value, icon: Icon, color, bgColor, desc }: any) {
           <Badge variant="secondary" className="bg-slate-50 text-slate-500 border-none font-bold text-[10px]">REAL-TIME</Badge>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">{title}</p>
+          <p className="text-xs text-muted-foreground font-black uppercase tracking-widest">{title}</p>
           <div className="flex items-baseline gap-2 mt-1">
-            <h3 className="text-3xl font-bold tracking-tight">{value}</h3>
+            <h3 className="text-3xl font-black tracking-tight">{value}</h3>
           </div>
-          <p className="text-[11px] text-slate-400 mt-2 font-medium italic">{desc}</p>
+          <p className="text-[11px] text-slate-400 mt-2 font-bold italic">{desc}</p>
         </div>
       </CardContent>
     </Card>

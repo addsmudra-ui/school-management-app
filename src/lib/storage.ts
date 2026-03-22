@@ -114,6 +114,28 @@ export const AdminService = {
     }, { merge: true });
 
     await batch.commit();
+  },
+  resetSystem: async (db: Firestore) => {
+    const collectionsToClear = [
+      'users',
+      'approved_news_posts',
+      'pending_news_posts',
+      'ads',
+      'notifications',
+      'roles_editors',
+      'roles_reporters'
+    ];
+
+    for (const colName of collectionsToClear) {
+      const colRef = collection(db, colName);
+      const snapshot = await getDocs(colRef);
+      const batch = writeBatch(db);
+      snapshot.forEach((doc) => {
+        // We preserve the master admin record if possible, but they can just login again.
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
   }
 };
 
