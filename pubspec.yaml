@@ -11,20 +11,20 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase (Stable Versions)
-  firebase_core: ^2.24.2
-  cloud_firestore: ^4.14.0
-  firebase_auth: ^4.16.0
-  firebase_messaging: ^14.7.10  # ఇక్కడ వెర్షన్ తగ్గించాను (Downgraded for stability)
+  # Firebase - 'any' వాడటం వల్ల బిల్డ్ ఫెయిల్ అవ్వదు
+  firebase_core: any
+  cloud_firestore: any
+  firebase_auth: any
+  firebase_messaging: any
   
   # UI & UX
-  google_fonts: ^6.1.0
-  flutter_svg: ^2.0.9
+  google_fonts: any
+  flutter_svg: any
   lucide_icons: any 
-  intl: ^0.19.0
+  intl: any
   
   # State Management
-  flutter_riverpod: ^2.4.9
+  flutter_riverpod: any
 
 dev_dependencies:
   flutter_test:
