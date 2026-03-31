@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, ChevronLeft, ShieldCheck, User as UserIcon, Loader2, Mail, Phone, Chrome, LockKeyhole } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { STATES as MOCK_STATES, LOCATIONS_BY_STATE as MOCK_LOCATIONS } from "@/lib/mock-data";
 import { UserService, AdminService } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +31,7 @@ declare global {
   }
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const firestore = useFirestore();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
@@ -42,7 +42,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<'user' | 'reporter'>("user");
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get('role') === 'reporter' ? 'reporter' : 'user';
+  
+  const [role, setRole] = useState<'user' | 'reporter'>(initialRole);
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [mandal, setMandal] = useState("");
@@ -329,5 +332,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-white"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

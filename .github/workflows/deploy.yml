@@ -1,0 +1,37 @@
+name: Cloud Build & Flutter Deploy
+
+on:
+  push:
+    branches:
+      - main # Change this if your default branch is different (e.g., 'master')
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🛠️ Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          # flutter-version: '3.19.0' # Optional: Specify version if needed
+
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+
+      - name: ⚙️ Restore Platform Folders
+        run: flutter create .
+
+      - name: 🏗️ Build Web Production
+        run: flutter build web --release
+
+      - name: 🚀 Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_GEN_LANG_CLIENT_0167429912 }}'
+          projectId: gen-lang-client-0167429912
+          channelId: live
