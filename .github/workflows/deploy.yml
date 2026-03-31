@@ -3,7 +3,8 @@ name: Cloud Build & Flutter Deploy
 on:
   push:
     branches:
-      - main  # మీ మెయిన్ బ్రాంచ్ పేరు 'main' అయితేనే ఇది రన్ అవుతుంది
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
