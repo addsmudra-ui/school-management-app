@@ -18,12 +18,10 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.19.0' # ఒక స్థిరమైన వెర్షన్ ఉపయోగిస్తున్నాం
 
       - name: 📦 Install Dependencies
         run: flutter pub get
-
-      - name: ⚙️ Fix Platform Folders
-        run: flutter create . --platforms web
 
       - name: 🏗️ Build Web Production
         run: flutter build web --release --base-href "/"
