@@ -11,25 +11,25 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase
-  firebase_core: ^3.11.0
-  cloud_firestore: ^5.6.4
-  firebase_auth: ^5.5.4
-  firebase_messaging: ^15.3.4
+  # Firebase (Stable Versions)
+  firebase_core: ^2.24.2
+  cloud_firestore: ^4.14.0
+  firebase_auth: ^4.16.0
+  firebase_messaging: ^14.7.10  # ఇక్కడ వెర్షన్ తగ్గించాను (Downgraded for stability)
   
   # UI & UX
-  google_fonts: ^6.2.1
-  flutter_svg: ^2.0.10+1
-  lucide_icons: any   # ఇక్కడ 'any' అని మార్చాను, ఇది సరైన వెర్షన్ తీసుకుంటుంది
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  lucide_icons: any 
   intl: ^0.19.0
   
   # State Management
-  flutter_riverpod: ^2.5.1
+  flutter_riverpod: ^2.4.9
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.1
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
